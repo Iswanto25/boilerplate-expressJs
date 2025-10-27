@@ -1,0 +1,76 @@
+// ========================================
+// Prisma Configuration
+// ========================================
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  USER
+}
+
+enum ServiceStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum AuthProvider {
+  MANUAL
+  GOOGLE
+}
+
+model logs {
+  id         Int       @id @default(autoincrement())
+  idUsers    String?
+  username   String?
+  role       String?
+  ip         String?
+  method     String?
+  status     Int?
+  host       String?
+  services   String?
+  date       DateTime?
+  data       Json?
+  createdAt  DateTime  @default(now())
+}
+
+model user {
+  id         String      @id @default(uuid())
+  name       String?
+  role       UserRole    @default(USER)
+  email      String      @unique
+  password   String?     
+  provider   AuthProvider @default(MANUAL)
+  providerId String?     
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  refreshTokens refreshToken[]
+}
+
+model refreshToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  userId     String
+  user       user     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model servicesRegistry {
+  id         String         @id @default(cuid())
+  name       String         @unique
+  baseUrl    String
+  status     ServiceStatus  @default(ACTIVE)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}

@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"outDir": "./dist",
+		"module": "CommonJS",
+		"target": "ESNext",
+		"esModuleInterop": true,
+		"resolveJsonModule": false,
+		"strictNullChecks": false,
+		"typeRoots": ["./node_modules/@types", "./types"],
+		"noImplicitAny": false,
+		"strict": false,
+		"strictFunctionTypes": false,
+		"skipLibCheck": true
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules"]
+}
