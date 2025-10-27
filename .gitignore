@@ -1,0 +1,5 @@
+node_modules
+logger
+dist
+# Keep environment variables out of version control
+.env
