@@ -143,7 +143,18 @@ export const authServices = {
 	},
 
 	async profile(userId: string) {
-		const user = await prisma.user.findUnique({ where: { id: userId } });
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				role: true,
+				isActive: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+		});
 		if (!user) throw new apiError(400, "User not found");
 		return user;
 	},
