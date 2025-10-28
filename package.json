@@ -7,9 +7,8 @@
 		"prettier": "npx prettier . --write",
 		"start": "node dist/app.js",
 		"dev": "nodemon src/app.ts",
-		"start:migrate": "prisma migrate deploy && npm run dev",
-		"build": "tsc && tsc-alias && npm run copy",
-		"copy": "cp -R ./src/proto ./dist"
+		"start:migrate": "prisma migrate deploy && npm run start",
+		"build": "tsc"
 	},
 	"author": "",
 	"license": "ISC",
