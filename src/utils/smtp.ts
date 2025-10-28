@@ -33,8 +33,10 @@ export const sendEmail = async (options: SendEmailOptions, req?: Request, res?: 
 			text: options.text,
 			html: options.html,
 		});
-        console.log(`📨 Email terkirim ke ${options.to} dengan subjek "${options.subject}"`);
+        console.info(`📨 Email terkirim ke ${options.to} dengan subjek "${options.subject}"`);
 	} catch (error) {
-		return respons.error("Failed to send email", error, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
+		const message = error instanceof Error ? error.message : "Unknown error";
+		console.error(`❌ Gagal mengirim email ke ${options.to}: ${message}`);
+		return respons.error("Failed to send email", message, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 	}
 };
