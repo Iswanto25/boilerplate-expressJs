@@ -1,6 +1,4 @@
 import nodemailer from "nodemailer";
-import { Request, Response } from "express";
-import { respons, HttpStatus } from "./respons";
 import dotenv from "dotenv";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
@@ -14,7 +12,7 @@ interface SendEmailOptions {
 	fromEmail?: string;
 }
 
-export const sendEmail = async (options: SendEmailOptions, req?: Request, res?: Response): Promise<void> => {
+export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
 	try {
 		const transporter = nodemailer.createTransport({
 			host: process.env.SMTP_HOST,
@@ -34,10 +32,10 @@ export const sendEmail = async (options: SendEmailOptions, req?: Request, res?: 
 			text: options.text,
 			html: options.html,
 		});
-        console.info(`📨 Email terkirim ke ${options.to} dengan subjek "${options.subject}"`);
+		console.info(`📨 Email terkirim ke ${options.to} dengan subjek "${options.subject}"`);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
 		console.error(`❌ Gagal mengirim email ke ${options.to}: ${message}`);
-		return respons.error("Failed to send email", message, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
+		throw new Error(`Failed to send email: ${message}`);
 	}
 };
