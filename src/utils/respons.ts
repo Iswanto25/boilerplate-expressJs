@@ -70,11 +70,15 @@ export const respons = {
 			},
 		};
 
-		logger.info(logPayload);
+			logger.info(logPayload);
 
-		await prisma.logs.create({
-			data: logPayload,
-		});
+			try {
+				await prisma.logs.create({
+					data: logPayload,
+				});
+			} catch (dbError) {
+				logger.warn({ dbError }, "Failed to write success log to database");
+			}
 
 		res.status(code).json({
 			status: code,
@@ -104,11 +108,15 @@ export const respons = {
 			},
 		};
 
-		logger.error(logPayload);
+			logger.error(logPayload);
 
-		await prisma.logs.create({
-			data: logPayload,
-		});
+			try {
+				await prisma.logs.create({
+					data: logPayload,
+				});
+			} catch (dbError) {
+				logger.warn({ dbError }, "Failed to write error log to database");
+			}
 		res.status(code).json({
 			status: code,
 			message,
