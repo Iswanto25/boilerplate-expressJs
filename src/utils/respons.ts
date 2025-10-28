@@ -1,6 +1,7 @@
 import { Response, Request } from "express";
 import prisma from "../configs/database";
 import { authenticate } from "../middlewares/authMiddleware";
+import { logger } from "./logger";
 import moment from "moment";
 moment.locale("id");
 
@@ -69,6 +70,8 @@ export const respons = {
 			},
 		};
 
+		logger.info(logPayload);
+
 		await prisma.logs.create({
 			data: logPayload,
 		});
@@ -101,6 +104,8 @@ export const respons = {
 			},
 		};
 
+		logger.error(logPayload);
+
 		await prisma.logs.create({
 			data: logPayload,
 		});
@@ -118,6 +123,7 @@ export class apiError extends Error {
 	constructor(statusCode: number, message: string) {
 		super(message);
 		this.statusCode = statusCode;
+		logger.error(message);
 		Error.captureStackTrace(this, this.constructor);
 	}
 }

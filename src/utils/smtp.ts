@@ -2,7 +2,8 @@ import nodemailer from "nodemailer";
 import { Request, Response } from "express";
 import { respons, HttpStatus } from "./respons";
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ quiet: process.env.NODE_ENV === "production" });
+
 
 interface SendEmailOptions {
 	to: string;
