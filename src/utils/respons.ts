@@ -1,5 +1,6 @@
 import { Response, Request } from "express";
 import prisma from "../configs/database";
+import { authenticate } from "../middlewares/authMiddleware";
 import moment from "moment";
 moment.locale("id");
 
@@ -18,132 +19,104 @@ export enum HttpStatus {
 	INTERNAL_SERVER_ERROR = 500,
 }
 
-interface Log {
-	idUsers?: string;
-	username?: string;
-	role?: string;
-	ip?: string;
-	method?: string;
-	status?: number;
-	host?: string; // domain:port
-	services?: string; // endpoint path or app name
-	date?: Date;
-	data?: any;
-}
+const getRequestContext = async (req?: Request) => {
+	if (!req) return { user: null, ip: "", host: "", userAgent: "", ua: { source: "Unknown" }, dateTimeNow: "" };
+	moment.locale("id");
+	const auth = req.headers?.authorization;
 
-/** Fix: mapping host/services tidak dibalik */
-export const createLogger = async (data: Log) => {
-	try {
-		await prisma.logs.create({
-			data: {
-				idUsers: data.idUsers ?? null,
-				username: data.username ?? null,
-				role: data.role ?? null,
-				ip: data.ip ?? null,
-				method: data.method ?? null,
-				status: data.status ?? null,
-				host: data.host ?? null, // <-- benar
-				services: data.services ?? null, // <-- benar
-				date: data.date ?? new Date(),
-				data: serializeError(data.data),
-			},
-		});
-	} catch (error) {
-		console.error("Logger error:", error);
+	let user = null;
+	let userId: string | null = null;
+	const token = auth?.startsWith("Bearer ") ? auth.split(" ")[1] : null;
+
+	if (token) {
+		const result = await authenticate.checkToken(req);
+		if (result.valid && result.userId) {
+			userId = result.userId;
+			user = await prisma.user.findUnique({ where: { id: userId } });
+		}
 	}
+
+	const forwardedForHeader = req.headers["x-forwarded-for"];
+	const forwardedFor = Array.isArray(forwardedForHeader) ? forwardedForHeader[0] : forwardedForHeader;
+	const ip = forwardedFor?.split(",")[0]?.trim() || null;
+	const host = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+	const userAgent = req.headers["user-agent"] || "Unknown";
+	const dateTimeNow = moment().format("YYYY-MM-DD HH:mm:ss");
+
+	return { user, ip, host, userAgent, dateTimeNow };
 };
 
-function extractHost(req?: Request) {
-	// prioritaskan x-forwarded-host (di balik reverse proxy)
-	const xf = req?.headers?.["x-forwarded-host"];
-	if (Array.isArray(xf)) return xf[0] ?? null;
-	return (xf as string) || (req?.headers?.host as string) || null;
-}
-
-function extractPath(req?: Request) {
-	return req?.originalUrl || req?.url || null;
-}
-
-function serializeError(error: any) {
-	if (!error) return null;
-	return {
-		name: error.name,
-		message: error.message,
-		stack: error.stack,
-	};
-}
-
 export const respons = {
-	success(res: Response, message: string, data?: any, code: number = HttpStatus.OK, req?: Request) {
-		const logPayload: Log = {
-			idUsers: req?.user?.id ?? null,
-			username: req?.user?.username ?? null,
-			role: req?.user?.role ?? null,
-			ip: req?.ip ?? null,
-			method: req?.method ?? null,
-			status: code,
-			host: extractHost(req), // <-- ambil dari header
-			services: extractPath(req), // <-- simpan endpoint path
-			date: new Date(),
-			data: data ?? null,
+	async success(message: any, data: any, code: number, res: Response, req: Request) {
+		const { user, ip, host, userAgent, dateTimeNow } = await getRequestContext(req);
+
+		const logPayload = {
+			userId: user?.id,
+			name: user?.name || "Unknown",
+			role: user?.role,
+			ip: ip,
+			date: dateTimeNow,
+			host,
+			status: code.toString(),
+			method: req?.method,
+			data: {
+				userAgent,
+				timestamp: dateTimeNow,
+				source: 'Success',
+				message,
+				data,
+			},
 		};
 
-		createLogger(logPayload).catch(() => {});
+		await prisma.logs.create({
+			data: logPayload,
+		});
 
-		return res.status(code).json({
-			success: true,
-			code,
+		res.status(code).json({
+			status: code,
 			message,
-			path: extractPath(req),
-			timestamp: moment().format("YYYY-MM-DD HH:mm:ss"),
-			data: data ?? null,
+			data,
 		});
 	},
 
-	error(res: Response, message: string, fallbackCode: number = HttpStatus.INTERNAL_SERVER_ERROR, error?: any) {
-		const derivedCode =
-			error?.name === "JsonWebTokenError"
-				? HttpStatus.UNAUTHORIZED
-				: error?.name === "TokenExpiredError"
-				? HttpStatus.UNAUTHORIZED
-				: error && Number.isInteger(error.httpStatus) && error.httpStatus >= 400 && error.httpStatus <= 599
-				? error.httpStatus
-				: error?.code === "UNSUPPORTED_MEDIA_TYPE"
-				? HttpStatus.UNSUPPORTED_MEDIA_TYPE
-				: error?.code === "INVALID_BASE64"
-				? HttpStatus.BAD_REQUEST
-				: error?.code === "PAYLOAD_TOO_LARGE"
-				? HttpStatus.PAYLOAD_TOO_LARGE
-				: error?.code === "STORAGE_WRITE_FAILED"
-				? HttpStatus.BAD_GATEWAY
-				: error?.code === "NOT_FOUND"
-				? HttpStatus.NOT_FOUND
-				: fallbackCode;
+	async error(message: string, error: any, code: number, res: Response, req?: Request) {
+		const { user, ip, host, userAgent, dateTimeNow } = await getRequestContext(req);
 
-		const req = res.req as Request | undefined;
-
-		const logPayload: Log = {
-			idUsers: req?.user?.id ?? null,
-			username: req?.user?.username ?? null,
-			role: req?.user?.role ?? null,
-			ip: req?.ip ?? null,
-			method: req?.method ?? null,
-			status: derivedCode,
-			host: extractHost(req), // <-- konsisten
-			services: extractPath(req), // <-- konsisten
-			date: new Date(),
-			data: error ?? null,
+		const logPayload = {
+			userId: user?.id,
+			name: user?.name || "Unknown",
+			role: user?.role,
+			ip: ip,
+			date: dateTimeNow,
+			host,
+			status: code.toString(),
+			method: req?.method,
+			data: {
+				userAgent,
+				timestamp: dateTimeNow,
+				source: 'Error',
+				message,
+				error,
+			},
 		};
 
-		createLogger(logPayload).catch(() => {});
-
-		return res.status(derivedCode).json({
-			success: false,
-			code: derivedCode,
+		await prisma.logs.create({
+			data: logPayload,
+		});
+		res.status(code).json({
+			status: code,
 			message,
-			path: extractPath(req),
-			timestamp: moment().format("YYYY-MM-DD HH:mm:ss"),
 			error,
 		});
 	},
 };
+
+export class apiError extends Error {
+	public statusCode: number;
+
+	constructor(statusCode: number, message: string) {
+		super(message);
+		this.statusCode = statusCode;
+		Error.captureStackTrace(this, this.constructor);
+	}
+}

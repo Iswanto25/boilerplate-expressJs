@@ -1,6 +1,7 @@
 import prisma from "../../../configs/database";
 import { existingEmail } from "../../../utils/existingUsers";
 import { encryptPassword, comparePassword } from "../../../utils/utils";
+import { apiError } from "../../../utils/respons";
 import { jwtUtils } from "../../../utils/jwt";
 import { storeToken, deleteToken } from "../../../utils/tokenStore";
 import { v4 as uuidv4 } from "uuid";
@@ -18,7 +19,7 @@ export const authServices = {
 	async register(data: LocalRegister) {
 		return await prisma.$transaction(async (tx) => {
 			const existing = await existingEmail(data.email);
-			if (existing) throw new Error("Email already exists");
+			if (existing) throw new apiError(400, "Email already exists");
 
 			const user = await tx.user.create({
 				data: {
@@ -59,10 +60,10 @@ export const authServices = {
 	// ========================================
 	async login(email: string, password: string) {
 		const user = await prisma.user.findUnique({ where: { email } });
-		if (!user) throw new Error("User not found");
+		if (!user) throw new apiError(400, "User not found");
 
 		const isValid = await comparePassword(password, user.password);
-		if (!isValid) throw new Error("Invalid password");
+		if (!isValid) throw new apiError(400, "Invalid password");
 
 		await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
 		await deleteToken(user.id, "access");
@@ -100,12 +101,14 @@ export const authServices = {
 		const decoded = jwtUtils.verifyRefreshToken(oldToken);
 
 		const user = await prisma.user.findUnique({ where: { id: decoded.id } });
-		if (!user) throw new Error("User not found");
+		if (!user) throw new apiError(400, "User not found");
+
 
 		const tokenRecord = await prisma.refreshToken.findFirst({
 			where: { userId: user.id, token: oldToken },
 		});
-		if (!tokenRecord) throw new Error("Refresh token invalid or expired");
+		if (!tokenRecord) throw new apiError(400, "Invalid token");
+
 
 		await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
 		await deleteToken(user.id, "access");
