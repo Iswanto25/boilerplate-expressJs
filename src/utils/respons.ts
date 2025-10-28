@@ -15,6 +15,7 @@ export enum HttpStatus {
 	PAYLOAD_TOO_LARGE = 413,
 	UNPROCESSABLE_ENTITY = 422,
 	UNSUPPORTED_MEDIA_TYPE = 415,
+	TOO_MANY_REQUESTS = 429,
 	BAD_GATEWAY = 502,
 	INTERNAL_SERVER_ERROR = 500,
 }
@@ -38,7 +39,7 @@ const getRequestContext = async (req?: Request) => {
 
 	const forwardedForHeader = req.headers["x-forwarded-for"];
 	const forwardedFor = Array.isArray(forwardedForHeader) ? forwardedForHeader[0] : forwardedForHeader;
-	const ip = forwardedFor?.split(",")[0]?.trim() || null;
+	const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() || req.socket.remoteAddress || "unknown";
 	const host = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
 	const userAgent = req.headers["user-agent"] || "Unknown";
 	const dateTimeNow = moment().format("YYYY-MM-DD HH:mm:ss");
