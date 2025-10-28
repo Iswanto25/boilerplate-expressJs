@@ -62,23 +62,23 @@ export function createUploader(config: MulterConfig) {
 			if (err instanceof multer.MulterError) {
 				switch (err.code) {
 					case "LIMIT_FILE_SIZE":
-						return respons.error(res, "Ukuran file terlalu besar", HttpStatus.BAD_REQUEST, err.message, req);
+						return respons.error(res, "Ukuran file terlalu besar", HttpStatus.BAD_REQUEST, err.message);
 					case "LIMIT_FILE_COUNT":
-						return respons.error(res, "Jumlah file melebihi batas", HttpStatus.BAD_REQUEST, err.message, req);
+						return respons.error(res, "Jumlah file melebihi batas", HttpStatus.BAD_REQUEST, err.message);
 					case "LIMIT_UNEXPECTED_FILE":
-						return respons.error(res, "Terlalu banyak file diunggah", HttpStatus.BAD_REQUEST, err.message, req);
+						return respons.error(res, "Terlalu banyak file diunggah", HttpStatus.BAD_REQUEST, err.message);
 					default:
-						return respons.error(res, "Terjadi kesalahan saat upload file", HttpStatus.BAD_REQUEST, err.message, req);
+						return respons.error(res, "Terjadi kesalahan saat upload file", HttpStatus.BAD_REQUEST, err.message);
 				}
 			}
 
 			if (err && err.message?.includes("File type not allowed")) {
-				return respons.error(res, "Format file tidak diperbolehkan", HttpStatus.UNPROCESSABLE_ENTITY, err.message, req);
+				return respons.error(res, "Format file tidak diperbolehkan", HttpStatus.UNPROCESSABLE_ENTITY, err.message);
 			}
 
 			if (err) {
 				console.error("[Uploader Error]", err);
-				return respons.error(res, "Kesalahan server saat upload file", HttpStatus.INTERNAL_SERVER_ERROR, err.message, req);
+				return respons.error(res, "Kesalahan server saat upload file", HttpStatus.INTERNAL_SERVER_ERROR, err.message);
 			}
 
 			next();
