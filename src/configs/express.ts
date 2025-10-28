@@ -7,6 +7,7 @@ import { logger } from "../utils/logger";
 import { uploadFile, getFile, deleteFile, uploadBase64 } from "../utils/s3";
 import { respons, HttpStatus } from "../utils/respons";
 import { createUploader } from "../middlewares/multerMiddleware";
+import authRoutes from "../routes/authRoutes";
 
 export const app = express();
 
@@ -37,6 +38,12 @@ app.use(compression());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(pinoHttp({ logger }));
+
+
+// Routes Auth
+app.use("/api/v1/auth", authRoutes);
+
+
 
 app.get("/", (req, res) => res.redirect("/health"));
 app.get("/health", (req, res) => {
