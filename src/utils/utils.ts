@@ -21,3 +21,16 @@ export function comparePassword(password: string, hash: string): boolean {
     return bcrypt.compareSync(password, hash);
 }
 
+export function isEmailValid(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+export function isPhoneNumberValid(phoneNumber: string): boolean {
+    const phoneRegex = /^[0-9]{10}$/;
+    return phoneRegex.test(phoneNumber);
+}
+
+export function generateOTP(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}

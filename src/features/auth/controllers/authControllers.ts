@@ -84,4 +84,22 @@ export const authController = {
 			return respons.error(message, null, statusCode, res, req);
 		}
 	},
+
+	forgotPassword: async (req: Request, res: Response) => {
+		try {
+			const email = req.body.email;
+
+			if (!email) {
+				return respons.error("Data tidak lengkap", null, HttpStatus.BAD_REQUEST, res, req);
+			}
+			const result = await authServices.forgotPassword(email);
+			return respons.success("Berhasil kirim email", result, HttpStatus.OK, res, req);
+		} catch (error: any) {
+			const statusCode = error.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			let message = error.message || "Terjadi kesalahan pada server";
+
+			if (message === "User not found") message = "User tidak ditemukan";
+			return respons.error(message, null, statusCode, res, req);
+		}
+	}
 };
