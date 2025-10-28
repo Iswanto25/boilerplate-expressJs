@@ -45,7 +45,7 @@ export const createLogger = async (data: Log) => {
 				host: data.host ?? null, // <-- benar
 				services: data.services ?? null, // <-- benar
 				date: data.date ?? new Date(),
-				data: data.data ?? null,
+				data: serializeError(data.data),
 			},
 		});
 	} catch (error) {
@@ -62,6 +62,15 @@ function extractHost(req?: Request) {
 
 function extractPath(req?: Request) {
 	return req?.originalUrl || req?.url || null;
+}
+
+function serializeError(error: any) {
+	if (!error) return null;
+	return {
+		name: error.name,
+		message: error.message,
+		stack: error.stack,
+	};
 }
 
 export const respons = {
@@ -93,7 +102,11 @@ export const respons = {
 
 	error(res: Response, message: string, fallbackCode: number = HttpStatus.INTERNAL_SERVER_ERROR, error?: any) {
 		const derivedCode =
-			error && Number.isInteger(error.httpStatus) && error.httpStatus >= 400 && error.httpStatus <= 599
+			error?.name === "JsonWebTokenError"
+				? HttpStatus.UNAUTHORIZED
+				: error?.name === "TokenExpiredError"
+				? HttpStatus.UNAUTHORIZED
+				: error && Number.isInteger(error.httpStatus) && error.httpStatus >= 400 && error.httpStatus <= 599
 				? error.httpStatus
 				: error?.code === "UNSUPPORTED_MEDIA_TYPE"
 				? HttpStatus.UNSUPPORTED_MEDIA_TYPE
