@@ -28,18 +28,21 @@ enum AuthProvider {
 }
 
 model logs {
-  id         Int       @id @default(autoincrement())
-  idUsers    String?
-  username   String?
-  role       String?
-  ip         String?
-  method     String?
-  status     Int?
-  host       String?
-  services   String?
-  date       DateTime?
-  data       Json?
-  createdAt  DateTime  @default(now())
+  id     Int     @id @default(autoincrement())
+  date   String?
+  name   String?
+  role   String?
+  host   String?
+  status String?
+  data   Json?
+  userId String?
+  ip     String?
+  method String?
+  dayCount Int?
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([userId])
 }
 
 model user {

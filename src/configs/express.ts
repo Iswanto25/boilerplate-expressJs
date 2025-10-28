@@ -44,13 +44,12 @@ app.use(pinoHttp({ logger }));
 app.use("/api/v1/auth", authRoutes);
 
 
-
 app.get("/", (req, res) => res.redirect("/health"));
 app.get("/health", (req, res) => {
 	const data = {
 		name: "Dummy",
 	};
-	return respons.success(res, "health", data, HttpStatus.OK, req);
+	return respons.success('Health', data, HttpStatus.OK, res, req);
 });
 
 app.post(
@@ -59,12 +58,12 @@ app.post(
 	async (req, res) => {
 		try {
 			if (!req.file) {
-				return respons.error(res, "No file uploaded", HttpStatus.BAD_REQUEST);
+				return respons.error('File not found', null, HttpStatus.NOT_FOUND, res);
 			}
 			const fileName = await uploadFile(req.file, "uploads");
-			return respons.success(res, "File uploaded successfully", { fileName }, HttpStatus.OK);
+			return respons.success('File uploaded successfully', { fileName }, HttpStatus.OK, res, req);
 		} catch (error) {
-			return respons.error(res, "Error uploading file", HttpStatus.INTERNAL_SERVER_ERROR, error);
+			return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 		}
 	},
 );
@@ -76,12 +75,12 @@ app.get("/test", async (req, res) => {
 
 		const url = await getFile(folder, fileName, 3600, { ensureExists: true });
 		if (!url) {
-			return respons.error(res, `File "${fileName}" di folder "${folder}" tidak ditemukan`, HttpStatus.NOT_FOUND, { folder, file: fileName });
+			return respons.error('File not found', null, HttpStatus.NOT_FOUND, res, req);
 		}
 
-		return respons.success(res, "File retrieved successfully", { result: url }, HttpStatus.OK);
+		return respons.success('Test', url, HttpStatus.OK, res, req);
 	} catch (error) {
-		return respons.error(res, "Terjadi kesalahan", HttpStatus.INTERNAL_SERVER_ERROR, error);
+		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 	}
 });
 
@@ -91,19 +90,19 @@ app.delete("/delete", async (req, res) => {
 		const folder = "uploads";
 		const result = await deleteFile(folder, fileName);
 		if (!result.deleted) {
-			return respons.error(res, `File "${fileName}" di folder "${folder}" tidak ditemukan`, HttpStatus.NOT_FOUND, { folder, file: fileName });
+			return respons.error('File not found', null, HttpStatus.NOT_FOUND, res, req);
 		}
-		return respons.success(res, "File deleted successfully", { result }, HttpStatus.OK);
+		return respons.success('File deleted successfully', result, HttpStatus.OK, res, req);
 	} catch (error) {
-		return respons.error(res, "Error", HttpStatus.INTERNAL_SERVER_ERROR, error);
+		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 	}
 });
 
 app.post("/base64", async (req, res) => {
 	try {
 		const result = await uploadBase64(req.body.file, "uploads", 155, ["image/jpeg", "image/png"]);
-		return respons.success(res, "File uploaded successfully", { result }, HttpStatus.OK);
+		return respons.success('File uploaded successfully', result, HttpStatus.OK, res, req);
 	} catch (error) {
-		return respons.error(res, "Error", HttpStatus.INTERNAL_SERVER_ERROR, error);
+		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 	}
 });
