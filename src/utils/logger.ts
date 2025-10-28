@@ -2,6 +2,9 @@ import pino from "pino";
 import path from "path";
 import fs from "fs";
 import moment from "moment";
+import dotenv from "dotenv";
+dotenv.config({ quiet: process.env.NODE_ENV === "production" });
+
 
 const isProd = process.env.NODE_ENV === "production";
 

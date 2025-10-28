@@ -15,7 +15,8 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import { randomString } from "./utils";
-dotenv.config();
+dotenv.config({ quiet: process.env.NODE_ENV === "production" });
+
 
 // ---- Env helpers ------------------------------------------------------------
 function normalizeEndpoint(raw?: string, useSSL?: boolean): string {
