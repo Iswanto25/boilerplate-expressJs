@@ -1,0 +1,40 @@
+import nodemailer from "nodemailer";
+import { Request, Response } from "express";
+import { respons, HttpStatus } from "./respons";
+import dotenv from "dotenv";
+dotenv.config();
+
+interface SendEmailOptions {
+	to: string;
+	subject: string;
+	html?: string;
+	text?: string;
+	fromName?: string;
+	fromEmail?: string;
+}
+
+export const sendEmail = async (options: SendEmailOptions, req?: Request, res?: Response): Promise<void> => {
+	try {
+		const transporter = nodemailer.createTransport({
+			host: process.env.SMTP_HOST,
+			port: Number(process.env.SMTP_PORT) || 587,
+			secure: process.env.SMTP_SECURE === "true",
+			auth: {
+				user: process.env.SMTP_USER,
+				pass: process.env.SMTP_PASS,
+			},
+		});
+		const fromAddress = options.fromEmail || process.env.SMTP_FROM || process.env.SMTP_USER;
+		const fromName = options.fromName || process.env.APP_NAME || "Boilerplate App";
+		await transporter.sendMail({
+			from: `"${fromName}" <${fromAddress}>`,
+			to: options.to,
+			subject: options.subject,
+			text: options.text,
+			html: options.html,
+		});
+        console.log(`📨 Email terkirim ke ${options.to} dengan subjek "${options.subject}"`);
+	} catch (error) {
+		return respons.error("Failed to send email", error, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
+	}
+};
