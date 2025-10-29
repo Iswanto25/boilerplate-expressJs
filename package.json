@@ -8,7 +8,9 @@
 		"start": "node dist/app.js",
 		"dev": "nodemon src/app.ts",
 		"start:migrate": "prisma migrate deploy && npm run start",
-		"build": "tsc"
+		"build": "tsc",
+		"test": "npm run build && node --test --experimental-test-module-mocks \"dist/**/*.test.js\"",
+		"test:utils": "npm run test"
 	},
 	"author": "",
 	"license": "ISC",
@@ -47,5 +49,17 @@
 		"prisma": "^6.18.0",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.3"
+	},
+	"testScenarios": {
+		"utils": [
+			"Encryption utilities encrypt and decrypt payloads using DATA_ENCRYPTION_KEY.",
+			"Generic utility helpers (strings, passwords, OTP, validation) behave deterministically under controlled randomness.",
+			"JWT utilities sign and verify access/refresh tokens with provided secrets.",
+			"Response helpers log payloads and format JSON responses when dependencies succeed or fail.",
+			"Rate limiter middleware enforces request windows and handles Redis errors gracefully.",
+			"S3 helpers validate inputs, upload/delete objects, and surface MinIO configuration errors.",
+			"SMTP helper builds transporter configuration and propagates send failures.",
+			"Token store persists, loads, and deletes tokens using Redis."
+		]
 	}
 }
