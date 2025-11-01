@@ -10,14 +10,15 @@ const responsPath = path.join(__dirname, "../respons");
 const loggerPath = path.join(__dirname, "../logger");
 
 
-const stubModule = (resolvedPath: string, exports: any): (() => void) => {
-	const original = requireModule.cache[resolvedPath];
-	(requireModule.cache as any)[resolvedPath] = {
-		id: resolvedPath,
-		filename: resolvedPath,
-		loaded: true,
-		exports,
-	};
+const stubModule = (specifier: string, exports: any): (() => void) => {
+        const resolvedPath = requireModule.resolve(specifier);
+        const original = requireModule.cache[resolvedPath];
+        (requireModule.cache as any)[resolvedPath] = {
+                id: resolvedPath,
+                filename: resolvedPath,
+                loaded: true,
+                exports,
+        };
 	return () => {
 		if (original) {
 			(requireModule.cache as any)[resolvedPath] = original;
@@ -55,11 +56,18 @@ const setup = async (overrides?: Partial<Record<"incr" | "expire" | "ttl" | "set
 	delete requireModule.cache[requireModule.resolve(modulePath)];
 	const rateLimiterModule = await import(modulePath);
 
-	return { rateLimiterModule, redisClient, responsError, logger, restore: () => {
-		restoreRedis();
-		restoreRespons();
-		restoreLogger();
-	} };
+        return {
+                rateLimiterModule,
+                redisClient,
+                responsError,
+                logger,
+                restore: () => {
+                        restoreRedis();
+                        restoreRespons();
+                        restoreLogger();
+                        delete requireModule.cache[requireModule.resolve(modulePath)];
+                },
+        };
 };
 
 const createReqRes = () => {
