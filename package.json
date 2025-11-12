@@ -4,9 +4,9 @@
 	"description": "",
 	"main": "app.ts",
 	"scripts": {
-                "prettier": "npx prettier . --write",
-                "pretest": "node scripts/prepare-test-env.cjs",
-                "start": "node dist/app.js",
+		"prettier": "npx prettier . --write",
+		"pretest": "node scripts/prepare-test-env.cjs",
+		"start": "node dist/app.js",
 		"dev": "nodemon src/app.ts",
 		"start:migrate": "prisma migrate deploy && npm run start",
 		"build": "tsc",

@@ -4,15 +4,15 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
 
 ## ✨ Fitur
 
--   **Framework**: Express.js
--   **Bahasa**: TypeScript
--   **ORM**: Prisma untuk interaksi database yang modern dan aman.
--   **Autentikasi**: Implementasi JWT (JSON Web Token) siap pakai.
--   **Penanganan File**: Unggah file dengan Multer, dengan contoh integrasi Amazon S3.
--   **Struktur Proyek**: Desain berbasis fitur (Feature-Sliced Design) untuk modularitas.
--   **Konfigurasi**: Manajemen variabel lingkungan dengan `dotenv`.
--   **Linting & Formatting**: Dikonfigurasi dengan Prettier untuk kode yang konsisten.
--   **Caching**: Siap diintegrasikan dengan Redis.
+- **Framework**: Express.js
+- **Bahasa**: TypeScript
+- **ORM**: Prisma untuk interaksi database yang modern dan aman.
+- **Autentikasi**: Implementasi JWT (JSON Web Token) siap pakai.
+- **Penanganan File**: Unggah file dengan Multer, dengan contoh integrasi Amazon S3.
+- **Struktur Proyek**: Desain berbasis fitur (Feature-Sliced Design) untuk modularitas.
+- **Konfigurasi**: Manajemen variabel lingkungan dengan `dotenv`.
+- **Linting & Formatting**: Dikonfigurasi dengan Prettier untuk kode yang konsisten.
+- **Caching**: Siap diintegrasikan dengan Redis.
 
 ## 📂 Struktur Proyek
 
@@ -40,9 +40,9 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
 
 ### Prasyarat
 
--   [Node.js](https://nodejs.org/en/) (v18 atau lebih baru direkomendasikan)
--   [NPM](https://www.npmjs.com/) atau [Yarn](https://yarnpkg.com/)
--   Database yang didukung oleh Prisma (misalnya: PostgreSQL, MySQL, SQLite)
+- [Node.js](https://nodejs.org/en/) (v18 atau lebih baru direkomendasikan)
+- [NPM](https://www.npmjs.com/) atau [Yarn](https://yarnpkg.com/)
+- Database yang didukung oleh Prisma (misalnya: PostgreSQL, MySQL, SQLite)
 
 ### Instalasi
 
@@ -62,9 +62,10 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
 3.  **Siapkan Environment Variables:**
     Salin file `.env.example` menjadi `.env` dan sesuaikan nilainya.
     `bash
-    cp .env.example .env
-    `
+cp .env.example .env
+`
     File `.env` Anda akan terlihat seperti ini:
+
     ```env
     DATABASE_URL=
 
@@ -76,19 +77,19 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
     REDIS_DB=0
 
     # Common
-  
+
     NODE_ENV=development
     PORT=3004
-  
+
     # JWT
-  
+
     JWT_SECRET=
     JWT_REFRESH_SECRET=
     ACCESS_TOKEN_EXPIRES_IN=
     REFRESH_TOKEN_EXPIRES_IN=
-  
+
     # s3
-  
+
     MINIO_ENDPOINT=
     MINIO_PORT=
     MINIO_ACCESS_KEY=
@@ -96,7 +97,9 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
     MINIO_BUCKET_NAME=
     MINIO_USE_SSL=
     MINIO_REGION=
-    
+
+
+    ```
 
 4.  **Jalankan Migrasi Database:**
     Pastikan koneksi `DATABASE_URL` Anda sudah benar, lalu jalankan perintah Prisma untuk membuat tabel di database Anda.
@@ -106,13 +109,13 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
 
 ### Menjalankan Aplikasi
 
--   **Mode Pengembangan (dengan hot-reload):**
+- **Mode Pengembangan (dengan hot-reload):**
 
     ```bash
     npm run dev
     ```
 
--   **Mode Produksi:**
+- **Mode Produksi:**
     ```bash
     npm run build
     npm start
@@ -122,9 +125,9 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
 
 Dalam file `package.json`, Anda akan menemukan beberapa skrip:
 
--   `start`: Menjalankan aplikasi dari kode yang sudah di-build (di direktori `dist/`).
--   `dev`: Menjalankan aplikasi dalam mode pengembangan menggunakan `ts-node-dev` untuk hot-reloading.
--   `build`: Mengompilasi kode TypeScript menjadi JavaScript di direktori `dist/`.
+- `start`: Menjalankan aplikasi dari kode yang sudah di-build (di direktori `dist/`).
+- `dev`: Menjalankan aplikasi dalam mode pengembangan menggunakan `ts-node-dev` untuk hot-reloading.
+- `build`: Mengompilasi kode TypeScript menjadi JavaScript di direktori `dist/`.
 
 ## Lizensi
 

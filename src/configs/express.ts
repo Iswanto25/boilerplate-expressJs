@@ -39,17 +39,15 @@ app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(pinoHttp({ logger }));
 
-
 // Routes Auth
 app.use("/api/v1/auth", authRoutes);
-
 
 app.get("/", (req, res) => res.redirect("/health"));
 app.get("/health", (req, res) => {
 	const data = {
 		name: "Dummy",
 	};
-	return respons.success('Health', data, HttpStatus.OK, res, req);
+	return respons.success("Health", data, HttpStatus.OK, res, req);
 });
 
 app.post(
@@ -58,12 +56,12 @@ app.post(
 	async (req, res) => {
 		try {
 			if (!req.file) {
-				return respons.error('File not found', null, HttpStatus.NOT_FOUND, res);
+				return respons.error("File not found", null, HttpStatus.NOT_FOUND, res);
 			}
 			const fileName = await uploadFile(req.file, "uploads");
-			return respons.success('File uploaded successfully', { fileName }, HttpStatus.OK, res, req);
+			return respons.success("File uploaded successfully", { fileName }, HttpStatus.OK, res, req);
 		} catch (error) {
-			return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
+			return respons.error("Terjadi kesalahan", null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 		}
 	},
 );
@@ -75,12 +73,12 @@ app.get("/test", async (req, res) => {
 
 		const url = await getFile(folder, fileName, 3600, { ensureExists: true });
 		if (!url) {
-			return respons.error('File not found', null, HttpStatus.NOT_FOUND, res, req);
+			return respons.error("File not found", null, HttpStatus.NOT_FOUND, res, req);
 		}
 
-		return respons.success('Test', url, HttpStatus.OK, res, req);
+		return respons.success("Test", url, HttpStatus.OK, res, req);
 	} catch (error) {
-		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
+		return respons.error("Terjadi kesalahan", null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 	}
 });
 
@@ -90,19 +88,19 @@ app.delete("/delete", async (req, res) => {
 		const folder = "uploads";
 		const result = await deleteFile(folder, fileName);
 		if (!result.deleted) {
-			return respons.error('File not found', null, HttpStatus.NOT_FOUND, res, req);
+			return respons.error("File not found", null, HttpStatus.NOT_FOUND, res, req);
 		}
-		return respons.success('File deleted successfully', result, HttpStatus.OK, res, req);
+		return respons.success("File deleted successfully", result, HttpStatus.OK, res, req);
 	} catch (error) {
-		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
+		return respons.error("Terjadi kesalahan", null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 	}
 });
 
 app.post("/base64", async (req, res) => {
 	try {
 		const result = await uploadBase64(req.body.file, "uploads", 155, ["image/jpeg", "image/png"]);
-		return respons.success('File uploaded successfully', result, HttpStatus.OK, res, req);
+		return respons.success("File uploaded successfully", result, HttpStatus.OK, res, req);
 	} catch (error) {
-		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
+		return respons.error("Terjadi kesalahan", null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 	}
 });
