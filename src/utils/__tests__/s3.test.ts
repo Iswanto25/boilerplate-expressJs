@@ -166,6 +166,15 @@ test("uploadFile uploads stream and removes temp file", async () => {
 	let capturedKey = "";
 	handlers.set("PutObjectCommand", async (command) => {
 		capturedKey = command.input.Key;
+		// Consume the stream to prevent async cleanup issues
+		const stream = command.input.Body;
+		if (stream && typeof stream.read === "function") {
+			await new Promise((resolve, reject) => {
+				stream.on("end", resolve);
+				stream.on("error", reject);
+				stream.on("data", () => {}); // consume the data
+			});
+		}
 		return {};
 	});
 
