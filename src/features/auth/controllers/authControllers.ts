@@ -101,5 +101,5 @@ export const authController = {
 			if (message === "User not found") message = "User tidak ditemukan";
 			return respons.error(message, null, statusCode, res, req);
 		}
-	}
+	},
 };

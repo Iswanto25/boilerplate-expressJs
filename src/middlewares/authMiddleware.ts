@@ -25,12 +25,12 @@ export const authenticate = {
 	async verifyToken(req: Request, res: Response, next: NextFunction) {
 		const result = await authenticate.checkToken(req);
 		if (!result.valid || !result.userId) {
-			return respons.error('Unauthorized', null, HttpStatus.UNAUTHORIZED, res, req);
+			return respons.error("Unauthorized", null, HttpStatus.UNAUTHORIZED, res, req);
 		}
 
 		const existingUser = await prisma.user.findUnique({ where: { id: result.userId } });
 
-		req.user =  existingUser;
+		req.user = existingUser;
 		next();
 	},
 };
