@@ -50,11 +50,11 @@ export function createUploader(config: MulterConfig) {
 	}));
 
 	const middleware =
-		config.fields.length === 1
-			? config.fields[0].type === "single"
-				? upload.single(config.fields[0].fieldName)
-				: upload.array(config.fields[0].fieldName, config.fields[0].maxCount || 10)
-			: upload.fields(fields);
+		config.fields.length === 1 ?
+			config.fields[0].type === "single" ?
+				upload.single(config.fields[0].fieldName)
+			:	upload.array(config.fields[0].fieldName, config.fields[0].maxCount || 10)
+		:	upload.fields(fields);
 
 	return (req: Request, res: Response, next: NextFunction) => {
 		middleware(req, res, (err: any) => {
@@ -62,23 +62,23 @@ export function createUploader(config: MulterConfig) {
 			if (err instanceof multer.MulterError) {
 				switch (err.code) {
 					case "LIMIT_FILE_SIZE":
-						return respons.error('Ukuran file terlalu besar', null, HttpStatus.PAYLOAD_TOO_LARGE, res, req);
+						return respons.error("Ukuran file terlalu besar", null, HttpStatus.PAYLOAD_TOO_LARGE, res, req);
 					case "LIMIT_FILE_COUNT":
-						return respons.error('Terlalu banyak file diunggah', null, HttpStatus.BAD_REQUEST, res, req);
+						return respons.error("Terlalu banyak file diunggah", null, HttpStatus.BAD_REQUEST, res, req);
 					case "LIMIT_UNEXPECTED_FILE":
-						return respons.error('Terlalu banyak file diunggah', null, HttpStatus.BAD_REQUEST, res, req);
+						return respons.error("Terlalu banyak file diunggah", null, HttpStatus.BAD_REQUEST, res, req);
 					default:
-						return respons.error('Terjadi kesalahan', null, HttpStatus.BAD_REQUEST, res, req);
+						return respons.error("Terjadi kesalahan", null, HttpStatus.BAD_REQUEST, res, req);
 				}
 			}
 
 			if (err && err.message?.includes("File type not allowed")) {
-				return respons.error('Format file tidak diizinkan', null, HttpStatus.BAD_REQUEST, res, req);
+				return respons.error("Format file tidak diizinkan", null, HttpStatus.BAD_REQUEST, res, req);
 			}
 
 			if (err) {
 				console.error("[Uploader Error]", err);
-				return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
+				return respons.error("Terjadi kesalahan", null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 			}
 
 			next();

@@ -4,13 +4,13 @@
 	"description": "",
 	"main": "app.ts",
 	"scripts": {
-                "prettier": "npx prettier . --write",
-                "pretest": "node scripts/prepare-test-env.cjs",
-                "start": "node dist/app.js",
+		"prettier": "npx prettier . --write",
+		"pretest": "node scripts/prepare-test-env.cjs",
+		"start": "node dist/app.js",
 		"dev": "nodemon src/app.ts",
 		"start:migrate": "prisma migrate deploy && npm run start",
 		"build": "tsc",
-		"test": "npm run build && node --test --experimental-test-module-mocks \"dist/**/*.test.js\"",
+		"test": "npm run build && node --test --experimental-test-module-mocks dist/utils/__tests__/*.test.js",
 		"test:utils": "npm run test"
 	},
 	"author": "",

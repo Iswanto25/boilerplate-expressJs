@@ -3,7 +3,6 @@ import http from "http";
 import dotenv from "dotenv";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
-
 const PORT = Number(process.env.PORT) || 3006;
 const HOST = process.env.HOST || "0.0.0.0";
 const NODE_ENV = process.env.NODE_ENV || "development";
