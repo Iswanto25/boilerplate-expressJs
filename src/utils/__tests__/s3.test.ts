@@ -218,7 +218,9 @@ test("uploadBase64 rejects disallowed formats", async () => {
 	try {
 		await assert.rejects(
 			() => module.uploadBase64(base64, "images", 2, ["image/jpeg"]),
-			/UNSUPPORTED_MEDIA_TYPE/,
+			(err: any) => {
+				return err.code === "UNSUPPORTED_MEDIA_TYPE";
+			},
 		);
 	} finally {
 		restoreAll();
@@ -243,7 +245,16 @@ test("deleteFile respects strict and verifyAfter options", async () => {
 	let headCalls = 0;
 	handlers.set("HeadObjectCommand", async () => {
 		headCalls += 1;
-		return { ETag: "etag" };
+		// First call (strict check): file exists
+		// Second call (verifyAfter check): file no longer exists (404)
+		if (headCalls === 1) {
+			return { ETag: "etag" };
+		} else {
+			const error: any = new Error("NotFound");
+			error.name = "NotFound";
+			error.$metadata = { httpStatusCode: 404 };
+			throw error;
+		}
 	});
 	const deleteSpy = mock.fn(async () => ({}));
 	handlers.set("DeleteObjectCommand", deleteSpy);
