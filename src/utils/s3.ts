@@ -19,8 +19,8 @@ dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 
 // ---- Env helpers ------------------------------------------------------------
-function normalizeEndpoint(raw?: string, useSSL?: boolean): string {
-	if (!raw || !raw.trim()) throw new Error("MINIO_ENDPOINT is required");
+function normalizeEndpoint(raw?: string, useSSL?: boolean): string | null {
+	if (!raw || !raw.trim()) return null;
 	let e = raw.trim().replace(/\/+$/, ""); // trim trailing slash
 	if (!/^https?:\/\//i.test(e)) {
 		// if user only put host:port, add scheme
@@ -29,6 +29,7 @@ function normalizeEndpoint(raw?: string, useSSL?: boolean): string {
 	return e;
 }
 
+// Check if S3/MinIO is configured
 const USE_SSL = String(process.env.MINIO_USE_SSL || "").toLowerCase() === "true";
 const ENDPOINT = normalizeEndpoint(process.env.MINIO_ENDPOINT, USE_SSL);
 const REGION = process.env.MINIO_REGION?.trim() || "us-east-1";
@@ -36,27 +37,49 @@ const BUCKET = process.env.MINIO_BUCKET_NAME?.trim();
 const ACCESS_KEY = process.env.MINIO_ACCESS_KEY?.trim();
 const SECRET_KEY = process.env.MINIO_SECRET_KEY?.trim();
 
-if (!BUCKET) throw new Error("MINIO_BUCKET_NAME is required");
-if (!ACCESS_KEY || !SECRET_KEY) throw new Error("MINIO_ACCESS_KEY / MINIO_SECRET_KEY are required");
+const isS3Configured = !!(ENDPOINT && BUCKET && ACCESS_KEY && SECRET_KEY);
 
-// ---- S3 client --------------------------------------------------------------
-export const s3 = new S3Client({
-	region: REGION,
-	endpoint: ENDPOINT,
-	forcePathStyle: true, // penting untuk MinIO
-	credentials: { accessKeyId: ACCESS_KEY, secretAccessKey: SECRET_KEY },
-	requestHandler: new NodeHttpHandler({
-		connectionTimeout: 5_000,
-		socketTimeout: 30_000,
-	}),
-});
+let s3: S3Client | null = null;
+
+if (isS3Configured) {
+	try {
+		s3 = new S3Client({
+			region: REGION,
+			endpoint: ENDPOINT!,
+			forcePathStyle: true, // penting untuk MinIO
+			credentials: { accessKeyId: ACCESS_KEY!, secretAccessKey: SECRET_KEY! },
+			requestHandler: new NodeHttpHandler({
+				connectionTimeout: 5_000,
+				socketTimeout: 30_000,
+			}),
+		});
+		console.info("✅ S3/MinIO configured successfully");
+	} catch (error) {
+		console.warn("⚠️  S3/MinIO initialization failed - file upload features will be disabled");
+		s3 = null;
+	}
+} else {
+	console.warn("⚠️  S3/MinIO not configured (MINIO_ENDPOINT, MINIO_BUCKET_NAME, MINIO_ACCESS_KEY, MINIO_SECRET_KEY) - file upload features will be disabled");
+}
 
 function publicUrl(key: string): string {
 	return `${ENDPOINT}/${BUCKET}/${key}`; // cocok dengan console MinIO
 }
 
+function throwS3NotConfigured(): never {
+	throw {
+		name: "S3NotConfiguredError",
+		code: "S3_NOT_CONFIGURED",
+		httpStatus: 503,
+		message: "S3/MinIO storage is not configured",
+		hint: "Please configure MINIO_ENDPOINT, MINIO_BUCKET_NAME, MINIO_ACCESS_KEY, and MINIO_SECRET_KEY in your environment variables",
+	};
+}
+
 // ---- Head (cek exist) -------------------------------------------------------
 export async function headFile(folder: string, file: string) {
+	if (!s3) throwS3NotConfigured();
+
 	const Key = `${folder}/${file}`;
 	try {
 		const res = await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key }));
@@ -75,6 +98,8 @@ export async function headFile(folder: string, file: string) {
 
 // ---- Upload (multer) --------------------------------------------------------
 export async function uploadFile(file: Express.Multer.File, folder: string) {
+	if (!s3) throwS3NotConfigured();
+
 	const fileExtension = path.extname(file.originalname) || "";
 	const key = `${folder}/${randomString()}${fileExtension}`;
 	const stream = fs.createReadStream(file.path);
@@ -100,6 +125,8 @@ export async function uploadFile(file: Express.Multer.File, folder: string) {
 
 // ---- Upload (base64) --------------------------------------------------------
 export async function uploadBase64(file: string, folder: string, maxSizeInMB: number = 10, allowedFormats?: string[]) {
+	if (!s3) throwS3NotConfigured();
+
 	// --- guard: tipe input
 	if (typeof file !== "string") {
 		throw {
@@ -210,6 +237,11 @@ export async function getFile(
 		contentType?: string;
 	},
 ): Promise<string | null> {
+	if (!s3) {
+		console.warn("⚠️  S3/MinIO not configured - cannot generate presigned URL");
+		return null;
+	}
+
 	const ensureExists = opts?.ensureExists ?? true;
 	const key = `${folder}/${file}`;
 
@@ -220,7 +252,7 @@ export async function getFile(
 		}
 
 		const command = new GetObjectCommand({
-			Bucket: process.env.MINIO_BUCKET_NAME!,
+			Bucket: BUCKET!,
 			Key: key,
 			ResponseCacheControl: opts?.cacheControl ?? "public, max-age=31536000, immutable",
 			ResponseContentDisposition: opts?.contentDisposition ?? "inline",
@@ -239,7 +271,12 @@ export async function deleteFile(
 	folder: string,
 	file: string,
 	opts?: { strict?: boolean; verifyAfter?: boolean },
-): Promise<{ deleted: boolean; key: string; reason?: "not_found" | "still_exists" | "error" }> {
+): Promise<{ deleted: boolean; key: string; reason?: "not_found" | "still_exists" | "error" | "s3_not_configured" }> {
+	if (!s3) {
+		console.warn("⚠️  S3/MinIO not configured - cannot delete file");
+		return { deleted: false, key: `${folder}/${file}`, reason: "s3_not_configured" };
+	}
+
 	const Key = `${folder}/${file}`;
 	const strict = opts?.strict ?? true;
 	const verifyAfter = opts?.verifyAfter ?? false;
@@ -266,6 +303,11 @@ export async function deleteFile(
 
 // ---- Delete batch -----------------------------------------------------------
 export async function deleteMany(items: Array<{ folder: string; file: string }>): Promise<{ deleted: string[]; errors: string[] }> {
+	if (!s3) {
+		console.warn("⚠️  S3/MinIO not configured - cannot delete files");
+		return { deleted: [], errors: items.map((i) => `${i.folder}/${i.file}: S3 not configured`) };
+	}
+
 	if (!items.length) return { deleted: [], errors: [] };
 
 	const toKey = (i: { folder: string; file: string }) => `${i.folder}/${i.file}`;
@@ -296,6 +338,11 @@ export async function deleteMany(items: Array<{ folder: string; file: string }>)
 
 // ---- Delete by prefix (paging) ----------------------------------------------
 export async function deleteByPrefix(prefix: string): Promise<{ deleted: number; errors: number }> {
+	if (!s3) {
+		console.warn("⚠️  S3/MinIO not configured - cannot delete by prefix");
+		return { deleted: 0, errors: 0 };
+	}
+
 	let continuationToken: string | undefined = undefined;
 	let totalDeleted = 0;
 	let totalErrors = 0;
@@ -328,3 +375,5 @@ export async function deleteByPrefix(prefix: string): Promise<{ deleted: number;
 
 	return { deleted: totalDeleted, errors: totalErrors };
 }
+
+export { s3, isS3Configured };
