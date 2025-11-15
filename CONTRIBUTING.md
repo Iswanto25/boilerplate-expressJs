@@ -1,6 +1,6 @@
 # Contributing to Express.js Boilerplate
 
-Terima kasih atas minat Anda untuk berkontribusi pada proyek ini! 
+Terima kasih atas minat Anda untuk berkontribusi pada proyek ini!
 
 ## Cara Berkontribusi
 
@@ -34,6 +34,7 @@ npm run dev
 ### Code Quality
 
 #### Linting
+
 Kami menggunakan ESLint untuk menjaga kualitas kode:
 
 ```bash
@@ -45,6 +46,7 @@ npm run lint:fix
 ```
 
 #### Formatting
+
 Kami menggunakan Prettier untuk formatting kode:
 
 ```bash
@@ -53,6 +55,7 @@ npm run prettier
 ```
 
 #### Testing
+
 Selalu jalankan test sebelum membuat pull request:
 
 ```bash
