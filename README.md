@@ -8,23 +8,23 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
 - **Bahasa**: TypeScript
 - **ORM**: Prisma untuk interaksi database yang modern dan aman
 - **Autentikasi**: Implementasi JWT (JSON Web Token) siap pakai
-- **Keamanan**: 
-  - Helmet untuk HTTP headers security
-  - CORS dengan konfigurasi environment-based
-  - Rate limiting dengan Redis
-  - Data encryption utilities
-- **Penanganan File**: 
-  - Upload file dengan Multer
-  - Integrasi S3/MinIO
-  - Support base64 upload
+- **Keamanan**:
+    - Helmet untuk HTTP headers security
+    - CORS dengan konfigurasi environment-based
+    - Rate limiting dengan Redis
+    - Data encryption utilities
+- **Penanganan File**:
+    - Upload file dengan Multer
+    - Integrasi S3/MinIO
+    - Support base64 upload
 - **Error Handling**: Global error handler dan 404 handler
 - **Logging**: Pino logger untuk structured logging
 - **Struktur Proyek**: Feature-Sliced Design untuk modularitas
 - **Konfigurasi**: Manajemen variabel lingkungan dengan `dotenv`
-- **Code Quality**: 
-  - ESLint untuk linting
-  - Prettier untuk formatting
-  - Comprehensive test suite
+- **Code Quality**:
+    - ESLint untuk linting
+    - Prettier untuk formatting
+    - Comprehensive test suite
 - **Caching**: Redis integration untuk rate limiting dan token storage
 
 ## 📂 Struktur Proyek
@@ -78,13 +78,13 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
     ```
 
 3.  **Siapkan Environment Variables:**
-    
+
     Salin file `.env.example` menjadi `.env` dan sesuaikan nilainya:
-    
+
     ```bash
     cp .env.example .env
     ```
-    
+
     Pastikan Anda mengubah nilai-nilai berikut untuk produksi:
     - `DATABASE_URL`: Connection string database Anda
     - `DATA_ENCRYPTION_KEY`: Generate key 32 karakter hex untuk enkripsi
@@ -154,25 +154,30 @@ Silakan baca [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan kontribusi.
 ## 📝 API Documentation
 
 ### Health Check
+
 ```
 GET /health
 ```
+
 Response:
+
 ```json
 {
-  "status": "ok",
-  "timestamp": "2024-11-15T10:30:00.000Z",
-  "environment": "development"
+	"status": "ok",
+	"timestamp": "2024-11-15T10:30:00.000Z",
+	"environment": "development"
 }
 ```
 
 ### Authentication Routes
+
 - `POST /api/v1/auth/register` - Register user baru
 - `POST /api/v1/auth/login` - Login user
 - `POST /api/v1/auth/refresh` - Refresh access token
 - `POST /api/v1/auth/logout` - Logout user
 
 ### File Upload Routes
+
 - `POST /api/v1/files/upload` - Upload file (multipart/form-data)
 - `POST /api/v1/files/upload-base64` - Upload file base64
 - `GET /api/v1/files/:folder/:fileName` - Get presigned URL
