@@ -12,7 +12,19 @@ interface SendEmailOptions {
 	fromEmail?: string;
 }
 
+// Check if SMTP is configured
+const isSMTPConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+
+if (!isSMTPConfigured) {
+	console.warn("⚠️  SMTP not configured (SMTP_HOST, SMTP_USER, SMTP_PASS) - email sending will be skipped");
+}
+
 export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
+	if (!isSMTPConfigured) {
+		console.warn(`⚠️  Email sending skipped (SMTP not configured) - would have sent to: ${options.to} with subject: "${options.subject}"`);
+		return;
+	}
+
 	try {
 		const transporter = nodemailer.createTransport({
 			host: process.env.SMTP_HOST,
@@ -35,7 +47,7 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
 		console.info(`📨 Email terkirim ke ${options.to} dengan subjek "${options.subject}"`);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
-		console.error(`❌ Gagal mengirim email ke ${options.to}: ${message}`);
-		throw new Error(`Failed to send email: ${message}`);
+		console.warn(`⚠️  Gagal mengirim email ke ${options.to}: ${message}`);
+		// Don't throw error, just log warning
 	}
 };
