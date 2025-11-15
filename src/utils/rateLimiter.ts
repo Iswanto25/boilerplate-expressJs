@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { redisClient } from "../configs/redis";
+import { redisClient, isRedisAvailable } from "../configs/redis";
 import { HttpStatus, respons } from "./respons";
 import { logger } from "./logger";
 
@@ -15,6 +15,12 @@ export function rateLimiter(options?: RateLimitOptions) {
 	const { keyPrefix = "rate_limit:", windowInSeconds = 60, maxRequests = 30, blockDuration = 60, useUserId = true } = options || {};
 
 	return async function rateLimiter(req: Request, res: Response, next: NextFunction) {
+		// Skip rate limiting if Redis is not available
+		if (!isRedisAvailable || !redisClient) {
+			logger.warn("⚠️  Rate limiting skipped - Redis not available");
+			return next();
+		}
+
 		try {
 			const userId = useUserId && req.user?.id ? req.user.id : null;
 			const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() || req.socket.remoteAddress || "unknown";
@@ -43,7 +49,7 @@ export function rateLimiter(options?: RateLimitOptions) {
 
 			next();
 		} catch (error) {
-			logger.error({ error }, "Rate limitter error");
+			logger.warn({ error }, "⚠️  Rate limitter error - skipping rate limit");
 			next();
 		}
 	};

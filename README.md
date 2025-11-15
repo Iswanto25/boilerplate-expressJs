@@ -11,11 +11,11 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
 - **Keamanan**:
     - Helmet untuk HTTP headers security
     - CORS dengan konfigurasi environment-based
-    - Rate limiting dengan Redis
+    - Rate limiting dengan Redis (optional)
     - Data encryption utilities
 - **Penanganan File**:
     - Upload file dengan Multer
-    - Integrasi S3/MinIO
+    - Integrasi S3/MinIO (optional)
     - Support base64 upload
 - **Error Handling**: Global error handler dan 404 handler
 - **Logging**: Pino logger untuk structured logging
@@ -25,7 +25,8 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
     - ESLint untuk linting
     - Prettier untuk formatting
     - Comprehensive test suite
-- **Caching**: Redis integration untuk rate limiting dan token storage
+- **Caching**: Redis integration untuk rate limiting dan token storage (optional)
+- **Optional Third-Party Services**: Aplikasi tetap berjalan meskipun Redis, S3/MinIO, atau SMTP tidak dikonfigurasi
 
 ## 📂 Struktur Proyek
 
@@ -86,11 +87,18 @@ Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API men
     ```
 
     Pastikan Anda mengubah nilai-nilai berikut untuk produksi:
-    - `DATABASE_URL`: Connection string database Anda
-    - `DATA_ENCRYPTION_KEY`: Generate key 32 karakter hex untuk enkripsi
-    - `JWT_SECRET` dan `JWT_REFRESH_SECRET`: Secret keys yang kuat
+    - `DATABASE_URL`: Connection string database Anda (Required)
+    - `DATA_ENCRYPTION_KEY`: Generate key 32 karakter hex untuk enkripsi (Required)
+    - `JWT_SECRET` dan `JWT_REFRESH_SECRET`: Secret keys yang kuat (Required)
     - `ALLOWED_ORIGINS`: Daftar origin yang diizinkan (pisahkan dengan koma)
-    - Konfigurasi Redis, S3/MinIO, dan SMTP sesuai environment Anda
+    
+    **Optional Services** (aplikasi tetap berjalan tanpa konfigurasi ini):
+    - **Redis**: Untuk rate limiting dan token storage. Jika tidak dikonfigurasi, rate limiting akan dilewati dan token tidak akan di-cache.
+      - `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`
+    - **S3/MinIO**: Untuk file upload. Jika tidak dikonfigurasi, file upload routes akan mengembalikan error 503.
+      - `MINIO_ENDPOINT`, `MINIO_BUCKET_NAME`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
+    - **SMTP**: Untuk email sending. Jika tidak dikonfigurasi, email akan dilewati dengan warning di log.
+      - `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`
 
 4.  **Jalankan Migrasi Database:**
     Pastikan koneksi `DATABASE_URL` Anda sudah benar, lalu jalankan perintah Prisma untuk membuat tabel di database Anda.
@@ -141,11 +149,39 @@ npm run test:utils
 
 - ✅ Helmet untuk HTTP security headers
 - ✅ CORS dikonfigurasi dengan environment variables
-- ✅ Rate limiting untuk mencegah abuse
+- ✅ Rate limiting untuk mencegah abuse (dengan Redis, optional)
 - ✅ Data encryption utilities
 - ✅ JWT-based authentication
 - ✅ Input validation
 - ✅ Error handling yang aman (tidak expose stack trace di production)
+
+## 🔌 Optional Third-Party Services
+
+Aplikasi ini dirancang untuk tetap berjalan meskipun beberapa third-party services tidak dikonfigurasi. Berikut adalah behavior untuk setiap service:
+
+### Redis (Optional)
+- **Fungsi**: Rate limiting dan token storage
+- **Jika tidak dikonfigurasi**: 
+  - Rate limiting akan dilewati dengan warning log
+  - Token storage akan dilewati dengan warning log
+  - Aplikasi tetap berjalan normal
+- **Environment Variables**: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`
+
+### S3/MinIO (Optional)
+- **Fungsi**: File upload dan storage
+- **Jika tidak dikonfigurasi**: 
+  - File upload endpoints akan mengembalikan error 503 (Service Unavailable)
+  - Warning ditampilkan saat aplikasi start
+- **Environment Variables**: `MINIO_ENDPOINT`, `MINIO_BUCKET_NAME`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
+
+### SMTP (Optional)
+- **Fungsi**: Email sending (forgot password, notifications, dll)
+- **Jika tidak dikonfigurasi**: 
+  - Email sending akan dilewati dengan warning log
+  - Aplikasi tetap berjalan normal
+- **Environment Variables**: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`
+
+**Catatan**: Hanya Database (Prisma) yang wajib dikonfigurasi. Semua third-party services lainnya bersifat optional.
 
 ## 🤝 Contributing
 
