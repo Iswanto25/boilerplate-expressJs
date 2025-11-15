@@ -1,9 +1,23 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { uploadFile, getFile, deleteFile, uploadBase64 } from "../utils/s3";
+import { uploadFile, getFile, deleteFile, uploadBase64, isS3Configured } from "../utils/s3";
 import { respons, HttpStatus } from "../utils/respons";
 import { createUploader } from "../middlewares/multerMiddleware";
 
 const router = Router();
+
+// Middleware to check if S3 is configured
+const requireS3 = (req: Request, res: Response, next: NextFunction) => {
+	if (!isS3Configured) {
+		return respons.error(
+			"File storage not configured", 
+			"S3/MinIO is not configured. Please set MINIO_ENDPOINT, MINIO_BUCKET_NAME, MINIO_ACCESS_KEY, and MINIO_SECRET_KEY in your environment variables.", 
+			HttpStatus.SERVICE_UNAVAILABLE, 
+			res, 
+			req
+		);
+	}
+	next();
+};
 
 /**
  * @route   POST /api/v1/files/upload
@@ -12,6 +26,7 @@ const router = Router();
  */
 router.post(
 	"/upload",
+	requireS3,
 	createUploader({
 		fields: [
 			{
@@ -43,7 +58,7 @@ router.post(
  * @desc    Upload a base64 encoded file
  * @access  Public (add authentication middleware as needed)
  */
-router.post("/upload-base64", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/upload-base64", requireS3, async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { file, folder = "uploads", maxSizeMB = 5 } = req.body;
 
@@ -64,7 +79,7 @@ router.post("/upload-base64", async (req: Request, res: Response, next: NextFunc
  * @desc    Get a presigned URL for a file
  * @access  Public (add authentication middleware as needed)
  */
-router.get("/:folder/:fileName", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:folder/:fileName", requireS3, async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { folder, fileName } = req.params;
 		const expiresIn = parseInt(req.query.expiresIn as string) || 3600; // Default 1 hour
@@ -86,7 +101,7 @@ router.get("/:folder/:fileName", async (req: Request, res: Response, next: NextF
  * @desc    Delete a file
  * @access  Public (add authentication middleware as needed)
  */
-router.delete("/:folder/:fileName", async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:folder/:fileName", requireS3, async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { folder, fileName } = req.params;
 		const result = await deleteFile(folder, fileName);
