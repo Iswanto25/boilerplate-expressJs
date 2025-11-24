@@ -101,7 +101,8 @@ export async function uploadFile(file: Express.Multer.File, folder: string) {
 	if (!s3) throwS3NotConfigured();
 
 	const fileExtension = path.extname(file.originalname) || "";
-	const key = `${folder}/${randomString()}${fileExtension}`;
+	const fileName = `${randomString()}${fileExtension}`;
+	const key = `${folder}/${fileName}`;
 	const stream = fs.createReadStream(file.path);
 
 	try {
@@ -114,7 +115,7 @@ export async function uploadFile(file: Express.Multer.File, folder: string) {
 				Metadata: { uploadedBy: "api" },
 			}),
 		);
-		return publicUrl(key);
+		return { fileName, folder };
 	} finally {
 		// pastikan file temp dihapus
 		try {
@@ -197,7 +198,8 @@ export async function uploadBase64(file: string, folder: string, maxSizeInMB: nu
 
 	// tentukan ekstensi & key object
 	const ext = (mimeType.split("/")[1] || "bin").toLowerCase();
-	const key = `${folder}/${randomString()}.${ext}`;
+	const fileName = `${randomString()}.${ext}`;
+	const key = `${folder}/${fileName}`;
 
 	try {
 		await s3.send(
@@ -221,8 +223,8 @@ export async function uploadBase64(file: string, folder: string, maxSizeInMB: nu
 		};
 	}
 
-	// sukses → kembalikan URL publik sesuai helper kamu
-	return publicUrl(key);
+	// sukses → kembalikan nama file dan folder
+	return { fileName, folder };
 }
 
 // ---- Presigned GET ----------------------------------------------------------
