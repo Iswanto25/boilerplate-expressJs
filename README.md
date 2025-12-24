@@ -1,141 +1,191 @@
 # Express.js & TypeScript Boilerplate
 
-Ini adalah boilerplate yang kokoh dan siap produksi untuk membangun REST API menggunakan Express.js, TypeScript, dan Prisma. Arsitektur proyek ini dirancang agar modular, dapat diskalakan, dan mudah dikelola.
+Boilerplate production-ready untuk membangun REST API menggunakan Express.js, TypeScript, dan Prisma. Arsitektur proyek ini dirancang agar modular, scalable, dan mudah dikelola.
 
-## ✨ Fitur
+## ✨ Fitur Utama
 
-- **Framework**: Express.js v5
-- **Bahasa**: TypeScript
-- **ORM**: Prisma untuk interaksi database yang modern dan aman
-- **Autentikasi**: Implementasi JWT (JSON Web Token) siap pakai
-- **Keamanan**:
-    - Helmet untuk HTTP headers security
-    - CORS dengan konfigurasi environment-based
-    - Rate limiting dengan Redis (optional)
-    - Data encryption utilities
-- **Penanganan File**:
-    - Upload file dengan Multer
-    - Integrasi S3/MinIO (optional)
-    - Support base64 upload
-- **Error Handling**: Global error handler dan 404 handler
-- **Logging**: Pino logger untuk structured logging
-- **Struktur Proyek**: Feature-Sliced Design untuk modularitas
-- **Konfigurasi**: Manajemen variabel lingkungan dengan `dotenv`
-- **Code Quality**:
-    - ESLint untuk linting
-    - Prettier untuk formatting
-    - Comprehensive test suite
-- **Caching**: Redis integration untuk rate limiting dan token storage (optional)
-- **Optional Third-Party Services**: Aplikasi tetap berjalan meskipun Redis, S3/MinIO, atau SMTP tidak dikonfigurasi
+-   **Framework**: Express.js v5 dengan TypeScript
+-   **ORM**: Prisma untuk database management yang modern dan type-safe
+-   **Authentication**: JWT-based authentication system
+-   **Security**:
+    -   Helmet untuk HTTP headers security
+    -   CORS dengan konfigurasi environment-based
+    -   Rate limiting dengan Redis (optional)
+    -   Data encryption utilities
+    -   Input validation
+-   **File Management**:
+    -   Upload file dengan Multer
+    -   Integrasi S3/MinIO (optional)
+    -   Support base64 upload
+    -   Automatic file cleanup
+-   **Error Handling**: Global error handler dan 404 handler
+-   **Logging**: Pino logger untuk structured logging dengan pretty print
+-   **Code Quality**:
+    -   ESLint untuk linting
+    -   Prettier untuk code formatting
+    -   Comprehensive test suite dengan Node.js test runner
+-   **Caching**: Redis integration untuk rate limiting dan token storage (optional)
+-   **Email**: SMTP integration untuk email sending (optional)
+-   **Graceful Degradation**: Aplikasi tetap berjalan meskipun layanan optional tidak dikonfigurasi
 
 ## 📂 Struktur Proyek
 
 ```
 /
 ├── prisma/
-│   ├── schema.prisma       # Skema database Prisma
-│   └── migrations/         # File migrasi database
+│   ├── schema.prisma       # Database schema
+│   └── migrations/         # Database migrations
+├── scripts/
+│   └── prepare-test-env.cjs # Test environment setup
 ├── src/
-│   ├── app.ts              # Entry point utama aplikasi
-│   ├── configs/            # Konfigurasi (database, express, redis)
-│   ├── features/           # Logika bisnis per fitur (misal: auth, users)
-│   │   └── auth/
-│   │       ├── controllers/  # Controller (menangani request & response)
-│   │       └── services/     # Service (logika bisnis inti)
-│   ├── middlewares/        # Middleware kustom (auth, upload file, error handler)
-│   ├── routes/             # Definisi rute API
-│   └── utils/              # Fungsi utilitas (JWT, response handler, dll.)
-│       └── __tests__/      # Unit tests
-├── .env.example            # Contoh file environment variable
-├── .env.test               # Environment variables untuk testing
-├── .eslintrc.json          # Konfigurasi ESLint
-├── .prettierrc             # Konfigurasi Prettier
-├── CONTRIBUTING.md         # Panduan kontribusi
+│   ├── app.ts              # Application entry point
+│   ├── configs/            # Configuration modules
+│   │   ├── db.ts           # Prisma database config
+│   │   ├── express.ts      # Express app config
+│   │   └── redis.ts        # Redis client config (optional)
+│   ├── features/           # Feature-based modules
+│   │   ├── auth/           # Authentication feature
+│   │   │   ├── controllers/
+│   │   │   ├── services/
+│   │   │   └── validations/
+│   │   └── services/       # Shared services
+│   ├── middlewares/        # Custom middlewares
+│   │   ├── authMiddleware.ts
+│   │   ├── errorHandler.ts
+│   │   └── multerMiddleware.ts
+│   ├── routes/             # API route definitions
+│   │   ├── apiRoutes.ts    # Main API routes
+│   │   └── fileRoutes.ts   # File upload routes
+│   └── utils/              # Utility functions
+│       ├── __tests__/      # Unit tests
+│       ├── encryption.ts   # Data encryption utilities
+│       ├── jwt.ts          # JWT token utilities
+│       ├── rateLimiter.ts  # Rate limiting middleware
+│       ├── respons.ts      # Response formatting
+│       ├── s3.ts           # S3/MinIO file storage
+│       ├── smtp.ts         # Email sending
+│       ├── tokenStore.ts   # Token caching with Redis
+│       └── utils.ts        # General utilities
+├── .env.example            # Environment variables template
+├── .env.test               # Test environment variables
+├── .eslintrc.json          # ESLint configuration
+├── .prettierrc             # Prettier configuration
+├── nodemon.json            # Nodemon configuration
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json           # TypeScript configuration
+└── README.md
 ```
 
-## 🚀 Memulai
+## 🚀 Quick Start
 
-### Prasyarat
+### Prerequisites
 
-- [Node.js](https://nodejs.org/en/) (v18 atau lebih baru direkomendasikan)
-- [NPM](https://www.npmjs.com/) atau [Yarn](https://yarnpkg.com/)
-- Database yang didukung oleh Prisma (misalnya: PostgreSQL, MySQL, SQLite)
+-   [Node.js](https://nodejs.org/) v18 atau lebih baru
+-   [NPM](https://www.npmjs.com/) atau [Yarn](https://yarnpkg.com/)
+-   Database yang didukung Prisma (PostgreSQL, MySQL, SQLite, dll)
 
-### Instalasi
+### Installation
 
-1.  **Clone repositori ini:**
+1. **Clone repository:**
 
     ```bash
     git clone git@github.com:Iswanto25/boilerplate-expressJs.git
-    cd <NAMA_DIREKTORI>
+    cd boilerplate-expressJs
     ```
 
-2.  **Install dependensi:**
+2. **Install dependencies:**
 
     ```bash
     npm install
     ```
 
-3.  **Siapkan Environment Variables:**
+3. **Setup environment variables:**
 
-    Salin file `.env.example` menjadi `.env` dan sesuaikan nilainya:
+    Salin `.env.example` menjadi `.env`:
 
     ```bash
     cp .env.example .env
     ```
 
-    Pastikan Anda mengubah nilai-nilai berikut untuk produksi:
-    - `DATABASE_URL`: Connection string database Anda (Required)
-    - `DATA_ENCRYPTION_KEY`: Generate key 32 karakter hex untuk enkripsi (Required)
-    - `JWT_SECRET` dan `JWT_REFRESH_SECRET`: Secret keys yang kuat (Required)
-    - `ALLOWED_ORIGINS`: Daftar origin yang diizinkan (pisahkan dengan koma)
-    
-    **Optional Services** (aplikasi tetap berjalan tanpa konfigurasi ini):
-    - **Redis**: Untuk rate limiting dan token storage. Jika tidak dikonfigurasi, rate limiting akan dilewati dan token tidak akan di-cache.
-      - `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`
-    - **S3/MinIO**: Untuk file upload. Jika tidak dikonfigurasi, file upload routes akan mengembalikan error 503.
-      - `MINIO_ENDPOINT`, `MINIO_BUCKET_NAME`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
-    - **SMTP**: Untuk email sending. Jika tidak dikonfigurasi, email akan dilewati dengan warning di log.
-      - `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`
+    **Required Variables:**
 
-4.  **Jalankan Migrasi Database:**
-    Pastikan koneksi `DATABASE_URL` Anda sudah benar, lalu jalankan perintah Prisma untuk membuat tabel di database Anda.
+    ```env
+    # Application
+    NODE_ENV=development
+    PORT=3000
+    HOST=localhost
+    DOMAIN=localhost
+    ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+
+    # Database (Required)
+    DATABASE_URL="your-database-connection-string"
+
+    # Security (Required)
+    DATA_ENCRYPTION_KEY="your-32-character-hex-key"
+    JWT_SECRET="your-jwt-secret-key"
+    JWT_REFRESH_SECRET="your-refresh-secret-key"
+    ```
+
+    **Optional Services:**
+
+    ```env
+    # Redis (Optional - for rate limiting & token caching)
+    REDIS_HOST=localhost
+    REDIS_PORT=6379
+    REDIS_PASSWORD=
+    REDIS_DB=0
+
+    # S3/MinIO (Optional - for file uploads)
+    MINIO_ENDPOINT=localhost:9000
+    MINIO_BUCKET_NAME=your-bucket
+    MINIO_ACCESS_KEY=your-access-key
+    MINIO_SECRET_KEY=your-secret-key
+    MINIO_USE_SSL=false
+    MINIO_REGION=us-east-1
+
+    # SMTP (Optional - for email sending)
+    SMTP_HOST=smtp.gmail.com
+    SMTP_PORT=587
+    SMTP_SECURE=false
+    SMTP_USER=your-email@gmail.com
+    SMTP_PASS=your-app-password
+    ```
+
+4. **Setup database:**
+
     ```bash
+    # Generate Prisma client
+    npx prisma generate
+
+    # Run migrations
     npx prisma migrate dev
     ```
 
-### Menjalankan Aplikasi
-
-- **Mode Pengembangan (dengan hot-reload):**
+5. **Start development server:**
 
     ```bash
     npm run dev
     ```
 
-- **Mode Produksi:**
-    ```bash
-    npm run build
-    npm start
-    ```
+    Server akan berjalan di `http://localhost:3000`
 
-## 📜 Skrip yang Tersedia
+## 📜 Available Scripts
 
-Dalam file `package.json`, Anda akan menemukan beberapa skrip:
-
-- `dev`: Menjalankan aplikasi dalam mode pengembangan dengan nodemon untuk hot-reloading
-- `build`: Mengompilasi kode TypeScript menjadi JavaScript di direktori `dist/`
-- `start`: Menjalankan aplikasi dari kode yang sudah di-build (untuk produksi)
-- `start:migrate`: Menjalankan database migration dan start aplikasi
-- `test`: Menjalankan semua test suite
-- `lint`: Check kode untuk linting errors
-- `lint:fix`: Auto-fix linting errors
-- `prettier`: Format semua kode dengan Prettier
+| Script                  | Description                                |
+| ----------------------- | ------------------------------------------ |
+| `npm run dev`           | Start development server dengan hot-reload |
+| `npm run build`         | Compile TypeScript ke JavaScript           |
+| `npm start`             | Run production server                      |
+| `npm run start:migrate` | Run migrations dan start server            |
+| `npm test`              | Run test suite                             |
+| `npm run test:utils`    | Run utility tests                          |
+| `npm run lint`          | Check linting errors                       |
+| `npm run lint:fix`      | Fix linting errors                         |
+| `npm run prettier`      | Format code dengan Prettier                |
 
 ## 🧪 Testing
 
-Boilerplate ini dilengkapi dengan comprehensive test suite:
+Project ini dilengkapi dengan comprehensive test suite:
 
 ```bash
 # Run all tests
@@ -145,53 +195,63 @@ npm test
 npm run test:utils
 ```
 
-## 🔒 Security Best Practices
+Test coverage meliputi:
 
-- ✅ Helmet untuk HTTP security headers
-- ✅ CORS dikonfigurasi dengan environment variables
-- ✅ Rate limiting untuk mencegah abuse (dengan Redis, optional)
-- ✅ Data encryption utilities
-- ✅ JWT-based authentication
-- ✅ Input validation
-- ✅ Error handling yang aman (tidak expose stack trace di production)
+-   Encryption utilities
+-   JWT token management
+-   Response formatting
+-   Rate limiting
+-   S3 file operations
+-   SMTP configuration
+-   Token storage
 
-## 🔌 Optional Third-Party Services
+## 🔒 Security Features
 
-Aplikasi ini dirancang untuk tetap berjalan meskipun beberapa third-party services tidak dikonfigurasi. Berikut adalah behavior untuk setiap service:
+-   ✅ **Helmet** - Secure HTTP headers
+-   ✅ **CORS** - Configurable cross-origin requests
+-   ✅ **Rate Limiting** - Prevent API abuse (with Redis)
+-   ✅ **Data Encryption** - Sensitive data encryption
+-   ✅ **JWT Authentication** - Secure token-based auth
+-   ✅ **Input Validation** - Request payload validation
+-   ✅ **Error Handling** - Secure error responses (no stack traces in production)
+-   ✅ **Password Hashing** - bcrypt integration
+
+## 🔌 Optional Services
 
 ### Redis (Optional)
-- **Fungsi**: Rate limiting dan token storage
-- **Jika tidak dikonfigurasi**: 
-  - Rate limiting akan dilewati dengan warning log
-  - Token storage akan dilewati dengan warning log
-  - Aplikasi tetap berjalan normal
-- **Environment Variables**: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`
+
+-   **Purpose**: Rate limiting dan token caching
+-   **If not configured**:
+    -   Rate limiting dilewati dengan warning log
+    -   Token storage dilewati dengan warning log
+    -   Aplikasi tetap berjalan normal
 
 ### S3/MinIO (Optional)
-- **Fungsi**: File upload dan storage
-- **Jika tidak dikonfigurasi**: 
-  - File upload endpoints akan mengembalikan error 503 (Service Unavailable)
-  - Warning ditampilkan saat aplikasi start
-- **Environment Variables**: `MINIO_ENDPOINT`, `MINIO_BUCKET_NAME`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
+
+-   **Purpose**: File upload dan storage
+-   **If not configured**:
+    -   File routes return 503 Service Unavailable
+    -   Warning ditampilkan saat startup
+-   **Features**:
+    -   Multipart file upload
+    -   Base64 upload support
+    -   Presigned URL generation
+    -   File deletion
 
 ### SMTP (Optional)
-- **Fungsi**: Email sending (forgot password, notifications, dll)
-- **Jika tidak dikonfigurasi**: 
-  - Email sending akan dilewati dengan warning log
-  - Aplikasi tetap berjalan normal
-- **Environment Variables**: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`
 
-**Catatan**: Hanya Database (Prisma) yang wajib dikonfigurasi. Semua third-party services lainnya bersifat optional.
+-   **Purpose**: Email sending (notifications, password reset, etc)
+-   **If not configured**:
+    -   Email operations dilewati dengan warning log
+    -   Aplikasi tetap berjalan normal
 
-## 🤝 Contributing
+**Note**: Hanya Database yang wajib dikonfigurasi. Semua layanan lain bersifat optional dan aplikasi akan gracefully degrade jika tidak tersedia.
 
-Silakan baca [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan kontribusi.
-
-## 📝 API Documentation
+## 📝 API Endpoints
 
 ### Health Check
 
-```
+```http
 GET /health
 ```
 
@@ -200,25 +260,72 @@ Response:
 ```json
 {
 	"status": "ok",
-	"timestamp": "2024-11-15T10:30:00.000Z",
+	"timestamp": "2024-12-24T07:00:00.000Z",
 	"environment": "development"
 }
 ```
 
-### Authentication Routes
+### Authentication
 
-- `POST /api/v1/auth/register` - Register user baru
-- `POST /api/v1/auth/login` - Login user
-- `POST /api/v1/auth/refresh` - Refresh access token
-- `POST /api/v1/auth/logout` - Logout user
+-   `POST /api/v1/auth/register` - Register new user
+-   `POST /api/v1/auth/login` - User login
+-   `POST /api/v1/auth/refresh` - Refresh access token
+-   `POST /api/v1/auth/logout` - User logout
 
-### File Upload Routes
+### File Upload (requires S3/MinIO)
 
-- `POST /api/v1/files/upload` - Upload file (multipart/form-data)
-- `POST /api/v1/files/upload-base64` - Upload file base64
-- `GET /api/v1/files/:folder/:fileName` - Get presigned URL
-- `DELETE /api/v1/files/:folder/:fileName` - Delete file
+-   `POST /api/v1/files/upload` - Upload file (multipart/form-data)
+-   `POST /api/v1/files/upload-base64` - Upload base64 encoded file
+-   `GET /api/v1/files/:folder/:fileName` - Get presigned URL
+-   `DELETE /api/v1/files/:folder/:fileName` - Delete file
 
-## Lizensi
+## 🛠️ Tech Stack
 
-Proyek ini dilisensikan di bawah [MIT License](LICENSE).
+### Core Dependencies
+
+-   **express** (v5.1.0) - Web framework
+-   **typescript** (v5.9.3) - Type safety
+-   **@prisma/client** (v6.18.0) - Database ORM
+-   **jsonwebtoken** (v9.0.2) - JWT authentication
+-   **bcrypt** (v6.0.0) - Password hashing
+
+### Security
+
+-   **helmet** (v8.1.0) - Security headers
+-   **cors** (v2.8.5) - CORS handling
+
+### File Handling
+
+-   **multer** (v2.0.2) - File upload
+-   **@aws-sdk/client-s3** (v3.917.0) - S3 integration
+
+### Utilities
+
+-   **pino** (v10.1.0) - Logging
+-   **ioredis** (v5.8.2) - Redis client
+-   **nodemailer** (v7.0.10) - Email sending
+-   **dotenv** (v17.2.3) - Environment variables
+-   **nanoid** (v5.1.6) - Unique ID generation
+
+### Development
+
+-   **nodemon** (v3.1.10) - Hot reload
+-   **eslint** (v9.39.1) - Linting
+-   **prettier** - Code formatting
+-   **ts-node** (v10.9.2) - TypeScript execution
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the ISC License.
+
+## 👤 Author
+
+Created by [Iswanto25](https://github.com/Iswanto25)
+
+---
+
+**Happy Coding! 🚀**
