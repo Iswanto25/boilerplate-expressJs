@@ -9,21 +9,22 @@ const prismaPath = path.join(__dirname, "../../configs/database");
 const authPath = path.join(__dirname, "../../middlewares/authMiddleware");
 const loggerPath = path.join(__dirname, "../logger");
 
-const stubModule = (resolved: string, exports: any): (() => void) => {
-	const original = requireModule.cache[resolved];
-	(requireModule.cache as any)[resolved] = {
-		id: resolved,
-		filename: resolved,
-		loaded: true,
-		exports,
-	};
-	return () => {
-		if (original) {
-			(requireModule.cache as any)[resolved] = original;
-		} else {
-			delete requireModule.cache[resolved];
-		}
-	};
+const stubModule = (specifier: string, exports: any): (() => void) => {
+        const resolved = requireModule.resolve(specifier);
+        const original = requireModule.cache[resolved];
+        (requireModule.cache as any)[resolved] = {
+                id: resolved,
+                filename: resolved,
+                loaded: true,
+                exports,
+        };
+        return () => {
+                if (original) {
+                        (requireModule.cache as any)[resolved] = original;
+                } else {
+                        delete requireModule.cache[resolved];
+                }
+        };
 };
 
 const createReqRes = (token: string = "token-123") => {
@@ -65,12 +66,13 @@ const setup = async (overrides?: {
 	const createLog = overrides?.createLog ?? mock.fn(async () => ({}));
 	const auth = overrides?.auth ?? mock.fn(async () => ({ valid: true, userId: "user-1" }));
 
-	const restorePrisma = stubModule(prismaPath, {
-		default: {
-			user: { findUnique: findUser },
-			logs: { create: createLog },
-		},
-	});
+        const restorePrisma = stubModule(prismaPath, {
+                __esModule: true,
+                default: {
+                        user: { findUnique: findUser },
+                        logs: { create: createLog },
+                },
+        });
 
 	const restoreAuth = stubModule(authPath, {
 		authenticate: { checkToken: auth },
@@ -86,13 +88,14 @@ const setup = async (overrides?: {
 	delete requireModule.cache[requireModule.resolve(modulePath)];
 	const module = await import(modulePath);
 
-	const restoreAll = () => {
-		restorePrisma();
-		restoreAuth();
-		restoreLogger();
-	};
+        const restoreAll = () => {
+                restorePrisma();
+                restoreAuth();
+                restoreLogger();
+                delete requireModule.cache[requireModule.resolve(modulePath)];
+        };
 
-	return { module, findUser, createLog, auth, logger, restoreAll };
+        return { module, findUser, createLog, auth, logger, restoreAll };
 };
 
 test("respons.success logs and responds with payload", async () => {
