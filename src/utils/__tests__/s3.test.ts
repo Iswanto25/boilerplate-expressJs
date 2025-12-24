@@ -166,13 +166,12 @@ test("uploadFile uploads stream and removes temp file", async () => {
 	let capturedKey = "";
 	handlers.set("PutObjectCommand", async (command) => {
 		capturedKey = command.input.Key;
-		// Consume the stream to prevent async cleanup issues
 		const stream = command.input.Body;
 		if (stream && typeof stream.read === "function") {
 			await new Promise((resolve, reject) => {
 				stream.on("end", resolve);
 				stream.on("error", reject);
-				stream.on("data", () => {}); // consume the data
+				stream.on("data", () => {});
 			});
 		}
 		return {};
@@ -186,10 +185,11 @@ test("uploadFile uploads stream and removes temp file", async () => {
 	} as Express.Multer.File;
 
 	try {
-		const url = await module.uploadFile(file, "avatars");
+		const result = await module.uploadFile(file, "avatars");
 		assert.equal(sendMock.mock.calls.length, 1);
 		assert.ok(capturedKey.startsWith("avatars/"));
-		assert.ok(url.startsWith("http://localhost:9000/test-bucket/avatars/"));
+		assert.equal(result.folder, "avatars");
+		assert.ok(result.fileName.endsWith(".jpg"));
 		assert.equal(fs.existsSync(tempFile), false);
 	} finally {
 		restoreAll();
@@ -211,8 +211,8 @@ test("uploadBase64 stores buffer and validates size", async () => {
 	const base64 = "data:image/png;base64," + Buffer.from("filedata").toString("base64");
 
 	try {
-		const url = await module.uploadBase64(base64, "images", 2, ["image/png"]);
-		assert.ok(url.includes("/images/"));
+		const result = await module.uploadBase64("images", base64, 2, ["image/png"]);
+		assert.ok(result.url.includes("/images/"));
 		assert.equal(savedContentType, "image/png");
 		assert.equal(savedBodyLength, Buffer.from("filedata").length);
 	} finally {
@@ -226,7 +226,7 @@ test("uploadBase64 rejects disallowed formats", async () => {
 
 	try {
 		await assert.rejects(
-			() => module.uploadBase64(base64, "images", 2, ["image/jpeg"]),
+			() => module.uploadBase64("images", base64, 2, ["image/jpeg"]),
 			(err: any) => {
 				return err.code === "UNSUPPORTED_MEDIA_TYPE";
 			},
@@ -254,8 +254,6 @@ test("deleteFile respects strict and verifyAfter options", async () => {
 	let headCalls = 0;
 	handlers.set("HeadObjectCommand", async () => {
 		headCalls += 1;
-		// First call (strict check): file exists
-		// Second call (verifyAfter check): file no longer exists (404)
 		if (headCalls === 1) {
 			return { ETag: "etag" };
 		} else {

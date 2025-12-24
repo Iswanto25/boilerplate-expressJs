@@ -19,12 +19,49 @@ declare module "express-serve-static-core" {
 
 app.use(
 	helmet({
-		contentSecurityPolicy: false,
-		crossOriginEmbedderPolicy: false,
+		contentSecurityPolicy: {
+			directives: {
+				defaultSrc: ["'self'"],
+				scriptSrc: ["'self'", "'unsafe-inline'"],
+				styleSrc: ["'self'", "'unsafe-inline'"],
+				imgSrc: ["'self'", "data:", "blob:"],
+				fontSrc: ["'self'"],
+				connectSrc: ["'self'"],
+				frameAncestors: ["'none'"],
+				baseUri: ["'self'"],
+				formAction: ["'self'"],
+				objectSrc: ["'none'"],
+				scriptSrcAttr: ["'none'"],
+				upgradeInsecureRequests: [],
+			},
+		},
+		crossOriginEmbedderPolicy: { policy: "require-corp" },
+		crossOriginOpenerPolicy: { policy: "same-origin" },
+		crossOriginResourcePolicy: { policy: "same-origin" },
+		originAgentCluster: true,
+		referrerPolicy: { policy: "no-referrer" },
+		strictTransportSecurity: {
+			maxAge: 63072000,
+			includeSubDomains: true,
+			preload: true,
+		},
+		xContentTypeOptions: true,
+		xDnsPrefetchControl: { allow: false },
+		xDownloadOptions: true,
+		xFrameOptions: { action: "deny" },
+		xPermittedCrossDomainPolicies: { permittedPolicies: "none" },
 	}),
 );
 
-// CORS configuration with environment-based origins
+app.use((req, res, next) => {
+	res.setHeader("X-XSS-Protection", "0");
+	res.setHeader(
+		"Permissions-Policy",
+		"camera=(), geolocation=(), microphone=(), fullscreen=(self), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()",
+	);
+	next();
+});
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()) : "*";
 
 const corsOptions: CorsOptions = {
@@ -32,7 +69,7 @@ const corsOptions: CorsOptions = {
 	methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 	preflightContinue: false,
 	optionsSuccessStatus: 204,
-	credentials: allowedOrigins !== "*", // Only allow credentials if specific origins are set
+	credentials: allowedOrigins !== "*",
 };
 
 app.use(cors(corsOptions));
@@ -43,7 +80,6 @@ app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(pinoHttp({ logger }));
 
-// Health check route
 app.get("/", (req, res) => res.redirect("/health"));
 app.get("/health", (req, res) => {
 	const data = {
@@ -54,12 +90,9 @@ app.get("/health", (req, res) => {
 	return respons.success("Service is healthy", data, HttpStatus.OK, res, req);
 });
 
-// API Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/files", fileRoutes);
 
-// 404 handler - must be after all routes
 app.use(notFoundHandler);
 
-// Global error handler - must be last
 app.use(errorHandler);

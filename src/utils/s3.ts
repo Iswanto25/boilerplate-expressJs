@@ -1,4 +1,3 @@
-// utils/storage.ts
 import {
 	S3Client,
 	PutObjectCommand,
@@ -9,7 +8,6 @@ import {
 	ListObjectsV2Command,
 	_Object,
 } from "@aws-sdk/client-s3";
-import { NodeHttpHandler } from "@aws-sdk/node-http-handler";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "fs";
 import path from "path";
@@ -17,19 +15,15 @@ import dotenv from "dotenv";
 import { randomString } from "./utils";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
-
-// ---- Env helpers ------------------------------------------------------------
 function normalizeEndpoint(raw?: string, useSSL?: boolean): string | null {
 	if (!raw || !raw.trim()) return null;
-	let e = raw.trim().replace(/\/+$/, ""); // trim trailing slash
+	let e = raw.trim().replace(/\/+$/, "");
 	if (!/^https?:\/\//i.test(e)) {
-		// if user only put host:port, add scheme
 		e = `${useSSL ? "https" : "http"}://${e}`;
 	}
 	return e;
 }
 
-// Check if S3/MinIO is configured
 const USE_SSL = String(process.env.MINIO_USE_SSL || "").toLowerCase() === "true";
 const ENDPOINT = normalizeEndpoint(process.env.MINIO_ENDPOINT, USE_SSL);
 const REGION = process.env.MINIO_REGION?.trim() || "us-east-1";
@@ -46,12 +40,8 @@ if (isS3Configured) {
 		s3 = new S3Client({
 			region: REGION,
 			endpoint: ENDPOINT!,
-			forcePathStyle: true, // penting untuk MinIO
+			forcePathStyle: true,
 			credentials: { accessKeyId: ACCESS_KEY!, secretAccessKey: SECRET_KEY! },
-			requestHandler: new NodeHttpHandler({
-				connectionTimeout: 5_000,
-				socketTimeout: 30_000,
-			}),
 		});
 		console.info("✅ S3/MinIO configured successfully");
 	} catch (error) {
@@ -59,11 +49,13 @@ if (isS3Configured) {
 		s3 = null;
 	}
 } else {
-	console.warn("⚠️  S3/MinIO not configured (MINIO_ENDPOINT, MINIO_BUCKET_NAME, MINIO_ACCESS_KEY, MINIO_SECRET_KEY) - file upload features will be disabled");
+	console.warn(
+		"⚠️  S3/MinIO not configured (MINIO_ENDPOINT, MINIO_BUCKET_NAME, MINIO_ACCESS_KEY, MINIO_SECRET_KEY) - file upload features will be disabled",
+	);
 }
 
 function publicUrl(key: string): string {
-	return `${ENDPOINT}/${BUCKET}/${key}`; // cocok dengan console MinIO
+	return `${ENDPOINT}/${BUCKET}/${key}`;
 }
 
 function throwS3NotConfigured(): never {
@@ -76,7 +68,6 @@ function throwS3NotConfigured(): never {
 	};
 }
 
-// ---- Head (cek exist) -------------------------------------------------------
 export async function headFile(folder: string, file: string) {
 	if (!s3) throwS3NotConfigured();
 
@@ -92,11 +83,10 @@ export async function headFile(folder: string, file: string) {
 		};
 	} catch (err: any) {
 		if (err?.$metadata?.httpStatusCode === 404) return { exists: false as const };
-		throw err; // permission/network error: bubble up
+		throw err;
 	}
 }
 
-// ---- Upload (multer) --------------------------------------------------------
 export async function uploadFile(file: Express.Multer.File, folder: string) {
 	if (!s3) throwS3NotConfigured();
 
@@ -117,18 +107,15 @@ export async function uploadFile(file: Express.Multer.File, folder: string) {
 		);
 		return { fileName, folder };
 	} finally {
-		// pastikan file temp dihapus
 		try {
 			fs.unlinkSync(file.path);
 		} catch {}
 	}
 }
 
-// ---- Upload (base64) --------------------------------------------------------
-export async function uploadBase64(file: string, folder: string, maxSizeInMB: number = 10, allowedFormats?: string[]) {
+export async function uploadBase64(folder: string, file: string, maxSizeInMB: number = 10, allowedFormats?: string[]) {
 	if (!s3) throwS3NotConfigured();
 
-	// --- guard: tipe input
 	if (typeof file !== "string") {
 		throw {
 			name: "UploadBase64Error",
@@ -145,13 +132,11 @@ export async function uploadBase64(file: string, folder: string, maxSizeInMB: nu
 	let mimeType = "application/octet-stream";
 	let base64Data = raw;
 
-	// dukung data URI & plain base64 (termasuk whitespace/newline)
 	const m = raw.match(dataUri);
 	if (m) {
 		mimeType = m[1].toLowerCase();
 		base64Data = m[2];
 	} else {
-		// plain base64 → bersihkan whitespace lalu validasi
 		const sanitized = raw.replace(/\s+/g, "");
 		if (!/^[A-Za-z0-9+/=]+$/.test(sanitized)) {
 			throw {
@@ -163,14 +148,11 @@ export async function uploadBase64(file: string, folder: string, maxSizeInMB: nu
 			};
 		}
 		base64Data = sanitized;
-		// fallback mime jika tidak ada prefix data:
 		mimeType = "image/jpeg";
 	}
 
-	// normalisasi jpg → jpeg
 	if (mimeType === "image/jpg") mimeType = "image/jpeg";
 
-	// validasi tipe file
 	if (allowedFormats?.length && !allowedFormats.includes(mimeType)) {
 		throw {
 			name: "UploadBase64Error",
@@ -182,7 +164,6 @@ export async function uploadBase64(file: string, folder: string, maxSizeInMB: nu
 		};
 	}
 
-	// konstruksi buffer & validasi ukuran
 	const buffer = Buffer.from(base64Data.replace(/\s+/g, ""), "base64");
 	const maxBytes = maxSizeInMB * 1024 * 1024;
 	if (buffer.length > maxBytes) {
@@ -196,7 +177,6 @@ export async function uploadBase64(file: string, folder: string, maxSizeInMB: nu
 		};
 	}
 
-	// tentukan ekstensi & key object
 	const ext = (mimeType.split("/")[1] || "bin").toLowerCase();
 	const fileName = `${randomString()}.${ext}`;
 	const key = `${folder}/${fileName}`;
@@ -212,7 +192,6 @@ export async function uploadBase64(file: string, folder: string, maxSizeInMB: nu
 			}),
 		);
 	} catch (e: any) {
-		// bungkus error storage supaya jelas
 		throw {
 			name: "UploadBase64Error",
 			code: "STORAGE_WRITE_FAILED",
@@ -223,17 +202,15 @@ export async function uploadBase64(file: string, folder: string, maxSizeInMB: nu
 		};
 	}
 
-	// sukses → kembalikan nama file dan folder
-	return { fileName, folder };
+	return { fileName, folder, url: publicUrl(key) };
 }
 
-// ---- Presigned GET ----------------------------------------------------------
 export async function getFile(
 	folder: string,
 	file: string,
 	expired: number = 3600,
 	opts?: {
-		ensureExists?: boolean; // default true
+		ensureExists?: boolean;
 		cacheControl?: string;
 		contentDisposition?: "inline" | `attachment; filename="${string}"`;
 		contentType?: string;
@@ -250,7 +227,7 @@ export async function getFile(
 	try {
 		if (ensureExists) {
 			const head = await headFile(folder, file);
-			if (!head.exists) return null; // <-- jangan presign kalau tidak ada
+			if (!head.exists) return null;
 		}
 
 		const command = new GetObjectCommand({
@@ -268,7 +245,6 @@ export async function getFile(
 	}
 }
 
-// ---- Delete (single, strict by default) -------------------------------------
 export async function deleteFile(
 	folder: string,
 	file: string,
@@ -303,7 +279,6 @@ export async function deleteFile(
 	}
 }
 
-// ---- Delete batch -----------------------------------------------------------
 export async function deleteMany(items: Array<{ folder: string; file: string }>): Promise<{ deleted: string[]; errors: string[] }> {
 	if (!s3) {
 		console.warn("⚠️  S3/MinIO not configured - cannot delete files");
@@ -314,7 +289,6 @@ export async function deleteMany(items: Array<{ folder: string; file: string }>)
 
 	const toKey = (i: { folder: string; file: string }) => `${i.folder}/${i.file}`;
 
-	// chunk 1000/permintaan sesuai S3
 	const chunks: Array<Array<{ folder: string; file: string }>> = [];
 	for (let i = 0; i < items.length; i += 1000) chunks.push(items.slice(i, i + 1000));
 
@@ -338,7 +312,6 @@ export async function deleteMany(items: Array<{ folder: string; file: string }>)
 	return { deleted, errors };
 }
 
-// ---- Delete by prefix (paging) ----------------------------------------------
 export async function deleteByPrefix(prefix: string): Promise<{ deleted: number; errors: number }> {
 	if (!s3) {
 		console.warn("⚠️  S3/MinIO not configured - cannot delete by prefix");

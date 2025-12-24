@@ -15,9 +15,6 @@ interface LocalRegister {
 }
 
 export const authServices = {
-	// ========================================
-	// REGISTER
-	// ========================================
 	async register(data: LocalRegister) {
 		return await prisma.$transaction(async (tx) => {
 			if (!isEmailValid(data.email)) throw new apiError(400, "Invalid email");
@@ -58,9 +55,6 @@ export const authServices = {
 		});
 	},
 
-	// ========================================
-	// LOGIN
-	// ========================================
 	async login(email: string, password: string) {
 		if (!isEmailValid(email)) throw new apiError(400, "Invalid email");
 		const user = await prisma.user.findUnique({ where: { email } });
@@ -98,9 +92,6 @@ export const authServices = {
 		};
 	},
 
-	// ========================================
-	// REFRESH TOKEN
-	// ========================================
 	async refreshToken(oldToken: string) {
 		const decoded = jwtUtils.verifyRefreshToken(oldToken);
 
@@ -131,9 +122,6 @@ export const authServices = {
 		};
 	},
 
-	// ========================================
-	// LOGOUT
-	// ========================================
 	async logout(userId: string) {
 		await prisma.refreshToken.deleteMany({ where: { userId } });
 		await deleteToken(userId, "access");
@@ -247,14 +235,12 @@ export const authServices = {
 </html>
 `;
 
-		// const text = `Your OTP is ${otp}`;
 		const fromName = process.env.APP_NAME;
 		const fromEmail = process.env.SMTP_USER;
 		await sendEmail({
 			to,
 			subject,
 			html,
-			// text,
 			fromName,
 			fromEmail,
 		});
