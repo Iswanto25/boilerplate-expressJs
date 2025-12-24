@@ -15,7 +15,6 @@ export function rateLimiter(options?: RateLimitOptions) {
 	const { keyPrefix = "rate_limit:", windowInSeconds = 60, maxRequests = 30, blockDuration = 60, useUserId = true } = options || {};
 
 	return async function rateLimiter(req: Request, res: Response, next: NextFunction) {
-		// Skip rate limiting if Redis is not available
 		if (!isRedisAvailable || !redisClient) {
 			logger.warn("⚠️  Rate limiting skipped - Redis not available");
 			return next();
@@ -39,12 +38,13 @@ export function rateLimiter(options?: RateLimitOptions) {
 				await redisClient.set(`${keyPrefix}blocked:${keyId}`, "1", "EX", blockDuration);
 				logger.warn(`Rate limit exceeded for ${userId ? `user ${userId}` : ip}`);
 
-				return respons.error("Terlalu banyak permintaan", `Terlalu banyak permintaan. Coba lagi dalam ${ttl} detik.`, HttpStatus.TOO_MANY_REQUESTS, res, req);
-
-				// return res.status(HttpStatus.TOO_MANY_REQUESTS).json({
-				// 	success: false,
-				// 	message: `Terlalu banyak permintaan. Coba lagi dalam ${ttl} detik.`,
-				// });
+				return respons.error(
+					"Terlalu banyak permintaan",
+					`Terlalu banyak permintaan. Coba lagi dalam ${ttl} detik.`,
+					HttpStatus.TOO_MANY_REQUESTS,
+					res,
+					req,
+				);
 			}
 
 			next();

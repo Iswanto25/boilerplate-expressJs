@@ -2,7 +2,6 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
-
 interface SendEmailOptions {
 	to: string;
 	subject: string;
@@ -12,7 +11,6 @@ interface SendEmailOptions {
 	fromEmail?: string;
 }
 
-// Check if SMTP is configured
 const isSMTPConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
 if (!isSMTPConfigured) {
@@ -48,6 +46,5 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
 		console.warn(`⚠️  Gagal mengirim email ke ${options.to}: ${message}`);
-		// Don't throw error, just log warning
 	}
 };

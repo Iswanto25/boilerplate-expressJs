@@ -4,7 +4,6 @@ import { logger } from "../utils/logger";
 let redisClient: Redis | null = null;
 let isRedisAvailable = false;
 
-// Check if Redis configuration is available
 const hasRedisConfig = !!(process.env.REDIS_HOST || process.env.REDIS_PORT);
 
 if (hasRedisConfig) {
@@ -19,12 +18,12 @@ if (hasRedisConfig) {
 				if (times > 3) {
 					logger.warn("⚠️  Redis connection failed after 3 retries. Running without Redis.");
 					isRedisAvailable = false;
-					return null; // Stop retrying
+					return null;
 				}
 				return Math.min(times * 200, 2000);
 			},
 			maxRetriesPerRequest: 5,
-			lazyConnect: true, // Don't connect immediately
+			lazyConnect: true,
 		});
 
 		redisClient.on("connect", () => {
@@ -46,7 +45,6 @@ if (hasRedisConfig) {
 			logger.warn("⚠️  Redis reconnecting...");
 		});
 
-		// Try to connect
 		redisClient.connect().catch((err) => {
 			isRedisAvailable = false;
 			logger.warn("⚠️  Redis not available - running without Redis cache");
