@@ -7,21 +7,22 @@ const requireModule = createRequire(__filename);
 const modulePath = "../tokenStore";
 const redisPath = path.join(__dirname, "../../configs/redis");
 
-const stubModule = (resolved: string, exports: any): (() => void) => {
-	const original = requireModule.cache[resolved];
-	(requireModule.cache as any)[resolved] = {
-		id: resolved,
-		filename: resolved,
-		loaded: true,
-		exports,
-	};
-	return () => {
-		if (original) {
-			(requireModule.cache as any)[resolved] = original;
-		} else {
-			delete requireModule.cache[resolved];
-		}
-	};
+const stubModule = (specifier: string, exports: any): (() => void) => {
+        const resolved = requireModule.resolve(specifier);
+        const original = requireModule.cache[resolved];
+        (requireModule.cache as any)[resolved] = {
+                id: resolved,
+                filename: resolved,
+                loaded: true,
+                exports,
+        };
+        return () => {
+                if (original) {
+                        (requireModule.cache as any)[resolved] = original;
+                } else {
+                        delete requireModule.cache[resolved];
+                }
+        };
 };
 
 const setupModule = async (overrides?: Partial<Record<string, any>>) => {
@@ -32,11 +33,18 @@ const setupModule = async (overrides?: Partial<Record<string, any>>) => {
 		...(overrides || {}),
 	};
 
-	const restore = stubModule(redisPath, { redisClient });
-	delete requireModule.cache[requireModule.resolve(modulePath)];
+        const restoreRedis = stubModule(redisPath, { redisClient });
+        delete requireModule.cache[requireModule.resolve(modulePath)];
 
-	const module = await import(modulePath);
-	return { module, redisClient, restore };
+        const module = await import(modulePath);
+        return {
+                module,
+                redisClient,
+                restore: () => {
+                        restoreRedis();
+                        delete requireModule.cache[requireModule.resolve(modulePath)];
+                },
+        };
 };
 
 test("storeToken persists token with the correct prefix", async () => {

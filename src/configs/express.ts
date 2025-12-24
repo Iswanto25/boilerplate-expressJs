@@ -4,10 +4,10 @@ import compression from "compression";
 import pinoHttp from "pino-http";
 import helmet from "helmet";
 import { logger } from "../utils/logger";
-import { uploadFile, getFile, deleteFile, uploadBase64 } from "../utils/s3";
 import { respons, HttpStatus } from "../utils/respons";
-import { createUploader } from "../middlewares/multerMiddleware";
 import authRoutes from "../routes/authRoutes";
+import fileRoutes from "../routes/fileRoutes";
+import { errorHandler, notFoundHandler } from "../middlewares/errorHandler";
 
 export const app = express();
 
@@ -24,11 +24,15 @@ app.use(
 	}),
 );
 
+// CORS configuration with environment-based origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()) : "*";
+
 const corsOptions: CorsOptions = {
-	origin: "*",
+	origin: allowedOrigins === "*" ? "*" : allowedOrigins,
 	methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 	preflightContinue: false,
 	optionsSuccessStatus: 204,
+	credentials: allowedOrigins !== "*", // Only allow credentials if specific origins are set
 };
 
 app.use(cors(corsOptions));
@@ -39,70 +43,23 @@ app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(pinoHttp({ logger }));
 
-
-// Routes Auth
-app.use("/api/v1/auth", authRoutes);
-
-
+// Health check route
 app.get("/", (req, res) => res.redirect("/health"));
 app.get("/health", (req, res) => {
 	const data = {
-		name: "Dummy",
+		status: "ok",
+		timestamp: new Date().toISOString(),
+		environment: process.env.NODE_ENV || "development",
 	};
-	return respons.success('Health', data, HttpStatus.OK, res, req);
+	return respons.success("Service is healthy", data, HttpStatus.OK, res, req);
 });
 
-app.post(
-	"/upload",
-	createUploader({ fields: [{ type: "single", fieldName: "file", allowedFormats: ["image/jpeg", "image/png"], maxSizeInMB: 1 }] }),
-	async (req, res) => {
-		try {
-			if (!req.file) {
-				return respons.error('File not found', null, HttpStatus.NOT_FOUND, res);
-			}
-			const fileName = await uploadFile(req.file, "uploads");
-			return respons.success('File uploaded successfully', { fileName }, HttpStatus.OK, res, req);
-		} catch (error) {
-			return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
-		}
-	},
-);
+// API Routes
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/files", fileRoutes);
 
-app.get("/test", async (req, res) => {
-	try {
-		const folder = "uploads";
-		const fileName = "20251027-864xZ8Ryvwd.jpg";
+// 404 handler - must be after all routes
+app.use(notFoundHandler);
 
-		const url = await getFile(folder, fileName, 3600, { ensureExists: true });
-		if (!url) {
-			return respons.error('File not found', null, HttpStatus.NOT_FOUND, res, req);
-		}
-
-		return respons.success('Test', url, HttpStatus.OK, res, req);
-	} catch (error) {
-		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
-	}
-});
-
-app.delete("/delete", async (req, res) => {
-	try {
-		const fileName = "20251027-6gXWZLFpYC.jpg";
-		const folder = "uploads";
-		const result = await deleteFile(folder, fileName);
-		if (!result.deleted) {
-			return respons.error('File not found', null, HttpStatus.NOT_FOUND, res, req);
-		}
-		return respons.success('File deleted successfully', result, HttpStatus.OK, res, req);
-	} catch (error) {
-		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
-	}
-});
-
-app.post("/base64", async (req, res) => {
-	try {
-		const result = await uploadBase64(req.body.file, "uploads", 155, ["image/jpeg", "image/png"]);
-		return respons.success('File uploaded successfully', result, HttpStatus.OK, res, req);
-	} catch (error) {
-		return respons.error('Terjadi kesalahan', null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
-	}
-});
+// Global error handler - must be last
+app.use(errorHandler);
