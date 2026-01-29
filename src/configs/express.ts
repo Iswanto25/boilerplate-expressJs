@@ -7,6 +7,7 @@ import { logger } from "../utils/logger";
 import { respons, HttpStatus } from "../utils/respons";
 import authRoutes from "../routes/authRoutes";
 import fileRoutes from "../routes/fileRoutes";
+import exampleRoutes from "../routes/exampleRoutes";
 import { errorHandler, notFoundHandler } from "../middlewares/errorHandler";
 
 export const app = express();
@@ -92,6 +93,7 @@ app.get("/health", (req, res) => {
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/files", fileRoutes);
+app.use("/api/v1/example", exampleRoutes);
 
 app.use(notFoundHandler);
 
