@@ -9,6 +9,7 @@ import { sendEmail } from "../../../utils/smtp";
 import { generateOTP, isPhoneNumberValid, isEmailValid } from "../../../utils/utils";
 import { generateOTPEmail } from "../../../utils/mail";
 import { v4 as uuidv4 } from "uuid";
+import pLimit from "p-limit";
 
 interface LocalRegister {
 	name: string;
@@ -20,6 +21,7 @@ interface LocalRegister {
 }
 
 const folder = "profile";
+const limit = pLimit(10);
 
 export const authServices = {
 	async register(data: LocalRegister) {
@@ -81,6 +83,63 @@ export const authServices = {
 				refreshToken,
 			};
 		});
+	},
+
+	async bulkRegister(users: LocalRegister[]) {
+		const results = { total: users.length, success: 0, failed: 0, errors: [] as any[] };
+
+		const emails = users.map((u) => u.email);
+		const existingUsers = await prisma.user.findMany({
+			where: { email: { in: emails } },
+			select: { email: true },
+		});
+		const existingEmailSet = new Set(existingUsers.map((u) => u.email));
+
+		const preProcessedUsers = await Promise.allSettled(
+			users.map((u) =>
+				limit(async () => {
+					if (!isEmailValid(u.email)) throw new Error("Invalid email");
+					if (existingEmailSet.has(u.email)) throw new Error("Email exists");
+
+					const hashedPassword = await encryptPassword(u.password);
+					return { ...u, hashedPassword, id: uuidv4() };
+				}),
+			),
+		);
+
+		const validUsers = preProcessedUsers.filter((p): p is PromiseFulfilledResult<any> => p.status === "fulfilled").map((p) => p.value);
+
+		const batchSize = 250;
+		for (let i = 0; i < validUsers.length; i += batchSize) {
+			const batch = validUsers.slice(i, i + batchSize);
+
+			try {
+				await prisma.$transaction(async (tx) => {
+					await tx.user.createMany({
+						data: batch.map((u) => ({
+							id: u.id,
+							email: u.email,
+							password: u.hashedPassword,
+						})),
+					});
+
+					await tx.profile.createMany({
+						data: batch.map((u) => ({
+							userId: u.id,
+							name: u.name,
+							address: u.address,
+							phone: u.phone,
+						})),
+					});
+
+					results.success += batch.length;
+				});
+			} catch (dbError: any) {
+				results.errors.push({ error: `DB Error: ${dbError.message}` });
+			}
+		}
+
+		return results;
 	},
 
 	async login(email: string, password: string) {

@@ -53,6 +53,10 @@ export const respons = {
 	async success(message: any, data: any, code: number, res: Response, req: Request) {
 		const { user, ip, host, userAgent, dateTimeNow } = await getRequestContext(req);
 
+		// Calculate response time
+		const startTime = (req as any).startTime || Date.now();
+		const responseTime = Date.now() - startTime;
+
 		const logPayload = {
 			userId: user?.id,
 			name: user?.name || "Unknown",
@@ -71,7 +75,10 @@ export const respons = {
 			},
 		};
 
-		logger.info(logPayload);
+		// Simplified console log with response time
+		const path = req.path || req.originalUrl;
+		const userName = user?.name || "Guest";
+		logger.info(`✅ ${req.method} ${path} ${code} | ${userName} | ${responseTime}ms`);
 
 		try {
 			await prisma.logs.create({
@@ -91,6 +98,10 @@ export const respons = {
 	async error(message: string, error: any, code: number, res: Response, req?: Request) {
 		const { user, ip, host, userAgent, dateTimeNow } = await getRequestContext(req);
 
+		// Calculate response time
+		const startTime = (req as any)?.startTime || Date.now();
+		const responseTime = Date.now() - startTime;
+
 		const logPayload = {
 			userId: user?.id,
 			name: user?.name || "Unknown",
@@ -109,7 +120,10 @@ export const respons = {
 			},
 		};
 
-		logger.error(logPayload);
+		// Simplified console log with response time
+		const path = req?.path || req?.originalUrl || "unknown";
+		const userName = user?.name || "Guest";
+		logger.error(`❌ ${req?.method} ${path} ${code} | ${message} | ${userName} | ${responseTime}ms`);
 
 		try {
 			await prisma.logs.create({

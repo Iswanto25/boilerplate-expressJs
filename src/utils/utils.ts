@@ -1,24 +1,25 @@
 import moment from "moment";
 import { customAlphabet } from "nanoid";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 moment.locale("id");
 
+const nanoid = customAlphabet(alphabet, 10);
+
 export function randomString(): string {
-	const nanoid = customAlphabet(alphabet, 10);
 	const datePart = moment().format("YYYYMMDD");
-	const randomPart = nanoid();
-	return `${datePart}-${randomPart}`;
+	return `${datePart}-${nanoid()}`;
 }
 
-export function encryptPassword(password: string): string {
-	const salt = bcrypt.genSaltSync(10);
-	return bcrypt.hashSync(password, salt);
+export async function encryptPassword(password: string): Promise<string> {
+	const salt = await bcrypt.genSalt(7);
+	return await bcrypt.hash(password, salt);
 }
 
-export function comparePassword(password: string, hash: string): boolean {
-	return bcrypt.compareSync(password, hash);
+export async function comparePassword(password: string, hash: string): Promise<boolean> {
+	return await bcrypt.compare(password, hash);
 }
 
 export function isEmailValid(email: string): boolean {
@@ -27,10 +28,10 @@ export function isEmailValid(email: string): boolean {
 }
 
 export function isPhoneNumberValid(phoneNumber: string): boolean {
-	const phoneRegex = /^[0-9]{10}$/;
+	const phoneRegex = /^[0-9]{10,15}$/;
 	return phoneRegex.test(phoneNumber);
 }
 
 export function generateOTP(): string {
-	return Math.floor(100000 + Math.random() * 900000).toString();
+	return crypto.randomInt(100000, 999999).toString();
 }
