@@ -6,19 +6,35 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 
 - **Framework**: Express.js v5 dengan TypeScript
 - **ORM**: Prisma untuk database management yang modern dan type-safe
-- **Authentication**: JWT-based authentication system
+- **Authentication**:
+    - JWT-based authentication system
+    - User registration with profile creation
+    - Access & refresh token management
+    - Token caching with Redis (optional)
+    - Profile management with photo upload
 - **Security**:
     - Helmet untuk HTTP headers security
     - CORS dengan konfigurasi environment-based
     - Rate limiting dengan Redis (optional)
-    - Data encryption utilities
+    - Data encryption utilities untuk sensitive data
     - Input validation
-    - API Signature verification untuk endpoint protection
+    - API Signature verification untuk endpoint protection (HMAC-SHA256)
+    - Password hashing with bcrypt
 - **File Management**:
     - Upload file dengan Multer
     - Integrasi S3/MinIO (optional)
-    - Support base64 upload
-    - Automatic file cleanup
+    - Support base64 upload untuk images
+    - Automatic file cleanup saat update
+    - Presigned URL generation untuk secure file access
+    - Photo size & format validation
+- **Email System**:
+    - SMTP integration (optional)
+    - Dynamic email templates
+    - OTP email untuk password reset
+    - Verification email untuk account activation
+    - Welcome email untuk new users
+    - Password change confirmation email
+    - Customizable email templates
 - **Error Handling**: Global error handler dan 404 handler
 - **Logging**: Pino logger untuk structured logging dengan pretty print
 - **Code Quality**:
@@ -26,54 +42,62 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     - Prettier untuk code formatting
     - Comprehensive test suite dengan Node.js test runner
 - **Caching**: Redis integration untuk rate limiting dan token storage (optional)
-- **Email**: SMTP integration untuk email sending (optional)
 - **Graceful Degradation**: Aplikasi tetap berjalan meskipun layanan optional tidak dikonfigurasi
 
 ## 📂 Struktur Proyek
 
 ```
 /
+├── docs/                    # Documentation files
+│   └── EMAIL_TEMPLATES.md   # Email template usage guide
 ├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── migrations/         # Database migrations
+│   ├── schema.prisma        # Database schema with User-Profile 1-to-1 relation
+│   └── migrations/          # Database migrations
 ├── scripts/
-│   └── prepare-test-env.cjs # Test environment setup
+│   ├── prepare-test-env.cjs # Test environment setup
+│   └── generateApiKey.ts    # API signature key generator
 ├── src/
-│   ├── app.ts              # Application entry point
-│   ├── configs/            # Configuration modules
-│   │   ├── db.ts           # Prisma database config
-│   │   ├── express.ts      # Express app config
-│   │   └── redis.ts        # Redis client config (optional)
-│   ├── features/           # Feature-based modules
-│   │   ├── auth/           # Authentication feature
-│   │   │   ├── controllers/
-│   │   │   ├── services/
-│   │   │   └── validations/
-│   │   └── services/       # Shared services
-│   ├── middlewares/        # Custom middlewares
-│   │   ├── authMiddleware.ts
-│   │   ├── errorHandler.ts
-│   │   └── multerMiddleware.ts
-│   ├── routes/             # API route definitions
-│   │   ├── apiRoutes.ts    # Main API routes
-│   │   └── fileRoutes.ts   # File upload routes
-│   └── utils/              # Utility functions
-│       ├── __tests__/      # Unit tests
-│       ├── encryption.ts   # Data encryption utilities
-│       ├── jwt.ts          # JWT token utilities
-│       ├── rateLimiter.ts  # Rate limiting middleware
-│       ├── respons.ts      # Response formatting
-│       ├── s3.ts           # S3/MinIO file storage
-│       ├── smtp.ts         # Email sending
-│       ├── tokenStore.ts   # Token caching with Redis
-│       └── utils.ts        # General utilities
-├── .env.example            # Environment variables template
-├── .env.test               # Test environment variables
-├── .eslintrc.json          # ESLint configuration
-├── .prettierrc             # Prettier configuration
-├── nodemon.json            # Nodemon configuration
+│   ├── app.ts               # Application entry point
+│   ├── configs/             # Configuration modules
+│   │   ├── database.ts      # Prisma database config
+│   │   ├── express.ts       # Express app config
+│   │   └── redis.ts         # Redis client config (optional)
+│   ├── features/            # Feature-based modules
+│   │   ├── auth/            # Authentication feature
+│   │   │   ├── controllers/ # Auth controllers
+│   │   │   ├── services/    # Auth business logic
+│   │   │   │   └── authServices.ts # Register, login, profile, etc.
+│   │   │   └── validations/ # Input validation schemas
+│   │   └── services/        # Shared services
+│   ├── middlewares/         # Custom middlewares
+│   │   ├── authMiddleware.ts      # JWT authentication
+│   │   ├── errorHandler.ts        # Global error handler
+│   │   └── multerMiddleware.ts    # File upload handler
+│   ├── routes/              # API route definitions
+│   │   ├── apiRoutes.ts     # Main API routes
+│   │   ├── authRoutes.ts    # Authentication routes
+│   │   └── fileRoutes.ts    # File upload routes
+│   └── utils/               # Utility functions
+│       ├── __tests__/       # Unit tests
+│       ├── encryption.ts    # Data encryption utilities
+│       ├── jwt.ts           # JWT token utilities
+│       ├── mail.ts          # Email template generator (NEW!)
+│       ├── rateLimiter.ts   # Rate limiting middleware
+│       ├── respons.ts       # Response formatting
+│       ├── s3.ts            # S3/MinIO file storage
+│       ├── signature.ts     # API signature verification
+│       ├── smtp.ts          # Email sending
+│       ├── tokenStore.ts    # Token caching with Redis
+│       └── utils.ts         # General utilities
+├── .env.example             # Environment variables template
+├── .env.test                # Test environment variables
+├── .eslintrc.json           # ESLint configuration
+├── .prettierrc              # Prettier configuration
+├── CHANGELOG.md             # Project changelog (NEW!)
+├── CODEOWNERS               # Code ownership
+├── nodemon.json             # Nodemon configuration
 ├── package.json
-├── tsconfig.json           # TypeScript configuration
+├── tsconfig.json            # TypeScript configuration
 └── README.md
 ```
 
@@ -383,10 +407,14 @@ Response:
 
 ### Authentication
 
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - User login
+- `POST /api/v1/auth/register` - Register new user with profile & photo upload (base64)
+- `POST /api/v1/auth/login` - User login (returns user data with photo URL)
 - `POST /api/v1/auth/refresh` - Refresh access token
 - `POST /api/v1/auth/logout` - User logout
+- `GET /api/v1/auth/profile` - Get user profile with photo URL
+- `POST /api/v1/auth/forgot-password` - Send OTP email for password reset
+- `PUT /api/v1/auth/profile` - Update user profile (name, phone, address, photo)
+- `DELETE /api/v1/auth/profile` - Delete user account & cleanup S3 files
 
 ### File Upload (requires S3/MinIO)
 
@@ -399,6 +427,34 @@ Response:
 
 - `GET /api/v1/example/protected` - Protected endpoint (requires x-api-key header)
 - `GET /api/v1/example/public` - Public endpoint (no authentication required)
+
+## 📧 Email Templates
+
+Project ini menyediakan email template system yang modular dan reusable. Lihat [Email Templates Documentation](./docs/EMAIL_TEMPLATES.md) untuk detail lengkap.
+
+### Available Templates
+
+- **OTP Email** - Untuk password reset
+- **Verification Email** - Untuk account activation
+- **Welcome Email** - Untuk new users
+- **Password Changed Email** - Konfirmasi perubahan password
+- **Generic OTP Email** - Customizable untuk berbagai keperluan
+
+### Usage Example
+
+```typescript
+import { generateOTPEmail } from "../utils/mail";
+import { sendEmail } from "../utils/smtp";
+
+const html = generateOTPEmail("John Doe", "123456");
+await sendEmail({
+	to: "user@example.com",
+	subject: "Reset Password",
+	html,
+	fromName: process.env.APP_NAME,
+	fromEmail: process.env.SMTP_USER,
+});
+```
 
 ## 🛠️ Tech Stack
 
@@ -439,13 +495,24 @@ Response:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## � Documentation
+
+- [CHANGELOG](./CHANGELOG.md) - Detailed version history and changes
+- [Email Templates Guide](./docs/EMAIL_TEMPLATES.md) - Email template usage and examples
+
+## �📄 License
 
 This project is licensed under the ISC License.
 
 ## 👤 Author
 
 Created by [Iswanto25](https://github.com/Iswanto25)
+
+## 🔗 Links
+
+- **Repository**: [github.com/Iswanto25/boilerplate-expressJs](https://github.com/Iswanto25/boilerplate-expressJs)
+- **Issues**: [Report a bug or request a feature](https://github.com/Iswanto25/boilerplate-expressJs/issues)
+- **Pull Requests**: [Contribute to the project](https://github.com/Iswanto25/boilerplate-expressJs/pulls)
 
 ---
 
