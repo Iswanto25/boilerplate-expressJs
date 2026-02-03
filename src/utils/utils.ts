@@ -7,6 +7,8 @@ const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 moment.locale("id");
 
 const nanoid = customAlphabet(alphabet, 10);
+const saltHast = process.env.SALT_HASH || "default";
+const saltRounds = process.env.SALT_ROUNDS || 5;
 
 export function randomString(): string {
 	const datePart = moment().format("YYYYMMDD");
@@ -14,12 +16,12 @@ export function randomString(): string {
 }
 
 export async function encryptPassword(password: string): Promise<string> {
-	const salt = await bcrypt.genSalt(7);
-	return await bcrypt.hash(password, salt);
+	const salt = await bcrypt.genSalt(Number(saltRounds));
+	return await bcrypt.hash(`${password}-${saltHast}`, salt);
 }
 
 export async function comparePassword(password: string, hash: string): Promise<boolean> {
-	return await bcrypt.compare(password, hash);
+	return await bcrypt.compare(`${password}-${saltHast}`, hash);
 }
 
 export function isEmailValid(email: string): boolean {

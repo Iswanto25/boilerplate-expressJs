@@ -149,6 +149,10 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     DATA_ENCRYPTION_KEY="your-32-character-hex-key"
     JWT_SECRET="your-jwt-secret-key"
     JWT_REFRESH_SECRET="your-refresh-secret-key"
+
+    # Password Security (Optional)
+    SALT_HASH="your-custom-salt-string"  # Additional salt for password hashing
+    SALT_ROUNDS=5                         # bcrypt salt rounds (default: 5)
     ```
 
     **Optional Services:**
@@ -240,7 +244,10 @@ Test coverage meliputi:
 - ✅ **JWT Authentication** - Secure token-based auth
 - ✅ **Input Validation** - Request payload validation
 - ✅ **Error Handling** - Secure error responses (no stack traces in production)
-- ✅ **Password Hashing** - bcrypt integration
+- ✅ **Password Hashing** - Enhanced bcrypt integration with:
+    - Configurable salt rounds (SALT_ROUNDS environment variable)
+    - Additional custom salt hash (SALT_HASH environment variable)
+    - Double-layer hashing for extra security
 
 ## 🔐 API Signature
 
@@ -413,6 +420,7 @@ Response:
 - `POST /api/v1/auth/refresh` - Refresh access token
 - `POST /api/v1/auth/logout` - User logout
 - `GET /api/v1/auth/profile` - Get user profile with photo URL
+- `GET /api/v1/auth/users` - **Get all users with profile data and photo URLs** 🆕
 - `POST /api/v1/auth/forgot-password` - Send OTP email for password reset
 - `PUT /api/v1/auth/profile` - Update user profile (name, phone, address, photo)
 - `DELETE /api/v1/auth/profile` - Delete user account & cleanup S3 files
