@@ -114,17 +114,14 @@ export const authController = {
 		try {
 			const users = req.body;
 
-			// Validate input is array
 			if (!Array.isArray(users)) {
 				return respons.error("Data harus berupa array", null, HttpStatus.BAD_REQUEST, res, req);
 			}
 
-			// Validate array not empty
 			if (users.length === 0) {
 				return respons.error("Array tidak boleh kosong", null, HttpStatus.BAD_REQUEST, res, req);
 			}
 
-			// Validate each user has required fields
 			const invalidUsers = users.filter((user) => !user.name || !user.email || !user.password);
 			if (invalidUsers.length > 0) {
 				return respons.error(`${invalidUsers.length} user memiliki data tidak lengkap`, null, HttpStatus.BAD_REQUEST, res, req);
@@ -138,9 +135,24 @@ export const authController = {
 				...results,
 				duration: `${endTime - startTime}ms`,
 				successRate: `${((results.success / results.total) * 100).toFixed(2)}%`,
+				photoUploadRate:
+					results.uploadedPhotos + results.failedPhotos > 0 ?
+						`${((results.uploadedPhotos / (results.uploadedPhotos + results.failedPhotos)) * 100).toFixed(2)}%`
+					:	"N/A",
 			};
 
 			return respons.success("Bulk register selesai", responseData, HttpStatus.OK, res, req);
+		} catch (error: any) {
+			const statusCode = error.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			const message = error.message || "Terjadi kesalahan pada server";
+			return respons.error(message, null, statusCode, res, req);
+		}
+	},
+
+	getUsers: async (req: Request, res: Response) => {
+		try {
+			const users = await authServices.getUsers();
+			return respons.success("Berhasil get users", users, HttpStatus.OK, res, req);
 		} catch (error: any) {
 			const statusCode = error.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
 			const message = error.message || "Terjadi kesalahan pada server";

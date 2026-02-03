@@ -30,7 +30,6 @@ export const authServices = {
 			const existing = await existingEmail(data.email);
 			if (existing) throw new apiError(400, "Email already exists");
 
-			// Upload photo to S3 if provided
 			let photoFileName: string | null = null;
 			if (data.photo) {
 				const uploadResult = await uploadBase64(folder, data.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
@@ -69,7 +68,6 @@ export const authServices = {
 				},
 			});
 
-			// Get photo URL
 			const photoUrl = user.profile?.photo ? await getFile(folder, user.profile.photo) : null;
 
 			return {
@@ -86,7 +84,7 @@ export const authServices = {
 	},
 
 	async bulkRegister(users: LocalRegister[]) {
-		const results = { total: users.length, success: 0, failed: 0, errors: [] as any[] };
+		const results = { total: users.length, success: 0, failed: 0, errors: [] as any[], uploadedPhotos: 0, failedPhotos: 0 };
 
 		const emails = users.map((u) => u.email);
 		const existingUsers = await prisma.user.findMany({
@@ -102,7 +100,21 @@ export const authServices = {
 					if (existingEmailSet.has(u.email)) throw new Error("Email exists");
 
 					const hashedPassword = await encryptPassword(u.password);
-					return { ...u, hashedPassword, id: uuidv4() };
+					const userId = uuidv4();
+
+					let photoFileName: string | null = null;
+					if (u.photo) {
+						try {
+							const uploadResult = await uploadBase64(folder, u.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
+							photoFileName = uploadResult.fileName;
+							results.uploadedPhotos++;
+						} catch (uploadError: any) {
+							photoFileName = null;
+							results.failedPhotos++;
+						}
+					}
+
+					return { ...u, hashedPassword, id: userId, photoFileName };
 				}),
 			),
 		);
@@ -129,13 +141,15 @@ export const authServices = {
 							name: u.name,
 							address: u.address,
 							phone: u.phone,
+							photo: u.photoFileName,
 						})),
 					});
 
 					results.success += batch.length;
 				});
 			} catch (dbError: any) {
-				results.errors.push({ error: `DB Error: ${dbError.message}` });
+				results.failed += batch.length;
+				results.errors.push({ batch: i / batchSize + 1, error: `DB Error: ${dbError.message}` });
 			}
 		}
 
@@ -355,5 +369,33 @@ export const authServices = {
 
 			return { message: "Profile deleted successfully" };
 		});
+	},
+
+	async getUsers() {
+		const users = await prisma.user.findMany({
+			select: {
+				id: true,
+				email: true,
+				profile: {
+					select: {
+						name: true,
+						phone: true,
+						address: true,
+						photo: true,
+					},
+				},
+			},
+		});
+
+		const baseUrl = `${process.env.MINIO_ENDPOINT}/${process.env.MINIO_BUCKET_NAME}/${folder}`;
+
+		return users.map((user) => ({
+			id: user.id,
+			email: user.email,
+			name: user.profile?.name || null,
+			phone: user.profile?.phone || null,
+			address: user.profile?.address || null,
+			photo: user.profile?.photo ? `${baseUrl}/${user.profile.photo}` : null,
+		}));
 	},
 };
