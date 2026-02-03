@@ -408,6 +408,7 @@ Response:
 ### Authentication
 
 - `POST /api/v1/auth/register` - Register new user with profile & photo upload (base64)
+- `POST /api/v1/auth/bulk-register` - **Bulk register multiple users (array input, up to 1000 users)** 🆕
 - `POST /api/v1/auth/login` - User login (returns user data with photo URL)
 - `POST /api/v1/auth/refresh` - Refresh access token
 - `POST /api/v1/auth/logout` - User logout

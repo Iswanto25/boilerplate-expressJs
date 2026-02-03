@@ -6,6 +6,7 @@ import { rateLimiter } from "../utils/rateLimiter";
 const router = Router();
 
 router.post("/register", authController.register);
+router.post("/bulk-register", authController.bulkRegister);
 router.post("/login", authController.login);
 router.post("/logout", authenticate.verifyToken, authController.logout);
 router.post("/refresh-token", authController.refreshToken);
