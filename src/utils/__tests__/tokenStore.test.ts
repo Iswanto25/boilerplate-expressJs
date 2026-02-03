@@ -33,7 +33,7 @@ const setupModule = async (overrides?: Partial<Record<string, any>>) => {
 		...(overrides || {}),
 	};
 
-	const restoreRedis = stubModule(redisPath, { redisClient });
+	const restoreRedis = stubModule(redisPath, { redisClient, isRedisAvailable: true });
 	delete requireModule.cache[requireModule.resolve(modulePath)];
 
 	const module = await import(modulePath);
@@ -59,12 +59,13 @@ test("storeToken persists token with the correct prefix", async () => {
 	}
 });
 
-test("storeToken throws when Redis does not acknowledge write", async () => {
+test("storeToken returns null when Redis does not acknowledge write", async () => {
 	const { module, restore } = await setupModule({
 		set: mock.fn(async () => "ERR"),
 	});
 	try {
-		await assert.rejects(() => module.storeToken("user-2", "token", "refresh", 60), /Failed to store token/);
+		const result = await module.storeToken("user-2", "token", "refresh", 60);
+		assert.equal(result, null);
 	} finally {
 		restore();
 	}

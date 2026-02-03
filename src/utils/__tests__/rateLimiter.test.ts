@@ -45,7 +45,7 @@ const setup = async (overrides?: Partial<Record<"incr" | "expire" | "ttl" | "set
 		error: mock.fn(() => {}),
 	};
 
-	const restoreRedis = stubModule(redisPath, { redisClient });
+	const restoreRedis = stubModule(redisPath, { redisClient, isRedisAvailable: true });
 	const restoreRespons = stubModule(responsPath, {
 		HttpStatus: { TOO_MANY_REQUESTS: 429 },
 		respons: { error: responsError },
@@ -163,7 +163,7 @@ test("rateLimiter logs errors and calls next when Redis throws", async () => {
 		await middleware(req, res, next);
 
 		assert.equal(nextCalled, true);
-		assert.equal(logger.error.mock.calls.length, 1);
+		assert.equal(logger.warn.mock.calls.length, 1);
 	} finally {
 		restore();
 	}

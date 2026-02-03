@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 
-const hashPayload = (body: any): string => {
-	const str = typeof body === "string" ? body : JSON.stringify(body || {});
-	return crypto.createHash("sha256").update(str).digest("hex");
-};
+// const hashPayload = (body: any): string => {
+// 	const str = typeof body === "string" ? body : JSON.stringify(body || {});
+// 	return crypto.createHash("sha256").update(str).digest("hex");
+// };
 
 export function generateApiKey(userKey: string, secretKey: string, syncedTimestamp: number): string {
 	const timestampStr = syncedTimestamp.toString();
@@ -41,7 +41,7 @@ export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
 			return res.status(401).json({ success: false, message: "Request expired" });
 		}
 
-		const bodyHash = hashPayload(req.body);
+		// const bodyHash = hashPayload(req.body);
 		// const dataToVerify = `${userKey}:${timestamp}:${bodyHash}:${req.method}:${req.originalUrl}`;
 		const dataToVerify = `${userKey}:${timestamp}`;
 
@@ -54,7 +54,7 @@ export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
 		}
 
 		next();
-	} catch (error) {
+	} catch {
 		return res.status(401).json({ success: false, message: "Gagal memproses kunci" });
 	}
 }

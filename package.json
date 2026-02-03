@@ -5,8 +5,8 @@
 	"main": "app.ts",
 	"scripts": {
 		"prettier": "npx prettier . --write",
-		"lint": "eslint src --ext .ts",
-		"lint:fix": "eslint src --ext .ts --fix",
+		"lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts",
+		"lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --fix",
 		"pretest": "node scripts/prepare-test-env.cjs",
 		"start": "node dist/app.js",
 		"dev": "nodemon src/app.ts",

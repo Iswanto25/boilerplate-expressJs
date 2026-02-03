@@ -45,11 +45,11 @@ if (hasRedisConfig) {
 			logger.warn("⚠️  Redis reconnecting...");
 		});
 
-		redisClient.connect().catch((err) => {
+		redisClient.connect().catch((_err) => {
 			isRedisAvailable = false;
 			logger.warn("⚠️  Redis not available - running without Redis cache");
 		});
-	} catch (error) {
+	} catch {
 		isRedisAvailable = false;
 		logger.warn("⚠️  Redis initialization failed - running without Redis");
 	}

@@ -44,7 +44,7 @@ if (isS3Configured) {
 			credentials: { accessKeyId: ACCESS_KEY!, secretAccessKey: SECRET_KEY! },
 		});
 		console.info("✅ S3/MinIO configured successfully");
-	} catch (error) {
+	} catch {
 		console.warn("⚠️  S3/MinIO initialization failed - file upload features will be disabled");
 		s3 = null;
 	}
@@ -109,7 +109,9 @@ export async function uploadFile(file: Express.Multer.File, folder: string) {
 	} finally {
 		try {
 			fs.unlinkSync(file.path);
-		} catch {}
+		} catch {
+			// ignore
+		}
 	}
 }
 

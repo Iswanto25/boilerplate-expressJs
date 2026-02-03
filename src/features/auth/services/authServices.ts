@@ -6,7 +6,7 @@ import { apiError } from "../../../utils/respons";
 import { jwtUtils } from "../../../utils/jwt";
 import { storeToken, deleteToken } from "../../../utils/tokenStore";
 import { sendEmail } from "../../../utils/smtp";
-import { generateOTP, isPhoneNumberValid, isEmailValid } from "../../../utils/utils";
+import { generateOTP, isEmailValid } from "../../../utils/utils";
 import { generateOTPEmail } from "../../../utils/mail";
 import { v4 as uuidv4 } from "uuid";
 
@@ -228,7 +228,7 @@ export const authServices = {
 			if (!currentUser) throw new apiError(400, "User not found");
 
 			let photoFileName: string | null | undefined = undefined;
-			let oldPhotoFileName: string | null = currentUser.profile?.photo || null;
+			const oldPhotoFileName: string | null = currentUser.profile?.photo || null;
 
 			if (data.photo) {
 				const uploadResult = await uploadBase64(folder, data.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
