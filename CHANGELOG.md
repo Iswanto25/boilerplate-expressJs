@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `updateProfile` service with photo upload/update
     - `deleteProfile` service with automatic S3 cleanup
     - Profile photo URL generation with presigned URLs
+- New `GET /api/v1/auth/users` endpoint for fetching all users
+    - Optimized photo URL generation using direct base URL construction
+    - Returns user list with id, email, name, phone, address, and photo URL
+    - Improved performance by avoiding individual `getFile` calls
 
 ### Changed
 
@@ -28,6 +32,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Prisma schema: User-Profile relationship changed from 1-to-many to proper 1-to-1
 - Improved S3 file handling in auth services (register, login, profile)
 - Enhanced profile data structure in authentication responses
+- **Enhanced password hashing security:**
+    - Added configurable salt hash via `SALT_HASH` environment variable
+    - Added configurable salt rounds via `SALT_ROUNDS` environment variable (default: 5)
+    - Password now hashed with format: `password-{SALT_HASH}` before bcrypt
+    - Improved password comparison to match new hashing format
+
+### Fixed
+
+- Fixed async/await syntax error in `getUsers` method
+    - Corrected method declaration from `async getUsers() =>` to `async getUsers()`
+    - Resolved "'await' expressions are only allowed within async functions" error
+    - Optimized implementation to avoid Promise.all overhead
 
 ## [2.0.0] - 2026-02-03
 
