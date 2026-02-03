@@ -80,9 +80,18 @@ app.set("trust proxy", 1);
 app.use(compression());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+
+// Response time tracking middleware
+app.use((req, res, next) => {
+	(req as any).startTime = Date.now();
+	next();
+});
+
 app.use(
 	pinoHttp({
 		logger,
+		// Only log HTTP in development, and make it less verbose
+		autoLogging: process.env.NODE_ENV === "development" ? false : false,
 		customSuccessMessage: (req, res, responseTime) => {
 			return `${req.method} ${req.url} ${res.statusCode} - ${responseTime}ms`;
 		},
