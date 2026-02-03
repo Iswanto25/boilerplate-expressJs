@@ -33,7 +33,7 @@ export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
 			return res.status(401).json({ success: false, message: "Identitas tidak valid" });
 		}
 		const requestTime = parseInt(timestamp);
-		const currentTime = Date.now();	
+		const currentTime = Date.now();
 		const timeDiff = Math.abs(currentTime - requestTime);
 		const maxAge = 5 * 60 * 1000;
 

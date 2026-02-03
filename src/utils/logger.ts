@@ -3,8 +3,8 @@ import path from "path";
 import fs from "fs";
 import moment from "moment";
 import dotenv from "dotenv";
-dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
+dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -22,8 +22,9 @@ const devTransport = pino.transport({
 			options: {
 				colorize: true,
 				translateTime: "HH:MM:ss",
+				ignore: "pid,hostname,req,res",
 				singleLine: true,
-				ignore: "pid,hostname",
+				messageFormat: "{msg}",
 			},
 		},
 		{
@@ -43,6 +44,16 @@ export const logger = pino(
 		level: isProd ? "info" : "debug",
 		base: undefined,
 		timestamp: pino.stdTimeFunctions.isoTime,
+		serializers: {
+			req: (req) => ({
+				method: req.method,
+				url: req.url,
+				ip: req.remoteAddress,
+			}),
+			res: (res) => ({
+				statusCode: res.statusCode,
+			}),
+		},
 	},
 	isProd ? prodTransport : devTransport,
 );

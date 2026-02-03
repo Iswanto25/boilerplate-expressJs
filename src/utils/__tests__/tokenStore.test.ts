@@ -8,21 +8,21 @@ const modulePath = "../tokenStore";
 const redisPath = path.join(__dirname, "../../configs/redis");
 
 const stubModule = (specifier: string, exports: any): (() => void) => {
-        const resolved = requireModule.resolve(specifier);
-        const original = requireModule.cache[resolved];
-        (requireModule.cache as any)[resolved] = {
-                id: resolved,
-                filename: resolved,
-                loaded: true,
-                exports,
-        };
-        return () => {
-                if (original) {
-                        (requireModule.cache as any)[resolved] = original;
-                } else {
-                        delete requireModule.cache[resolved];
-                }
-        };
+	const resolved = requireModule.resolve(specifier);
+	const original = requireModule.cache[resolved];
+	(requireModule.cache as any)[resolved] = {
+		id: resolved,
+		filename: resolved,
+		loaded: true,
+		exports,
+	};
+	return () => {
+		if (original) {
+			(requireModule.cache as any)[resolved] = original;
+		} else {
+			delete requireModule.cache[resolved];
+		}
+	};
 };
 
 const setupModule = async (overrides?: Partial<Record<string, any>>) => {
@@ -33,18 +33,18 @@ const setupModule = async (overrides?: Partial<Record<string, any>>) => {
 		...(overrides || {}),
 	};
 
-        const restoreRedis = stubModule(redisPath, { redisClient });
-        delete requireModule.cache[requireModule.resolve(modulePath)];
+	const restoreRedis = stubModule(redisPath, { redisClient });
+	delete requireModule.cache[requireModule.resolve(modulePath)];
 
-        const module = await import(modulePath);
-        return {
-                module,
-                redisClient,
-                restore: () => {
-                        restoreRedis();
-                        delete requireModule.cache[requireModule.resolve(modulePath)];
-                },
-        };
+	const module = await import(modulePath);
+	return {
+		module,
+		redisClient,
+		restore: () => {
+			restoreRedis();
+			delete requireModule.cache[requireModule.resolve(modulePath)];
+		},
+	};
 };
 
 test("storeToken persists token with the correct prefix", async () => {
@@ -64,10 +64,7 @@ test("storeToken throws when Redis does not acknowledge write", async () => {
 		set: mock.fn(async () => "ERR"),
 	});
 	try {
-		await assert.rejects(
-			() => module.storeToken("user-2", "token", "refresh", 60),
-			/Failed to store token/,
-		);
+		await assert.rejects(() => module.storeToken("user-2", "token", "refresh", 60), /Failed to store token/);
 	} finally {
 		restore();
 	}

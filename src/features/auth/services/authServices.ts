@@ -1,6 +1,7 @@
 import prisma from "../../../configs/database";
 import { existingEmail } from "../../../utils/existingUsers";
 import { encryptPassword, comparePassword } from "../../../utils/utils";
+import { uploadBase64, getFile, deleteFile } from "../../../utils/s3";
 import { apiError } from "../../../utils/respons";
 import { jwtUtils } from "../../../utils/jwt";
 import { storeToken, deleteToken } from "../../../utils/tokenStore";
@@ -12,7 +13,12 @@ interface LocalRegister {
 	name: string;
 	email: string;
 	password: string;
+	address: string;
+	phone: string;
+	photo: string;
 }
+
+const folder = "profile";
 
 export const authServices = {
 	async register(data: LocalRegister) {
@@ -21,11 +27,28 @@ export const authServices = {
 			const existing = await existingEmail(data.email);
 			if (existing) throw new apiError(400, "Email already exists");
 
+			// Upload photo to S3 if provided
+			let photoFileName: string | null = null;
+			if (data.photo) {
+				const uploadResult = await uploadBase64(folder, data.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
+				photoFileName = uploadResult.fileName;
+			}
+
 			const user = await tx.user.create({
 				data: {
-					name: data.name,
 					email: data.email,
 					password: await encryptPassword(data.password),
+					profile: {
+						create: {
+							name: data.name,
+							address: data.address,
+							phone: data.phone,
+							photo: photoFileName,
+						},
+					},
+				},
+				include: {
+					profile: true,
 				},
 			});
 
@@ -43,11 +66,15 @@ export const authServices = {
 				},
 			});
 
+			// Get photo URL
+			const photoUrl = user.profile?.photo ? await getFile(folder, user.profile.photo) : null;
+
 			return {
 				user: {
 					id: user.id,
-					name: user.name,
+					name: user.profile?.name || null,
 					email: user.email,
+					photo: photoUrl,
 				},
 				accessToken,
 				refreshToken,
@@ -57,7 +84,10 @@ export const authServices = {
 
 	async login(email: string, password: string) {
 		if (!isEmailValid(email)) throw new apiError(400, "Invalid email");
-		const user = await prisma.user.findUnique({ where: { email } });
+		const user = await prisma.user.findUnique({
+			where: { email },
+			include: { profile: true },
+		});
 		if (!user) throw new apiError(400, "User not found");
 
 		const isValid = await comparePassword(password, user.password);
@@ -81,11 +111,15 @@ export const authServices = {
 		await storeToken(user.id, accessToken, "access", 24 * 60 * 60);
 		await storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60);
 
+		// Get photo URL
+		const photoUrl = user.profile?.photo ? await getFile(folder, user.profile.photo) : null;
+
 		return {
 			user: {
 				id: user.id,
-				name: user.name,
+				name: user.profile?.name || null,
 				email: user.email,
+				photo: photoUrl,
 			},
 			accessToken,
 			refreshToken,
@@ -135,20 +169,39 @@ export const authServices = {
 			where: { id: userId },
 			select: {
 				id: true,
-				name: true,
 				email: true,
 				role: true,
 				isActive: true,
 				createdAt: true,
 				updatedAt: true,
+				profile: {
+					select: {
+						name: true,
+						phone: true,
+						address: true,
+						photo: true,
+					},
+				},
 			},
 		});
 		if (!user) throw new apiError(400, "User not found");
-		return user;
+
+		const photoUrl = user.profile?.photo ? await getFile(folder, user.profile.photo) : null;
+
+		return {
+			...user,
+			name: user.profile?.name || null,
+			phone: user.profile?.phone || null,
+			address: user.profile?.address || null,
+			photo: photoUrl,
+		};
 	},
 
 	async forgotPassword(email: string): Promise<void> {
-		const user = await prisma.user.findUnique({ where: { email } });
+		const user = await prisma.user.findUnique({
+			where: { email },
+			include: { profile: true },
+		});
 		if (!user) throw new apiError(400, "User not found");
 		const otp = generateOTP();
 		const to = email;
@@ -217,7 +270,7 @@ export const authServices = {
   <div class="container">
     <div class="header">${process.env.APP_NAME || "Our App"}</div>
     <div class="body">
-      <p>Halo <strong>${user.name || "User"}</strong>,</p>
+      <p>Halo <strong>${user.profile?.name || "User"}</strong>,</p>
       <p>Kami menerima permintaan untuk mengatur ulang kata sandi akun Anda.</p>
       <p>Gunakan kode OTP berikut untuk melanjutkan proses reset password:</p>
       <div class="otp-box">${otp}</div>
@@ -243,6 +296,86 @@ export const authServices = {
 			html,
 			fromName,
 			fromEmail,
+		});
+	},
+
+	async updateProfile(userId: string, data: Partial<{ name: string; phone: string; address: string; photo: string }>) {
+		return await prisma.$transaction(async (tx) => {
+			const currentUser = await tx.user.findUnique({
+				where: { id: userId },
+				include: { profile: true },
+			});
+
+			if (!currentUser) throw new apiError(400, "User not found");
+
+			let photoFileName: string | null | undefined = undefined;
+			let oldPhotoFileName: string | null = currentUser.profile?.photo || null;
+
+			if (data.photo) {
+				const uploadResult = await uploadBase64(folder, data.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
+				photoFileName = uploadResult.fileName;
+
+				if (oldPhotoFileName) {
+					await deleteFile(folder, oldPhotoFileName, { strict: false });
+				}
+			}
+
+			const updatedUser = await tx.user.update({
+				where: { id: userId },
+				data: {
+					profile: {
+						update: {
+							where: { userId: userId },
+							data: {
+								...(data.name !== undefined && { name: data.name }),
+								...(data.phone !== undefined && { phone: data.phone }),
+								...(data.address !== undefined && { address: data.address }),
+								...(photoFileName !== undefined && { photo: photoFileName }),
+							},
+						},
+					},
+				},
+				include: {
+					profile: true,
+				},
+			});
+
+			const photoUrl = updatedUser.profile?.photo ? await getFile(folder, updatedUser.profile.photo) : null;
+
+			return {
+				id: updatedUser.id,
+				email: updatedUser.email,
+				name: updatedUser.profile?.name || null,
+				phone: updatedUser.profile?.phone || null,
+				address: updatedUser.profile?.address || null,
+				photo: photoUrl,
+			};
+		});
+	},
+
+	async deleteProfile(userId: string) {
+		return await prisma.$transaction(async (tx) => {
+			const user = await tx.user.findUnique({
+				where: { id: userId },
+				include: { profile: true },
+			});
+
+			if (!user) throw new apiError(400, "User not found");
+
+			const photoFileName = user.profile?.photo;
+
+			await tx.user.delete({
+				where: { id: userId },
+			});
+
+			if (photoFileName) {
+				await deleteFile(folder, photoFileName, { strict: false });
+			}
+
+			await deleteToken(userId, "access");
+			await deleteToken(userId, "refresh");
+
+			return { message: "Profile deleted successfully" };
 		});
 	},
 };

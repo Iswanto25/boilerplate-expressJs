@@ -5,13 +5,21 @@ import { HttpStatus, respons } from "../../../utils/respons";
 export const authController = {
 	register: async (req: Request, res: Response) => {
 		try {
-			const { name, email, password } = req.body;
 
-			if (!name || !email || !password) {
+			const data = {
+				name: req.body.name,
+				email: req.body.email,
+				password: req.body.password,
+				address: req.body.address,
+				phone: req.body.phone,
+				photo: req.body.photo,
+			}
+
+			if (!data.name || !data.email || !data.password) {
 				return respons.error("Data tidak lengkap", null, HttpStatus.BAD_REQUEST, res, req);
 			}
 
-			const user = await authServices.register({ name, email, password });
+			const user = await authServices.register(data);
 			return respons.success("Berhasil register", user, HttpStatus.OK, res, req);
 		} catch (error: any) {
 			const statusCode = error.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;

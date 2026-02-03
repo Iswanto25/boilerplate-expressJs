@@ -28,17 +28,17 @@ enum AuthProvider {
 }
 
 model logs {
-  id     Int     @id @default(autoincrement())
-  date   String?
-  name   String?
-  role   String?
-  host   String?
-  status String?
-  data   Json?
-  userId String?
-  ip     String?
-  method String?
-  dayCount Int?
+  id        Int      @id @default(autoincrement())
+  date      String?
+  name      String?
+  role      String?
+  host      String?
+  status    String?
+  data      Json?
+  userId    String?
+  ip        String?
+  method    String?
+  dayCount  Int?
   createdAt DateTime @default(now())
 
   @@index([date])
@@ -46,34 +46,46 @@ model logs {
 }
 
 model user {
-  id         String      @id @default(uuid())
-  name       String?
-  role       UserRole    @default(USER)
-  email      String      @unique
-  password   String?     
+  id         String       @id @default(uuid())
+  role       UserRole     @default(USER)
+  email      String       @unique
+  password   String?
   provider   AuthProvider @default(MANUAL)
-  providerId String?     
-  isActive   Boolean     @default(true)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  providerId String?
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
   refreshTokens refreshToken[]
+  profile       profile?
+}
+
+model profile {
+  id        String   @id @default(uuid())
+  name      String?
+  phone     String?
+  address   String?
+  photo     String?
+  userId    String   @unique
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model refreshToken {
-  id         String   @id @default(uuid())
-  token      String   @unique
-  userId     String
-  user       user     @relation(fields: [userId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      user     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model servicesRegistry {
-  id         String         @id @default(cuid())
-  name       String         @unique
-  baseUrl    String
-  status     ServiceStatus  @default(ACTIVE)
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id        String        @id @default(cuid())
+  name      String        @unique
+  baseUrl   String
+  status    ServiceStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
