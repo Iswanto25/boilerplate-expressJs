@@ -4,10 +4,6 @@ import { respons, HttpStatus } from "../utils/respons";
 
 const router = Router();
 
-/**
- * Example endpoint yang dilindungi dengan API signature
- * Membutuhkan header: x-api-key dengan signature yang valid
- */
 router.get("/protected", verifyApiKey, (req: Request, res: Response) => {
 	const data = {
 		message: "Ini adalah endpoint yang dilindungi dengan API signature",
@@ -18,9 +14,6 @@ router.get("/protected", verifyApiKey, (req: Request, res: Response) => {
 	return respons.success("Access granted", data, HttpStatus.OK, res, req);
 });
 
-/**
- * Example endpoint publik tanpa signature
- */
 router.get("/public", (req: Request, res: Response) => {
 	const data = {
 		message: "Ini adalah endpoint publik",
