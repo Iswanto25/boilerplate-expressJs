@@ -1,14 +1,7 @@
 import assert from "node:assert/strict";
 import test, { mock } from "node:test";
 
-import {
-	randomString,
-	encryptPassword,
-	comparePassword,
-	isEmailValid,
-	isPhoneNumberValid,
-	generateOTP,
-} from "../utils";
+import { randomString, encryptPassword, comparePassword, isEmailValid, isPhoneNumberValid, generateOTP } from "../utils";
 
 test("randomString produces expected structure", () => {
 	const value = randomString();

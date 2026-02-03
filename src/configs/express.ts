@@ -3,6 +3,7 @@ import cors, { CorsOptions } from "cors";
 import compression from "compression";
 import pinoHttp from "pino-http";
 import helmet from "helmet";
+
 import { logger } from "../utils/logger";
 import { respons, HttpStatus } from "../utils/respons";
 import authRoutes from "../routes/authRoutes";
@@ -79,7 +80,18 @@ app.set("trust proxy", 1);
 app.use(compression());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
-app.use(pinoHttp({ logger }));
+app.use(
+	pinoHttp({
+		logger,
+		customSuccessMessage: (req, res, responseTime) => {
+			return `${req.method} ${req.url} ${res.statusCode} - ${responseTime}ms`;
+		},
+		customErrorMessage: (req, res, err) => {
+			return `${req.method} ${req.url} ${res.statusCode} - ERROR: ${err.message}`;
+		},
+		quietReqLogger: true,
+	}),
+);
 
 app.get("/", (req, res) => res.redirect("/health"));
 app.get("/health", (req, res) => {
