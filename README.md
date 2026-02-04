@@ -12,11 +12,13 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     - Access & refresh token management
     - Token caching with Redis (optional)
     - Profile management with photo upload
+    - **NIK (National ID) encryption with AES-256-GCM** 🆕
 - **Security**:
     - Helmet untuk HTTP headers security
     - CORS dengan konfigurasi environment-based
     - Rate limiting dengan Redis (optional)
     - Data encryption utilities untuk sensitive data
+    - **AES-256-GCM encryption untuk NIK field** 🆕
     - Input validation
     - API Signature verification untuk endpoint protection (HMAC-SHA256)
     - Password hashing with bcrypt
@@ -35,6 +37,15 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     - Welcome email untuk new users
     - Password change confirmation email
     - Customizable email templates
+- **Performance Profiling & Monitoring** 🆕:
+    - Comprehensive performance profiling untuk bulk register
+    - Performance profiling untuk get users operations
+    - **Auto-generated markdown performance reports**
+    - NIK encryption/decryption speed tracking
+    - Console logging dengan detailed metrics
+    - Bottleneck detection dengan recommendations
+    - CPU & memory usage monitoring
+    - Throughput analysis (users/second)
 - **Error Handling**: Global error handler dan 404 handler
 - **Logging**: Pino logger untuk structured logging dengan pretty print
 - **Code Quality**:

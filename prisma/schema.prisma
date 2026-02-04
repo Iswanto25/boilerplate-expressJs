@@ -66,6 +66,7 @@ model profile {
   phone     String?
   address   String?
   photo     String?
+  NIK       String?
   userId    String   @unique
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

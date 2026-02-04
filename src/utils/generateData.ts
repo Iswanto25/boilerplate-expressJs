@@ -9,6 +9,7 @@ interface UserData {
 	address: string;
 	phone: string;
 	photo: string;
+	NIK: string;
 }
 
 /**
@@ -35,6 +36,7 @@ const generateUserData = (count: number): UserData[] => {
 		const lastName = faker.person.lastName();
 		const randomNum = faker.number.int({ min: 100, max: 9999 });
 		const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${randomNum}@example.com`;
+		const NIK = faker.string.numeric(16);
 
 		// Skip if email already exists
 		if (usedEmails.has(email)) {
@@ -50,6 +52,7 @@ const generateUserData = (count: number): UserData[] => {
 			address: `${faker.location.streetAddress()}, ${faker.location.city()}, ${faker.location.state()} ${faker.location.zipCode()}`,
 			phone: "0812" + faker.string.numeric(8),
 			photo: base64Photo,
+			NIK: NIK,
 		});
 	}
 
