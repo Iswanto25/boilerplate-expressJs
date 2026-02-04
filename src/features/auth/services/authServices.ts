@@ -10,6 +10,8 @@ import { generateOTP, isPhoneNumberValid, isEmailValid } from "../../../utils/ut
 import { generateOTPEmail } from "../../../utils/mail";
 import { v4 as uuidv4 } from "uuid";
 import pLimit from "p-limit";
+import os from "os";
+import { encryptionUtils, decryptSensitive } from "../../../utils/encryption";
 
 interface LocalRegister {
 	name: string;
@@ -18,10 +20,12 @@ interface LocalRegister {
 	address: string;
 	phone: string;
 	photo: string;
+	NIK?: string; // Optional NIK field
 }
 
 const folder = "profile";
-const limit = pLimit(10);
+const CONCURRENCY_LIMIT = 20;
+const limit = pLimit(CONCURRENCY_LIMIT);
 
 export const authServices = {
 	async register(data: LocalRegister) {
@@ -84,15 +88,36 @@ export const authServices = {
 	},
 
 	async bulkRegister(users: LocalRegister[]) {
+		// 🔍 PROFILING: Start total time
+		console.log(`\n🚀 Starting bulk register for ${users.length} users`);
+		const totalStartTime = Date.now();
 		const results = { total: users.length, success: 0, failed: 0, errors: [] as any[], uploadedPhotos: 0, failedPhotos: 0 };
 
+		// 📊 Metrics collection
+		let emailValidationTime = 0;
+		let preprocessingTime = 0;
+		let databaseInsertionTime = 0;
+		const batchTimings: Array<{ batchNum: number; users: number; time: number; status: "success" | "failed"; error?: string }> = [];
+		let totalPhotoSizeMB = 0;
+		let totalNIKEncryptionTime = 0;
+		let nikEncryptionCount = 0;
+
+		// 🔍 PROFILING: Email validation
+		console.time("⏱️  1. Email validation");
+		const emailValidationStart = Date.now();
 		const emails = users.map((u) => u.email);
 		const existingUsers = await prisma.user.findMany({
 			where: { email: { in: emails } },
 			select: { email: true },
 		});
 		const existingEmailSet = new Set(existingUsers.map((u) => u.email));
+		emailValidationTime = Date.now() - emailValidationStart;
+		console.timeEnd("⏱️  1. Email validation");
+		console.log(`   ℹ️  Found ${existingEmailSet.size} existing emails`);
 
+		// 🔍 PROFILING: Preprocessing (password hashing + photo upload + NIK encryption)
+		console.time("⏱️  2. Preprocessing (hash + upload + NIK encrypt)");
+		const preprocessingStart = Date.now();
 		const preProcessedUsers = await Promise.allSettled(
 			users.map((u) =>
 				limit(async () => {
@@ -103,27 +128,70 @@ export const authServices = {
 					const userId = uuidv4();
 
 					let photoFileName: string | null = null;
+					let photoSizeMB = 0;
 					if (u.photo) {
 						try {
 							const uploadResult = await uploadBase64(folder, u.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
 							photoFileName = uploadResult.fileName;
 							results.uploadedPhotos++;
+
+							// Estimate photo size from base64
+							const base64Length = u.photo.replace(/^data:image\/\w+;base64,/, "").length;
+							photoSizeMB = (base64Length * 0.75) / 1024 / 1024; // base64 to bytes to MB
+							totalPhotoSizeMB += photoSizeMB;
 						} catch (uploadError: any) {
 							photoFileName = null;
 							results.failedPhotos++;
 						}
 					}
 
-					return { ...u, hashedPassword, id: userId, photoFileName };
+					// 🔍 PROFILING: NIK Encryption
+					let encryptedNIK: string | null = null;
+					if (u.NIK) {
+						const nikEncryptStart = Date.now();
+						const { ciphertext } = encryptionUtils.encryptSensitive(u.NIK);
+						encryptedNIK = ciphertext;
+						const nikEncryptTime = Date.now() - nikEncryptStart;
+						totalNIKEncryptionTime += nikEncryptTime;
+						nikEncryptionCount++;
+					}
+
+					return { ...u, hashedPassword, id: userId, photoFileName, photoSizeMB, encryptedNIK };
 				}),
 			),
 		);
+		preprocessingTime = Date.now() - preprocessingStart;
+		console.timeEnd("⏱️  2. Preprocessing (hash + upload + NIK encrypt)");
 
 		const validUsers = preProcessedUsers.filter((p): p is PromiseFulfilledResult<any> => p.status === "fulfilled").map((p) => p.value);
+		console.log(`   ✅ Valid users: ${validUsers.length} | ❌ Failed: ${preProcessedUsers.length - validUsers.length}`);
+		console.log(`   📸 Photos uploaded: ${results.uploadedPhotos} | Failed: ${results.failedPhotos}`);
+		if (nikEncryptionCount > 0) {
+			const avgNIKEncrypt = (totalNIKEncryptionTime / nikEncryptionCount).toFixed(3);
+			console.log(`   🔐 NIK encrypted: ${nikEncryptionCount} | Avg time: ${avgNIKEncrypt}ms | Total: ${totalNIKEncryptionTime}ms`);
+		}
 
+		const failedCount = preProcessedUsers.length - validUsers.length;
+		if (failedCount > 0) {
+			console.log(`\n   ⚠️  Debugging ${failedCount} failed users...`);
+			const failedSamples = preProcessedUsers.filter((p) => p.status === "rejected").slice(0, 5);
+			failedSamples.forEach((f: any, idx) => {
+				const errMsg = f.reason?.message || String(f.reason);
+				console.log(`   ${idx + 1}. ${errMsg}`);
+			});
+		}
+
+		// 🔍 PROFILING: Database batch insert
+		console.time("⏱️  3. Database insertion");
+		const dbInsertionStart = Date.now();
 		const batchSize = 250;
 		for (let i = 0; i < validUsers.length; i += batchSize) {
 			const batch = validUsers.slice(i, i + batchSize);
+			const batchNum = Math.floor(i / batchSize) + 1;
+			const totalBatches = Math.ceil(validUsers.length / batchSize);
+
+			console.log(`   📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} users)`);
+			const batchStart = Date.now();
 
 			try {
 				await prisma.$transaction(async (tx) => {
@@ -142,15 +210,64 @@ export const authServices = {
 							address: u.address,
 							phone: u.phone,
 							photo: u.photoFileName,
+							NIK: u.encryptedNIK || null,
 						})),
 					});
 
 					results.success += batch.length;
 				});
+				const batchTime = Date.now() - batchStart;
+				batchTimings.push({ batchNum, users: batch.length, time: batchTime, status: "success" });
+				console.log(`   ✅ Batch ${batchNum} completed in ${batchTime}ms`);
 			} catch (dbError: any) {
+				const batchTime = Date.now() - batchStart;
 				results.failed += batch.length;
-				results.errors.push({ batch: i / batchSize + 1, error: `DB Error: ${dbError.message}` });
+				results.errors.push({ batch: batchNum, error: `DB Error: ${dbError.message}` });
+				batchTimings.push({ batchNum, users: batch.length, time: batchTime, status: "failed", error: dbError.message });
+				console.log(`   ❌ Batch ${batchNum} failed in ${batchTime}ms: ${dbError.message}`);
 			}
+		}
+		databaseInsertionTime = Date.now() - dbInsertionStart;
+		console.timeEnd("⏱️  3. Database insertion");
+
+		const totalTime = Date.now() - totalStartTime;
+		const memUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
+		console.log(`\n✅ Bulk register completed in ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
+		console.log(`📊 Success: ${results.success} | Failed: ${results.failed} | Memory used: ${memUsed} MB\n`);
+
+		// 📄 Generate and save markdown report
+		try {
+			const { saveBulkRegisterReport } = await import("../../../utils/bulkRegisterReport");
+			const metrics = {
+				totalUsers: users.length,
+				timestamp: new Date().toISOString(),
+				emailValidationTime,
+				preprocessingTime,
+				databaseInsertionTime,
+				totalTime,
+				successCount: results.success,
+				failedCount: results.failed,
+				existingEmailsCount: existingEmailSet.size,
+				uploadedPhotos: results.uploadedPhotos,
+				failedPhotos: results.failedPhotos,
+				batchSize,
+				totalBatches: Math.ceil(validUsers.length / batchSize),
+				batchTimings,
+				memoryUsedMB: parseFloat(memUsed),
+				averageTimePerUser: totalTime / users.length,
+				throughputUsersPerSecond: (users.length / totalTime) * 1000,
+				cpuCores: os.cpus().length,
+				concurrencyLimit: CONCURRENCY_LIMIT,
+				nikEncryptionTime: totalNIKEncryptionTime,
+				nikEncryptionCount: nikEncryptionCount,
+				averageNIKEncryptTime: nikEncryptionCount > 0 ? totalNIKEncryptionTime / nikEncryptionCount : 0,
+				totalDataSizeMB: totalPhotoSizeMB,
+				averagePhotoSizeMB: results.uploadedPhotos > 0 ? totalPhotoSizeMB / results.uploadedPhotos : 0,
+			};
+
+			await saveBulkRegisterReport(metrics);
+		} catch (reportError: any) {
+			console.error("❌ Failed to generate report:", reportError.message);
 		}
 
 		return results;
@@ -372,6 +489,14 @@ export const authServices = {
 	},
 
 	async getUsers() {
+		// 🔍 PROFILING: Start total time
+		console.log(`\n🚀 Starting get all users`);
+		const totalStartTime = Date.now();
+		const memStart = process.memoryUsage().heapUsed / 1024 / 1024;
+
+		// 🔍 PROFILING: Database query
+		console.time("⏱️  1. Database query");
+		const queryStart = Date.now();
 		const users = await prisma.user.findMany({
 			select: {
 				id: true,
@@ -382,20 +507,97 @@ export const authServices = {
 						phone: true,
 						address: true,
 						photo: true,
+						NIK: true,
 					},
 				},
 			},
 		});
+		const queryTime = Date.now() - queryStart;
+		console.timeEnd("⏱️  1. Database query");
+		console.log(`   📊 Retrieved ${users.length} users`);
 
+		// 🔍 PROFILING: URL generation
+		console.time("⏱️  2. URL generation");
+		const urlGenStart = Date.now();
 		const baseUrl = `${process.env.MINIO_ENDPOINT}/${process.env.MINIO_BUCKET_NAME}/${folder}`;
 
-		return users.map((user) => ({
-			id: user.id,
-			email: user.email,
-			name: user.profile?.name || null,
-			phone: user.profile?.phone || null,
-			address: user.profile?.address || null,
-			photo: user.profile?.photo ? `${baseUrl}/${user.profile.photo}` : null,
-		}));
+		let usersWithPhoto = 0;
+		let usersWithoutPhoto = 0;
+		let totalNIKDecryptionTime = 0;
+		let nikDecryptionCount = 0;
+
+		const result = users.map((user) => {
+			if (user.profile?.photo) {
+				usersWithPhoto++;
+			} else {
+				usersWithoutPhoto++;
+			}
+
+			let decryptedNIK: string | null = null;
+			if (user.profile?.NIK) {
+				const nikDecryptStart = Date.now();
+				try {
+					decryptedNIK = decryptSensitive({ version: 1, ciphertext: user.profile.NIK });
+					const nikDecryptTime = Date.now() - nikDecryptStart;
+					totalNIKDecryptionTime += nikDecryptTime;
+					nikDecryptionCount++;
+				} catch (error) {
+					console.error(`Failed to decrypt NIK for user ${user.id}:`, error);
+				}
+			}
+
+			return {
+				id: user.id,
+				email: user.email,
+				name: user.profile?.name || null,
+				phone: user.profile?.phone || null,
+				address: user.profile?.address || null,
+				photo: user.profile?.photo ? `${baseUrl}/${user.profile.photo}` : null,
+				NIK: decryptedNIK,
+			};
+		});
+		const urlGenerationTime = Date.now() - urlGenStart;
+		console.timeEnd("⏱️  2. URL generation");
+
+		// Log NIK decryption metrics
+		if (nikDecryptionCount > 0) {
+			const avgNIKDecrypt = (totalNIKDecryptionTime / nikDecryptionCount).toFixed(3);
+			console.log(`   🔓 NIK decrypted: ${nikDecryptionCount} | Avg time: ${avgNIKDecrypt}ms | Total: ${totalNIKDecryptionTime}ms`);
+		}
+
+		const totalTime = Date.now() - totalStartTime;
+		const memEnd = process.memoryUsage().heapUsed / 1024 / 1024;
+		const memUsed = memEnd - memStart;
+
+		console.log(`\n✅ Get all users completed in ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
+		console.log(`📊 Users with photo: ${usersWithPhoto} | Without photo: ${usersWithoutPhoto}`);
+		console.log(`💾 Memory used: ${memUsed.toFixed(2)} MB\n`);
+
+		// 📄 Generate and save markdown report
+		try {
+			const { saveGetUsersReport } = await import("../../../utils/getUsersReport");
+			const metrics = {
+				timestamp: new Date().toISOString(),
+				totalUsers: users.length,
+				queryTime,
+				urlGenerationTime,
+				totalTime,
+				usersWithPhoto,
+				usersWithoutPhoto,
+				memoryUsedMB: memUsed,
+				cpuCores: os.cpus().length,
+				averageTimePerUser: totalTime / users.length,
+				throughputUsersPerSecond: (users.length / totalTime) * 1000,
+				nikDecryptionTime: totalNIKDecryptionTime,
+				nikDecryptionCount: nikDecryptionCount,
+				averageNIKDecryptTime: nikDecryptionCount > 0 ? totalNIKDecryptionTime / nikDecryptionCount : 0,
+			};
+
+			await saveGetUsersReport(metrics);
+		} catch (reportError: any) {
+			console.error("❌ Failed to generate report:", reportError.message);
+		}
+
+		return result;
 	},
 };

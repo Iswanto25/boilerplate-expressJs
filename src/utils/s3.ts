@@ -116,6 +116,10 @@ export async function uploadFile(file: Express.Multer.File, folder: string) {
 export async function uploadBase64(folder: string, file: string, maxSizeInMB: number = 10, allowedFormats?: string[]) {
 	if (!s3) throwS3NotConfigured();
 
+	// 🔍 PROFILING: Start total time
+	const totalStartTime = Date.now();
+	const memStart = process.memoryUsage().heapUsed / 1024 / 1024;
+
 	if (typeof file !== "string") {
 		throw {
 			name: "UploadBase64Error",
@@ -164,7 +168,12 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 		};
 	}
 
+	// 🔍 PROFILING: Decode base64 (CPU bound)
+	console.time("decode");
 	const buffer = Buffer.from(base64Data.replace(/\s+/g, ""), "base64");
+	const fileSizeMB = (buffer.length / 1024 / 1024).toFixed(2);
+	console.timeEnd("decode");
+	console.log(`📦 File size: ${fileSizeMB} MB | Memory after decode: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`);
 	const maxBytes = maxSizeInMB * 1024 * 1024;
 	if (buffer.length > maxBytes) {
 		throw {
@@ -182,6 +191,7 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 	const key = `${folder}/${fileName}`;
 
 	try {
+		console.time("upload");
 		await s3.send(
 			new PutObjectCommand({
 				Bucket: BUCKET,
@@ -191,7 +201,11 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 				Metadata: { uploadedBy: "api" },
 			}),
 		);
+		console.timeEnd("upload");
 	} catch (e: any) {
+		console.timeEnd("upload");
+		const totalTime = Date.now() - totalStartTime;
+		console.log(`❌ Upload failed after ${totalTime}ms`);
 		throw {
 			name: "UploadBase64Error",
 			code: "STORAGE_WRITE_FAILED",
@@ -201,6 +215,10 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 			hint: "Periksa koneksi ke MinIO, credential, permission bucket, dan endpoint.",
 		};
 	}
+
+	const totalTime = Date.now() - totalStartTime;
+	const memEnd = process.memoryUsage().heapUsed / 1024 / 1024;
+	console.log(`✅ Total upload time: ${totalTime}ms | Memory delta: ${(memEnd - memStart).toFixed(2)} MB`);
 
 	return { fileName, folder, url: publicUrl(key) };
 }
