@@ -15,7 +15,8 @@
 		"test": "npm run build && node --test --experimental-test-module-mocks dist/utils/__tests__/*.test.js",
 		"test:utils": "npm run test",
 		"generate-api-key": "ts-node scripts/generateApiKey.ts",
-		"generate-data": "ts-node src/utils/generateData.ts"
+		"generate-data": "ts-node src/utils/generateData.ts",
+		"cleanup": "bash scripts/cleanup-boilerplate.sh"
 	},
 	"author": "",
 	"license": "ISC",
