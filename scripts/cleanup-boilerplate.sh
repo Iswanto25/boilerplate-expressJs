@@ -118,21 +118,11 @@ else
     echo "⏭️  Profiling utilities kept"
 fi
 
-# Remove email template documentation only (keep utils - they're core features)
-read -p "📧 Remove email template documentation? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    rm -f docs/EMAIL_TEMPLATES.md
-    echo "✅ Email docs removed (mail.ts and smtp.ts kept as core utilities)"
-else
-    echo "⏭️  Email docs kept"
-fi
-
 echo ""
 echo "🔧 Core utilities preserved..."
 echo "   ✅ Multer middleware (file uploads)"
 echo "   ✅ Mail & SMTP utilities"
+echo "   ✅ Email templates documentation"
 echo "   ✅ API signature system"
 echo "   ✅ Redis integration"
 echo "   ✅ Rate limiter & token store"
