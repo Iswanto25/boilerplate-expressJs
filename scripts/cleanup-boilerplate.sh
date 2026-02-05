@@ -69,16 +69,15 @@ echo "🗄️  Cleaning up database migrations..."
 echo "⏭️  Migrations kept (remove manually if needed: 'rm -rf prisma/migrations')"
 
 echo ""
-echo "�️  Removing optional routes and services..."
+echo "🗑️  Removing optional routes and features..."
 
-# Remove file upload routes (if you don't need file uploads)
+# Remove file upload routes (keep middleware - it's reusable)
 read -p "📁 Remove file upload routes? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     rm -f src/routes/fileRoutes.ts
-    rm -f src/middlewares/multerMiddleware.ts
-    echo "✅ File upload routes removed"
+    echo "✅ File routes removed (multer middleware kept for reuse)"
 else
     echo "⏭️  File routes kept"
 fi
@@ -119,54 +118,26 @@ else
     echo "⏭️  Profiling utilities kept"
 fi
 
-# Remove email templates (if you don't need email features)
-read -p "📧 Remove email template system? (y/N): " -n 1 -r
+# Remove email template documentation only (keep utils - they're core features)
+read -p "📧 Remove email template documentation? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    rm -f src/utils/mail.ts
-    rm -f src/utils/smtp.ts
     rm -f docs/EMAIL_TEMPLATES.md
-    echo "✅ Email system removed"
-    echo "⚠️  Note: Update authServices.ts to remove email-related code (forgotPassword, etc)"
+    echo "✅ Email docs removed (mail.ts and smtp.ts kept as core utilities)"
 else
-    echo "⏭️  Email system kept"
-fi
-
-# Remove API signature system (if you don't need it)
-read -p "🔐 Remove API signature verification system? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    rm -f src/utils/signature.ts
-    rm -f scripts/generateApiKey.ts
-    echo "✅ API signature system removed"
-else
-    echo "⏭️  API signature system kept"
-fi
-
-# Remove Redis integration (if you don't need caching/rate limiting)
-read -p "🗄️  Remove Redis integration? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    rm -f src/configs/redis.ts
-    rm -f src/utils/rateLimiter.ts
-    rm -f src/utils/tokenStore.ts
-    echo "✅ Redis integration removed"
-    echo "⚠️  Note: Update middleware imports and remove Redis from app.ts"
-else
-    echo "⏭️  Redis integration kept"
+    echo "⏭️  Email docs kept"
 fi
 
 echo ""
-echo "🔧 Cleaning up development helpers..."
-
-# Remove API key generator (if not needed)
-# Uncomment if you don't need API signature feature
-# rm -f scripts/generateApiKey.ts
-
-echo "⏭️  Check what was removed and update imports accordingly"
+echo "🔧 Core utilities preserved..."
+echo "   ✅ Multer middleware (file uploads)"
+echo "   ✅ Mail & SMTP utilities"
+echo "   ✅ API signature system"
+echo "   ✅ Redis integration"
+echo "   ✅ Rate limiter & token store"
+echo ""
+echo "💡 These are kept as they are commonly used features."
 
 echo ""
 echo "📜 Updating CHANGELOG..."
