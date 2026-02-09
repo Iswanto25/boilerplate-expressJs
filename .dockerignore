@@ -1,0 +1,84 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+coverage/
+.nyc_output
+
+# Logs
+logs
+*.log
+logger/
+
+# Prisma
+prisma/migrations/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Scripts (not needed in production)
+scripts/cleanup-boilerplate.sh
+scripts/generateApiKey.ts
+scripts/prepare-test-env.cjs
+
+# Generated files
+test_data.json
+ADD_*.md
+ADD_*.ts
+
+# ESLint & Prettier
+.eslintrc*
+.prettierrc*
+.editorconfig
