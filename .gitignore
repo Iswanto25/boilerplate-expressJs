@@ -29,6 +29,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.scannerwork/
 *~
 
 # Testing
