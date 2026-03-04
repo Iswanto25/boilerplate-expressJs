@@ -10,8 +10,9 @@
 		"noImplicitAny": false,
 		"strict": false,
 		"strictFunctionTypes": false,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"allowJs": true
 	},
-	"include": ["src/**/*.ts"],
+	"include": ["src/**/*.ts", "__tests__/**/*.ts"],
 	"exclude": ["node_modules"]
 }

@@ -99,7 +99,7 @@ const setup = async (): Promise<SetupResult> => {
 	});
 
 	delete requireModule.cache[requireModule.resolve(modulePath)];
-	const module = await import(modulePath);
+	const module = requireModule(modulePath);
 
 	return {
 		module,
