@@ -1,12 +1,6 @@
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('SUPERADMIN', 'ADMIN', 'USER');
 
--- CreateEnum
-CREATE TYPE "ServiceStatus" AS ENUM ('ACTIVE', 'MAINTENANCE', 'INACTIVE');
-
--- CreateEnum
-CREATE TYPE "AuthProvider" AS ENUM ('MANUAL', 'GOOGLE');
-
 -- CreateTable
 CREATE TABLE "logs" (
     "id" SERIAL NOT NULL,
@@ -28,17 +22,29 @@ CREATE TABLE "logs" (
 -- CreateTable
 CREATE TABLE "user" (
     "id" TEXT NOT NULL,
-    "name" TEXT,
     "role" "UserRole" NOT NULL DEFAULT 'USER',
     "email" TEXT NOT NULL,
     "password" TEXT,
-    "provider" "AuthProvider" NOT NULL DEFAULT 'MANUAL',
-    "providerId" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "profile" (
+    "id" TEXT NOT NULL,
+    "name" TEXT,
+    "phone" TEXT,
+    "address" TEXT,
+    "photo" TEXT,
+    "NIK" TEXT,
+    "userId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "profile_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -52,18 +58,6 @@ CREATE TABLE "refreshToken" (
     CONSTRAINT "refreshToken_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "servicesRegistry" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "baseUrl" TEXT NOT NULL,
-    "status" "ServiceStatus" NOT NULL DEFAULT 'ACTIVE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "servicesRegistry_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE INDEX "logs_date_idx" ON "logs"("date");
 
@@ -74,10 +68,13 @@ CREATE INDEX "logs_userId_idx" ON "logs"("userId");
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "refreshToken_token_key" ON "refreshToken"("token");
+CREATE UNIQUE INDEX "profile_userId_key" ON "profile"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "servicesRegistry_name_key" ON "servicesRegistry"("name");
+CREATE UNIQUE INDEX "refreshToken_token_key" ON "refreshToken"("token");
 
 -- AddForeignKey
-ALTER TABLE "refreshToken" ADD CONSTRAINT "refreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "profile" ADD CONSTRAINT "profile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "refreshToken" ADD CONSTRAINT "refreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
