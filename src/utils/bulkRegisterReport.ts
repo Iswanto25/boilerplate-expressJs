@@ -1,6 +1,5 @@
-import fs from "fs";
-import path from "path";
-import os from "os";
+import fs from "node:fs";
+import path from "node:path";
 
 interface BulkRegisterMetrics {
 	// Request Info
@@ -91,7 +90,7 @@ export function generateBulkRegisterReport(metrics: BulkRegisterMetrics): string
 |----------|-------|
 | **CPU Cores Available** | ${metrics.cpuCores} cores |
 | **Concurrency Limit** | ${metrics.concurrencyLimit} parallel processes |
-${metrics.cpuUsagePercent !== undefined ? `| **CPU Usage** | ${metrics.cpuUsagePercent.toFixed(2)}% |` : ""}
+${metrics.cpuUsagePercent == null ? "" : `| **CPU Usage** | ${metrics.cpuUsagePercent.toFixed(2)}% |`}
 
 ### Execution Time Breakdown
 
@@ -141,9 +140,9 @@ ${metrics.cpuUsagePercent !== undefined ? `| **CPU Usage** | ${metrics.cpuUsageP
 		report += `| Metric | Value |\n`;
 		report += `|--------|-------|\n`;
 		report += `| **NIK Encrypted** | ${metrics.nikEncryptionCount} NIKs |\n`;
-		report += `| **Total Encryption Time** | ${metrics.nikEncryptionTime}ms (${(metrics.nikEncryptionTime! / 1000).toFixed(2)}s) |\n`;
-		report += `| **Average Time per NIK** | ${metrics.averageNIKEncryptTime!.toFixed(3)}ms/NIK |\n`;
-		report += `| **Encryption Throughput** | ${((metrics.nikEncryptionCount / metrics.nikEncryptionTime!) * 1000).toFixed(2)} NIKs/second |\n`;
+		report += `| **Total Encryption Time** | ${metrics.nikEncryptionTime}ms (${((metrics.nikEncryptionTime ?? 0) / 1000).toFixed(2)}s) |\n`;
+		report += `| **Average Time per NIK** | ${metrics.averageNIKEncryptTime?.toFixed(3)}ms/NIK |\n`;
+		report += `| **Encryption Throughput** | ${((metrics.nikEncryptionCount / (metrics.nikEncryptionTime ?? 1)) * 1000).toFixed(2)} NIKs/second |\n`;
 	}
 
 	// Performance Analysis
@@ -156,7 +155,7 @@ ${metrics.cpuUsagePercent !== undefined ? `| **CPU Usage** | ${metrics.cpuUsageP
 		{ name: "Database Insertion", time: metrics.databaseInsertionTime, threshold: metrics.totalBatches * 5000 }, // 5s per batch
 	];
 
-	const slowestPhase = phases.reduce((prev, current) => (prev.time > current.time ? prev : current));
+	const slowestPhase = phases.reduce((prev, current) => (prev.time > current.time ? prev : current), phases[0]);
 	const bottlenecks = phases.filter((phase) => phase.time > phase.threshold);
 
 	report += `### 🔍 Bottleneck Detection\n\n`;
@@ -223,14 +222,14 @@ export async function saveBulkRegisterReport(metrics: BulkRegisterMetrics): Prom
 
 	// Generate filename with timestamp
 	const date = new Date(metrics.timestamp);
-	const filename = `bulk-register-${date.toISOString().replace(/:/g, "-").split(".")[0]}.md`;
+	const filename = `bulk-register-${date.toISOString().replaceAll(":", "-").split(".")[0]}.md`;
 	const filepath = path.join(reportDir, filename);
 
 	// Generate and save report
 	const report = generateBulkRegisterReport(metrics);
 	fs.writeFileSync(filepath, report, "utf-8");
 
-	console.log(`\n📄 Report saved: ${filepath}\n`);
+	console.info(`Report saved: ${filepath}`);
 
 	return filepath;
 }

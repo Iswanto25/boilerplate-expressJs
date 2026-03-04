@@ -1,6 +1,5 @@
-import fs from "fs";
-import path from "path";
-import os from "os";
+import fs from "node:fs";
+import path from "node:path";
 
 interface GetUsersMetrics {
 	// Request Info
@@ -48,7 +47,7 @@ export function generateGetUsersReport(metrics: GetUsersMetrics): string {
 | **Timestamp** | ${formattedDate} |
 | **Total Users Retrieved** | ${metrics.totalUsers.toLocaleString("id-ID")} users |
 | **Users with Photo** | ${metrics.usersWithPhoto.toLocaleString("id-ID")} (${photoPercentage}%) |
-| **Users without Photo** | ${metrics.usersWithoutPhoto.toLocaleString("id-ID")} (${(100 - parseFloat(photoPercentage)).toFixed(2)}%) |
+| **Users without Photo** | ${metrics.usersWithoutPhoto.toLocaleString("id-ID")} (${(100 - Number.parseFloat(photoPercentage)).toFixed(2)}%) |
 
 ---
 
@@ -88,9 +87,9 @@ ${
 | Metric | Value |
 |--------|-------|
 | **NIK Decrypted** | ${metrics.nikDecryptionCount} NIKs |
-| **Total Decryption Time** | ${metrics.nikDecryptionTime}ms (${(metrics.nikDecryptionTime! / 1000).toFixed(2)}s) |
-| **Average Time per NIK** | ${metrics.averageNIKDecryptTime!.toFixed(3)}ms/NIK |
-| **Decryption Throughput** | ${((metrics.nikDecryptionCount / metrics.nikDecryptionTime!) * 1000).toFixed(2)} NIKs/second |
+| **Total Decryption Time** | ${metrics.nikDecryptionTime}ms (${((metrics.nikDecryptionTime ?? 0) / 1000).toFixed(2)}s) |
+| **Average Time per NIK** | ${metrics.averageNIKDecryptTime?.toFixed(3)}ms/NIK |
+| **Decryption Throughput** | ${((metrics.nikDecryptionCount / (metrics.nikDecryptionTime ?? 1)) * 1000).toFixed(2)} NIKs/second |
 `
 	:	""
 }
@@ -149,9 +148,9 @@ ${
 	report += `**Estimated performance for different dataset sizes:**\n\n`;
 	report += `| Users | Estimated Time | Recommendation |\n`;
 	report += `|-------|----------------|----------------|\n`;
-	report += `| 1,000 | ${(metrics.averageTimePerUser * 1000).toFixed(0)}ms (${((metrics.averageTimePerUser * 1000) / 1000).toFixed(2)}s) | ✅ Acceptable |\n`;
-	report += `| 10,000 | ${estimatedTimeFor10k}ms (${(parseFloat(estimatedTimeFor10k) / 1000).toFixed(2)}s) | ${parseFloat(estimatedTimeFor10k) < 5000 ? "✅ Acceptable" : "⚠️ Consider pagination"} |\n`;
-	report += `| 100,000 | ${estimatedTimeFor100k}ms (${(parseFloat(estimatedTimeFor100k) / 1000).toFixed(2)}s) | ${parseFloat(estimatedTimeFor100k) < 10000 ? "⚠️ Pagination recommended" : "❌ Pagination required"} |\n`;
+	report += `| 1,000 | ${(metrics.averageTimePerUser * 1000).toFixed(0)}ms (${((metrics.averageTimePerUser * 1000) / 1000).toFixed(2)}s) | Acceptable |\n`;
+	report += `| 10,000 | ${estimatedTimeFor10k}ms (${(Number.parseFloat(estimatedTimeFor10k) / 1000).toFixed(2)}s) | ${Number.parseFloat(estimatedTimeFor10k) < 5000 ? "Acceptable" : "Consider pagination"} |\n`;
+	report += `| 100,000 | ${estimatedTimeFor100k}ms (${(Number.parseFloat(estimatedTimeFor100k) / 1000).toFixed(2)}s) | ${Number.parseFloat(estimatedTimeFor100k) < 10000 ? "Pagination recommended" : "Pagination required"} |\n`;
 
 	// Footer
 	report += `\n---\n\n`;
@@ -171,14 +170,14 @@ export async function saveGetUsersReport(metrics: GetUsersMetrics): Promise<stri
 
 	// Generate filename with timestamp
 	const date = new Date(metrics.timestamp);
-	const filename = `get-users-${date.toISOString().replace(/:/g, "-").split(".")[0]}.md`;
+	const filename = `get-users-${date.toISOString().replaceAll(":", "-").split(".")[0]}.md`;
 	const filepath = path.join(reportDir, filename);
 
 	// Generate and save report
 	const report = generateGetUsersReport(metrics);
 	fs.writeFileSync(filepath, report, "utf-8");
 
-	console.log(`\n📄 Report saved: ${filepath}\n`);
+	console.info(`Report saved: ${filepath}`);
 
 	return filepath;
 }

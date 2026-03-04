@@ -1,5 +1,6 @@
 import multer from "multer";
-import path from "path";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { Request, Response, NextFunction } from "express";
 import { respons, HttpStatus } from "../utils/respons";
 
@@ -19,16 +20,16 @@ export function createUploader(config: MulterConfig) {
 	const storage = multer.diskStorage({
 		destination: "uploads/",
 		filename: (_, file, cb) => {
-			const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+			const uniqueName = `${randomUUID()}${path.extname(file.originalname)}`;
 			cb(null, uniqueName);
 		},
 	});
 
-	const allAllowed = config.fields.flatMap((f) => f.allowedFormats);
+	const allAllowed = new Set(config.fields.flatMap((f) => f.allowedFormats));
 
 	const fileFilter = (_: any, file: Express.Multer.File, cb: any) => {
 		const ext = path.extname(file.originalname).toLowerCase();
-		const isAllowed = allAllowed.includes(file.mimetype) || allAllowed.includes(ext.replace(".", ""));
+		const isAllowed = allAllowed.has(file.mimetype) || allAllowed.has(ext.replace(".", ""));
 
 		if (!isAllowed) {
 			return cb(new Error(`File type not allowed: ${file.mimetype}`), false);
@@ -49,12 +50,18 @@ export function createUploader(config: MulterConfig) {
 		maxCount: f.maxCount || 1,
 	}));
 
-	const middleware =
-		config.fields.length === 1 ?
-			config.fields[0].type === "single" ?
-				upload.single(config.fields[0].fieldName)
-			:	upload.array(config.fields[0].fieldName, config.fields[0].maxCount || 10)
-		:	upload.fields(fields);
+	let middleware: ReturnType<typeof upload.single> | ReturnType<typeof upload.array> | ReturnType<typeof upload.fields>;
+
+	if (config.fields.length === 1) {
+		const field = config.fields[0];
+		if (field.type === "single") {
+			middleware = upload.single(field.fieldName);
+		} else {
+			middleware = upload.array(field.fieldName, field.maxCount || 10);
+		}
+	} else {
+		middleware = upload.fields(fields);
+	}
 
 	return (req: Request, res: Response, next: NextFunction) => {
 		middleware(req, res, (err: any) => {
@@ -72,7 +79,7 @@ export function createUploader(config: MulterConfig) {
 				}
 			}
 
-			if (err && err.message?.includes("File type not allowed")) {
+			if (err?.message?.includes("File type not allowed")) {
 				return respons.error("Format file tidak diizinkan", null, HttpStatus.BAD_REQUEST, res, req);
 			}
 

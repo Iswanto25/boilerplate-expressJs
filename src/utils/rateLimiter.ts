@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { redisClient, isRedisAvailable } from "../configs/redis";
+import { redisState } from "../configs/redis";
 import { HttpStatus, respons } from "./respons";
 import { logger } from "./logger";
 
@@ -15,8 +15,8 @@ export function rateLimiter(options?: RateLimitOptions) {
 	const { keyPrefix = "rate_limit:", windowInSeconds = 60, maxRequests = 30, blockDuration = 60, useUserId = true } = options || {};
 
 	return async function rateLimiter(req: Request, res: Response, next: NextFunction) {
-		if (!isRedisAvailable || !redisClient) {
-			logger.warn("⚠️  Rate limiting skipped - Redis not available");
+		if (!redisState.isAvailable || !redisState.client) {
+			logger.warn("Rate limiting skipped - Redis not available");
 			return next();
 		}
 
@@ -27,15 +27,15 @@ export function rateLimiter(options?: RateLimitOptions) {
 			const keyId = userId || ip;
 			const key = `${keyPrefix}${keyId}`;
 
-			const current = await redisClient.incr(key);
+			const current = await redisState.client.incr(key);
 			if (current === 1) {
-				await redisClient.expire(key, windowInSeconds);
+				await redisState.client.expire(key, windowInSeconds);
 			}
 
 			if (current > maxRequests) {
-				const ttl = await redisClient.ttl(key);
+				const ttl = await redisState.client.ttl(key);
 
-				await redisClient.set(`${keyPrefix}blocked:${keyId}`, "1", "EX", blockDuration);
+				await redisState.client.set(`${keyPrefix}blocked:${keyId}`, "1", "EX", blockDuration);
 				logger.warn(`Rate limit exceeded for ${userId ? `user ${userId}` : ip}`);
 
 				return respons.error(
@@ -49,7 +49,7 @@ export function rateLimiter(options?: RateLimitOptions) {
 
 			next();
 		} catch (error) {
-			logger.warn({ error }, "⚠️  Rate limitter error - skipping rate limit");
+			logger.warn({ error }, "Rate limiter error - skipping rate limit");
 			next();
 		}
 	};
