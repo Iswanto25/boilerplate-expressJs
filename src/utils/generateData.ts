@@ -48,7 +48,7 @@ const generateUserData = (count: number): UserData[] => {
 		users.push({
 			name: `${firstName} ${lastName}`,
 			email: email,
-			password: "SecurePassword123!",
+			password: process.env.SEED_USER_PASSWORD ?? "SecurePassword123!",
 			address: `${faker.location.streetAddress()}, ${faker.location.city()}, ${faker.location.state()} ${faker.location.zipCode()}`,
 			phone: "0812" + faker.string.numeric(8),
 			photo: base64Photo,
