@@ -6,10 +6,9 @@ import { apiError } from "../../../utils/respons";
 import { jwtUtils } from "../../../utils/jwt";
 import { storeToken, deleteToken } from "../../../utils/tokenStore";
 import { sendEmail } from "../../../utils/smtp";
-import { generateOTP, isPhoneNumberValid, isEmailValid } from "../../../utils/utils";
+import { generateOTP, isPhoneNumberValid, isEmailValid, pLimit } from "../../../utils/utils";
 import { generateOTPEmail } from "../../../utils/mail";
-import { v4 as uuidv4 } from "uuid";
-import pLimit from "p-limit";
+import crypto from "node:crypto";
 import os from "os";
 import { encryptionUtils, decryptSensitive } from "../../../utils/encryption";
 
@@ -66,7 +65,7 @@ export const authServices = {
 
 			await tx.refreshToken.create({
 				data: {
-					id: uuidv4(),
+					id: crypto.randomUUID(),
 					userId: user.id,
 					token: refreshToken,
 				},
@@ -125,7 +124,7 @@ export const authServices = {
 					if (existingEmailSet.has(u.email)) throw new Error("Email exists");
 
 					const hashedPassword = await encryptPassword(u.password);
-					const userId = uuidv4();
+					const userId = crypto.randomUUID();
 
 					let photoFileName: string | null = null;
 					let photoSizeMB = 0;
@@ -293,7 +292,7 @@ export const authServices = {
 
 		await prisma.refreshToken.create({
 			data: {
-				id: uuidv4(),
+				id: crypto.randomUUID(),
 				userId: user.id,
 				token: refreshToken,
 			},
@@ -336,7 +335,7 @@ export const authServices = {
 		const newRefreshToken = jwtUtils.generateRefreshToken({ id: user.id, email: user.email });
 
 		await prisma.refreshToken.create({
-			data: { id: uuidv4(), userId: user.id, token: newRefreshToken },
+			data: { id: crypto.randomUUID(), userId: user.id, token: newRefreshToken },
 		});
 		await storeToken(user.id, newAccessToken, "access", 24 * 60 * 60);
 		await storeToken(user.id, newRefreshToken, "refresh", 7 * 24 * 60 * 60);

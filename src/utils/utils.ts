@@ -63,3 +63,28 @@ export function isPhoneNumberValid(phoneNumber: string): boolean {
 export function generateOTP(): string {
 	return crypto.randomInt(100000, 999999).toString();
 }
+
+/**
+ * Native concurrency limiter to replace 'p-limit' dependency (ESM issues with Jest)
+ */
+export function pLimit(concurrency: number) {
+	const queue: (() => void)[] = [];
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+		if (queue.length > 0) queue.shift()?.();
+	};
+
+	return async <T>(fn: () => Promise<T> | T): Promise<T> => {
+		if (activeCount >= concurrency) {
+			await new Promise<void>((resolve) => queue.push(resolve));
+		}
+		activeCount++;
+		try {
+			return await fn();
+		} finally {
+			next();
+		}
+	};
+}

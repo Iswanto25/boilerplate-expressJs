@@ -14,6 +14,7 @@ module.exports = {
 		"/node_modules/",
 		"/dist/",
 		"/__tests__/helpers/", // Helpers bukan test files
+		"/src/utils/__tests__/", // Tests format native node --test (not jest)
 	],
 
 	moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
@@ -36,7 +37,7 @@ module.exports = {
 	restoreMocks: true,
 
 	// Ignore transforming ESM modules
-	transformIgnorePatterns: ["node_modules/(?!(@faker-js|nanoid)/)"],
+	transformIgnorePatterns: ["node_modules/(?!(@faker-js|uuid|p-limit|nanoid)/)"],
 
 	// ESM support
 	extensionsToTreatAsEsm: [".ts"],

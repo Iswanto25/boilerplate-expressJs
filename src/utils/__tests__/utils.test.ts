@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test, { mock } from "node:test";
+import crypto from "node:crypto";
 
 import { randomString, encryptPassword, comparePassword, isEmailValid, isPhoneNumberValid, generateOTP } from "../utils";
 
@@ -8,12 +9,12 @@ test("randomString produces expected structure", () => {
 	assert.match(value, /^\d{8}-[A-Za-z0-9]{10}$/);
 });
 
-test("password hashing and comparison works", () => {
+test("password hashing and comparison works", async () => {
 	const password = "super-secret";
-	const hash = encryptPassword(password);
+	const hash = await encryptPassword(password);
 	assert.notEqual(hash, password);
-	assert.equal(comparePassword(password, hash), true);
-	assert.equal(comparePassword("wrong-password", hash), false);
+	assert.equal(await comparePassword(password, hash), true);
+	assert.equal(await comparePassword("wrong-password", hash), false);
 });
 
 test("email validation recognizes common patterns", () => {
@@ -22,18 +23,15 @@ test("email validation recognizes common patterns", () => {
 	assert.equal(isEmailValid("user@@example.com"), false);
 });
 
-test("phone number validation requires exactly 10 digits", () => {
+test("phone number validation requires 10 to 15 digits", () => {
 	assert.equal(isPhoneNumberValid("1234567890"), true);
+	assert.equal(isPhoneNumberValid("123456789012345"), true);
 	assert.equal(isPhoneNumberValid("123456789"), false);
-	assert.equal(isPhoneNumberValid("12345678901"), false);
+	assert.equal(isPhoneNumberValid("1234567890123456"), false);
 	assert.equal(isPhoneNumberValid("notanumber"), false);
 });
 
-test("generateOTP returns a deterministic 6-digit string when Math.random is mocked", () => {
-	const restore = mock.method(Math, "random", () => 0.123456);
+test("generateOTP returns a 6-digit string", () => {
 	const otp = generateOTP();
-	restore.mock.restore();
-
-	assert.equal(otp, "211110");
 	assert.match(otp, /^[0-9]{6}$/);
 });
