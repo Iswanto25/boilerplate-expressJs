@@ -1,6 +1,6 @@
 import { fakerID_ID as faker } from "@faker-js/faker";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 interface UserData {
 	name: string;
