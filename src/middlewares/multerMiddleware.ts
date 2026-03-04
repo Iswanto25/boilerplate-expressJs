@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { Request, Response, NextFunction } from "express";
 import { respons, HttpStatus } from "../utils/respons";
+import { logger } from "../utils/logger";
 
 type FieldConfig = {
 	type: "single" | "array";
@@ -27,12 +28,12 @@ export function createUploader(config: MulterConfig) {
 
 	const allAllowed = new Set(config.fields.flatMap((f) => f.allowedFormats));
 
-	const fileFilter = (_: any, file: Express.Multer.File, cb: any) => {
+	const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
 		const ext = path.extname(file.originalname).toLowerCase();
 		const isAllowed = allAllowed.has(file.mimetype) || allAllowed.has(ext.replace(".", ""));
 
 		if (!isAllowed) {
-			return cb(new Error(`File type not allowed: ${file.mimetype}`), false);
+			return cb(new Error(`File type not allowed: ${file.mimetype}`));
 		}
 		cb(null, true);
 	};
@@ -64,7 +65,7 @@ export function createUploader(config: MulterConfig) {
 	}
 
 	return (req: Request, res: Response, next: NextFunction) => {
-		middleware(req, res, (err: any) => {
+		middleware(req, res, (err: unknown) => {
 			if (res.headersSent) return;
 			if (err instanceof multer.MulterError) {
 				switch (err.code) {
@@ -79,12 +80,12 @@ export function createUploader(config: MulterConfig) {
 				}
 			}
 
-			if (err?.message?.includes("File type not allowed")) {
+			if (err instanceof Error && err.message.includes("File type not allowed")) {
 				return respons.error("Format file tidak diizinkan", null, HttpStatus.BAD_REQUEST, res, req);
 			}
 
 			if (err) {
-				console.error("[Uploader Error]", err);
+				logger.error({ err }, "[Uploader Error]");
 				return respons.error("Terjadi kesalahan", null, HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 			}
 

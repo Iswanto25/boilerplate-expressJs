@@ -51,7 +51,7 @@ if (hasRedisConfig) {
 			redisState.isAvailable = false;
 			logger.warn("Redis not available - running without Redis cache");
 		});
-	} catch (error) {
+	} catch {
 		redisState.isAvailable = false;
 		logger.warn("Redis initialization failed - running without Redis");
 	}

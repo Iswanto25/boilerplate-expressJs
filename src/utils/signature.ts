@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
-const hashPayload = (body: any): string => {
+const hashPayload = (body: unknown): string => {
 	const str = typeof body === "string" ? body : JSON.stringify(body || {});
 	return crypto.createHash("sha256").update(str).digest("hex");
 };
@@ -42,8 +42,7 @@ export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
 		}
 
 		const bodyHash = hashPayload(req.body);
-		// const dataToVerify = `${userKey}:${timestamp}:${bodyHash}:${req.method}:${req.originalUrl}`;
-		const dataToVerify = `${userKey}:${timestamp}`;
+		const dataToVerify = `${userKey}:${timestamp}:${bodyHash}:${req.method}:${req.originalUrl}`;
 
 		const expectedSignature = crypto.createHmac("sha256", process.env.SECRET_KEY!).update(dataToVerify).digest("hex");
 
@@ -54,7 +53,7 @@ export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
 		}
 
 		next();
-	} catch (error) {
+	} catch {
 		return res.status(401).json({ success: false, message: "Gagal memproses kunci" });
 	}
 }

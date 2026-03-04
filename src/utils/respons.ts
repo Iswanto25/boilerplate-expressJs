@@ -40,8 +40,7 @@ const getRequestContext = async (req?: Request) => {
 	}
 
 	const forwardedForHeader = req.headers["x-forwarded-for"];
-	const forwardedFor = Array.isArray(forwardedForHeader) ? forwardedForHeader[0] : forwardedForHeader;
-	const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() || req.socket.remoteAddress || "unknown";
+	const ip = forwardedForHeader?.toString().split(",")[0].trim() || req.socket?.remoteAddress || "unknown";
 	const host = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
 	const userAgent = req.headers["user-agent"] || "Unknown";
 	const dateTimeNow = moment().format("YYYY-MM-DD HH:mm:ss");
@@ -50,11 +49,11 @@ const getRequestContext = async (req?: Request) => {
 };
 
 export const respons = {
-	async success(message: any, data: any, code: number, res: Response, req: Request) {
+	async success(message: string, data: unknown, code: number, res: Response, req: Request) {
 		const { user, ip, host, userAgent, dateTimeNow } = await getRequestContext(req);
 
 		// Calculate response time
-		const startTime = (req as any).startTime || Date.now();
+		const startTime = req.startTime || Date.now();
 		const responseTime = Date.now() - startTime;
 
 		const logPayload = {
@@ -71,7 +70,7 @@ export const respons = {
 				timestamp: dateTimeNow,
 				source: "Success",
 				message,
-				data,
+				data: data as any,
 			},
 		};
 
@@ -95,11 +94,11 @@ export const respons = {
 		});
 	},
 
-	async error(message: string, error: any, code: number, res: Response, req?: Request) {
+	async error(message: string, error: unknown, code: number, res: Response, req?: Request) {
 		const { user, ip, host, userAgent, dateTimeNow } = await getRequestContext(req);
 
 		// Calculate response time
-		const startTime = (req as any)?.startTime || Date.now();
+		const startTime = req?.startTime || Date.now();
 		const responseTime = Date.now() - startTime;
 
 		const logPayload = {
@@ -116,7 +115,7 @@ export const respons = {
 				timestamp: dateTimeNow,
 				source: "Error",
 				message,
-				error,
+				error: error as any,
 			},
 		};
 

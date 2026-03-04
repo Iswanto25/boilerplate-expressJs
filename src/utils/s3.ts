@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
 import { randomString } from "./utils";
+import { logger } from "./logger";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 function normalizeEndpoint(raw?: string, useSSL?: boolean): string | null {
@@ -84,8 +85,9 @@ export async function headFile(folder: string, file: string) {
 			contentType: res.ContentType,
 			lastModified: res.LastModified,
 		};
-	} catch (err: any) {
-		if (err?.$metadata?.httpStatusCode === 404) return { exists: false as const };
+	} catch (err) {
+		const error = err as { $metadata?: { httpStatusCode: number } };
+		if (error?.$metadata?.httpStatusCode === 404) return { exists: false as const };
 		throw err;
 	}
 }
@@ -113,7 +115,9 @@ export async function uploadFile(file: Express.Multer.File, folder: string) {
 	} finally {
 		try {
 			fs.unlinkSync(file.path);
-		} catch {}
+		} catch {
+			// ignore unlink error
+		}
 	}
 }
 
@@ -193,7 +197,10 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 	const totalStartTime = Date.now();
 	const memStart = process.memoryUsage().heapUsed / 1024 / 1024;
 
-	let { mimeType, base64Data } = parseBase64Input(file.trim());
+	const parsed = parseBase64Input(file.trim());
+	let mimeType = parsed.mimeType;
+	const { base64Data } = parsed;
+
 	if (mimeType === "image/jpg") mimeType = "image/jpeg";
 
 	if (allowedFormats?.length && !allowedFormats.includes(mimeType)) {
@@ -207,11 +214,12 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 	}
 
 	// 🔍 PROFILING: Decode base64 (CPU bound)
-	console.time("decode");
+	const decodeStart = Date.now();
 	const buffer = Buffer.from(stripAsciiWhitespace(base64Data), "base64");
 	const fileSizeMB = (buffer.length / 1024 / 1024).toFixed(2);
-	console.timeEnd("decode");
-	console.info(`File size: ${fileSizeMB} MB | Memory after decode: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`);
+	const decodeTime = Date.now() - decodeStart;
+	logger.info(`decode: ${decodeTime}ms`);
+	logger.info(`File size: ${fileSizeMB} MB | Memory after decode: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`);
 
 	const maxBytes = maxSizeInMB * 1024 * 1024;
 	if (buffer.length > maxBytes) {
@@ -228,8 +236,8 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 	const fileName = `${randomString()}.${ext}`;
 	const key = `${folder}/${fileName}`;
 
+	const uploadStart = Date.now();
 	try {
-		console.time("upload");
 		await s3.send(
 			new PutObjectCommand({
 				Bucket: BUCKET,
@@ -239,23 +247,24 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 				Metadata: { uploadedBy: "api" },
 			}),
 		);
-		console.timeEnd("upload");
-	} catch (e: any) {
-		console.timeEnd("upload");
+		const uploadTime = Date.now() - uploadStart;
+		logger.info(`upload: ${uploadTime}ms`);
+	} catch (e) {
+		const uploadTime = Date.now() - uploadStart;
 		const totalTime = Date.now() - totalStartTime;
-		console.error(`Upload failed after ${totalTime}ms`);
+		logger.error(`Upload failed after ${totalTime}ms (upload stage: ${uploadTime}ms)`);
 		throw Object.assign(new Error("Gagal menyimpan objek ke storage."), {
 			name: "UploadBase64Error",
 			code: "STORAGE_WRITE_FAILED",
 			httpStatus: 502,
-			details: { storage: "minio/s3", message: e?.message },
+			details: { storage: "minio/s3", message: (e as Error)?.message },
 			hint: "Periksa koneksi ke MinIO, credential, permission bucket, dan endpoint.",
 		});
 	}
 
 	const totalTime = Date.now() - totalStartTime;
 	const memEnd = process.memoryUsage().heapUsed / 1024 / 1024;
-	console.info(`Total upload time: ${totalTime}ms | Memory delta: ${(memEnd - memStart).toFixed(2)} MB`);
+	logger.info(`Total upload time: ${totalTime}ms | Memory delta: ${(memEnd - memStart).toFixed(2)} MB`);
 
 	return { fileName, folder, url: publicUrl(key) };
 }
@@ -295,8 +304,8 @@ export async function getFile(
 		});
 
 		return await getSignedUrl(s3, command, { expiresIn: expired });
-	} catch (error: any) {
-		console.error("Error getFile from MinIO:", error?.message || error);
+	} catch (error) {
+		logger.error({ err: error }, "Error getFile from MinIO");
 		return null;
 	}
 }
@@ -330,8 +339,8 @@ export async function deleteFile(
 		}
 
 		return { deleted: true, key: Key };
-	} catch (error: any) {
-		console.error("Error deleteFile from MinIO:", error?.message || error);
+	} catch (error) {
+		logger.error({ err: error }, "Error deleteFile from MinIO");
 		return { deleted: false, key: Key, reason: "error" };
 	}
 }
@@ -363,8 +372,8 @@ export async function deleteMany(items: Array<{ folder: string; file: string }>)
 			);
 			res.Deleted?.forEach((d) => d.Key && deleted.push(d.Key));
 			res.Errors?.forEach((e) => e.Key && errors.push(`${e.Key}: ${e.Code} ${e.Message || ""}`.trim()));
-		} catch (err: any) {
-			chunk.forEach((i) => errors.push(`${toKey(i)}: ${err?.message || "DeleteObjects failed"}`));
+		} catch (err) {
+			chunk.forEach((i) => errors.push(`${toKey(i)}: ${(err as Error)?.message || "DeleteObjects failed"}`));
 		}
 	}
 	return { deleted, errors };

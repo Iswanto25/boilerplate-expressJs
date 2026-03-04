@@ -29,7 +29,20 @@ jest.mock("../../../configs/database", () => ({
 			count: jest.fn(),
 			createMany: jest.fn(),
 		},
-		$transaction: jest.fn(),
+		profile: {
+			createMany: jest.fn(),
+		},
+		refreshToken: {
+			create: jest.fn(),
+			findFirst: jest.fn(),
+			update: jest.fn(),
+			delete: jest.fn(),
+			deleteMany: jest.fn(),
+		},
+		$transaction: jest.fn().mockImplementation(async (callback) => {
+			const tx = require("../../../configs/database").default;
+			return await callback(tx);
+		}),
 	},
 }));
 
@@ -40,15 +53,17 @@ jest.mock("../../../utils/s3", () => ({
 }));
 
 jest.mock("../../../utils/jwt", () => ({
-	generateAccessToken: jest.fn().mockReturnValue("mock-access-token"),
-	generateRefreshToken: jest.fn().mockReturnValue("mock-refresh-token"),
-	verifyRefreshToken: jest.fn().mockReturnValue({ userId: "test-user-id" }),
+	jwtUtils: {
+		generateAccessToken: jest.fn().mockReturnValue("mock-access-token"),
+		generateRefreshToken: jest.fn().mockReturnValue("mock-refresh-token"),
+		verifyRefreshToken: jest.fn().mockReturnValue({ id: "test-user-id", email: "test@example.com" }),
+	},
 }));
 
 jest.mock("../../../utils/tokenStore", () => ({
-	storeRefreshToken: jest.fn().mockResolvedValue(undefined),
-	getRefreshToken: jest.fn().mockResolvedValue("mock-refresh-token"),
-	deleteRefreshToken: jest.fn().mockResolvedValue(undefined),
+	storeToken: jest.fn().mockResolvedValue(undefined),
+	getToken: jest.fn().mockResolvedValue("mock-refresh-token"),
+	deleteToken: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock("../../../utils/encryption", () => ({
@@ -80,14 +95,14 @@ describe("Auth Services", () => {
 				name: registerData.name,
 			});
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+			(prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 			(prisma.user.create as jest.Mock).mockResolvedValue(fakeUser);
 
 			// Act
 			const result = await authServices.register(registerData);
 
 			// Assert
-			expect(prisma.user.findFirst).toHaveBeenCalledWith({
+			expect(prisma.user.findUnique).toHaveBeenCalledWith({
 				where: { email: registerData.email },
 			});
 			expect(prisma.user.create).toHaveBeenCalled();
@@ -100,7 +115,7 @@ describe("Auth Services", () => {
 			const registerData = generateFakeRegisterData();
 			const existingUser = generateFakeUser({ email: registerData.email });
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(existingUser);
+			(prisma.user.findUnique as jest.Mock).mockResolvedValue(existingUser);
 
 			// Act & Assert
 			await expect(authServices.register(registerData)).rejects.toThrow("Email already exists");
@@ -114,7 +129,7 @@ describe("Auth Services", () => {
 			});
 			const fakeUser = generateFakeUser();
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+			(prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 			(prisma.user.create as jest.Mock).mockResolvedValue(fakeUser);
 
 			// Act
@@ -136,20 +151,21 @@ describe("Auth Services", () => {
 				email: "test@example.com",
 				password: "correct-password",
 			});
-			const hashedPassword = encryptPassword("correct-password");
+			const hashedPassword = await encryptPassword("correct-password");
 			const fakeUser = generateFakeUser({
 				email: loginData.email,
 				password: hashedPassword,
 			});
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(fakeUser);
+			(prisma.user.findUnique as jest.Mock).mockResolvedValue(fakeUser);
 
 			// Act
 			const result = await authServices.login(loginData.email, loginData.password);
 
 			// Assert
-			expect(prisma.user.findFirst).toHaveBeenCalledWith({
+			expect(prisma.user.findUnique).toHaveBeenCalledWith({
 				where: { email: loginData.email },
+				include: { profile: true },
 			});
 			expect(result).toBeDefined();
 			expect(result.accessToken).toBe("mock-access-token");
@@ -159,7 +175,7 @@ describe("Auth Services", () => {
 		it("should throw error if user not found", async () => {
 			// Arrange
 			const loginData = generateFakeLoginData();
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+			(prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// Act & Assert
 			await expect(authServices.login(loginData.email, loginData.password)).rejects.toThrow("User not found");
@@ -168,13 +184,13 @@ describe("Auth Services", () => {
 		it("should throw error if password is incorrect", async () => {
 			// Arrange
 			const loginData = generateFakeLoginData();
-			const hashedPassword = encryptPassword("correct-password");
+			const hashedPassword = await encryptPassword("correct-password");
 			const fakeUser = generateFakeUser({
 				email: loginData.email,
 				password: hashedPassword,
 			});
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(fakeUser);
+			(prisma.user.findUnique as jest.Mock).mockResolvedValue(fakeUser);
 
 			// Act & Assert
 			await expect(authServices.login(loginData.email, "wrong-password")).rejects.toThrow();
@@ -187,7 +203,7 @@ describe("Auth Services", () => {
 			const bulkData = generateBulkRegisterData(5);
 			const fakeUsers = bulkData.map((data) => generateFakeUser({ email: data.email }));
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+			(prisma.user.findMany as jest.Mock).mockResolvedValue([]);
 			(prisma.user.create as jest.Mock).mockImplementation((args) => {
 				const user = fakeUsers.find((u) => u.email === args.data.email);
 				return Promise.resolve(user);
@@ -209,11 +225,9 @@ describe("Auth Services", () => {
 			const existingUser = generateFakeUser({ email: bulkData[1].email });
 
 			let callCount = 0;
-			(prisma.user.findFirst as jest.Mock).mockImplementation((args) => {
-				if (args.where.email === bulkData[1].email) {
-					return Promise.resolve(existingUser);
-				}
-				return Promise.resolve(null);
+			(prisma.user.findMany as jest.Mock).mockImplementation((args) => {
+				// return users emails that correspond to existingUser mock in bulk register processing
+				return Promise.resolve([{ email: existingUser.email }]);
 			});
 
 			(prisma.user.create as jest.Mock).mockImplementation(() => {
@@ -235,13 +249,14 @@ describe("Auth Services", () => {
 		it("should logout user successfully", async () => {
 			// Arrange
 			const userId = generateFakeUUID();
-			const { deleteRefreshToken } = require("../../../utils/tokenStore");
+			const { deleteToken } = require("../../../utils/tokenStore");
 
 			// Act
 			await authServices.logout(userId);
 
 			// Assert
-			expect(deleteRefreshToken).toHaveBeenCalledWith(userId);
+			expect(deleteToken).toHaveBeenCalledWith(userId, "access");
+			expect(deleteToken).toHaveBeenCalledWith(userId, "refresh");
 		});
 	});
 

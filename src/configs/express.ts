@@ -13,9 +13,15 @@ import { errorHandler, notFoundHandler } from "../middlewares/errorHandler";
 
 export const app = express();
 
+interface DecodedToken {
+	id: string;
+	email: string;
+}
+
 declare module "express-serve-static-core" {
 	interface Request {
-		user?: any;
+		user?: DecodedToken;
+		startTime?: number;
 	}
 }
 
@@ -83,7 +89,7 @@ app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
 // Response time tracking middleware
 app.use((req, res, next) => {
-	(req as any).startTime = Date.now();
+	req.startTime = Date.now();
 	next();
 });
 
