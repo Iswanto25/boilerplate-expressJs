@@ -89,7 +89,7 @@ export const authServices = {
 
 	async bulkRegister(users: LocalRegister[]) {
 		// 🔍 PROFILING: Start total time
-		console.log(`\n🚀 Starting bulk register for ${users.length} users`);
+		console.info(`Starting bulk register for ${users.length} users`);
 		const totalStartTime = Date.now();
 		const results = { total: users.length, success: 0, failed: 0, errors: [] as any[], uploadedPhotos: 0, failedPhotos: 0 };
 
@@ -103,7 +103,7 @@ export const authServices = {
 		let nikEncryptionCount = 0;
 
 		// 🔍 PROFILING: Email validation
-		console.time("⏱️  1. Email validation");
+		console.time("1. Email validation");
 		const emailValidationStart = Date.now();
 		const emails = users.map((u) => u.email);
 		const existingUsers = await prisma.user.findMany({
@@ -112,11 +112,11 @@ export const authServices = {
 		});
 		const existingEmailSet = new Set(existingUsers.map((u) => u.email));
 		emailValidationTime = Date.now() - emailValidationStart;
-		console.timeEnd("⏱️  1. Email validation");
-		console.log(`   ℹ️  Found ${existingEmailSet.size} existing emails`);
+		console.timeEnd("1. Email validation");
+		console.info(`   Found ${existingEmailSet.size} existing emails`);
 
 		// 🔍 PROFILING: Preprocessing (password hashing + photo upload + NIK encryption)
-		console.time("⏱️  2. Preprocessing (hash + upload + NIK encrypt)");
+		console.time("2. Preprocessing (hash + upload + NIK encrypt)");
 		const preprocessingStart = Date.now();
 		const preProcessedUsers = await Promise.allSettled(
 			users.map((u) =>
@@ -161,28 +161,28 @@ export const authServices = {
 			),
 		);
 		preprocessingTime = Date.now() - preprocessingStart;
-		console.timeEnd("⏱️  2. Preprocessing (hash + upload + NIK encrypt)");
+		console.timeEnd("2. Preprocessing (hash + upload + NIK encrypt)");
 
 		const validUsers = preProcessedUsers.filter((p): p is PromiseFulfilledResult<any> => p.status === "fulfilled").map((p) => p.value);
-		console.log(`   ✅ Valid users: ${validUsers.length} | ❌ Failed: ${preProcessedUsers.length - validUsers.length}`);
-		console.log(`   📸 Photos uploaded: ${results.uploadedPhotos} | Failed: ${results.failedPhotos}`);
+		console.info(`   Valid users: ${validUsers.length} | Failed: ${preProcessedUsers.length - validUsers.length}`);
+		console.info(`   Photos uploaded: ${results.uploadedPhotos} | Failed: ${results.failedPhotos}`);
 		if (nikEncryptionCount > 0) {
 			const avgNIKEncrypt = (totalNIKEncryptionTime / nikEncryptionCount).toFixed(3);
-			console.log(`   🔐 NIK encrypted: ${nikEncryptionCount} | Avg time: ${avgNIKEncrypt}ms | Total: ${totalNIKEncryptionTime}ms`);
+			console.info(`   NIK encrypted: ${nikEncryptionCount} | Avg time: ${avgNIKEncrypt}ms | Total: ${totalNIKEncryptionTime}ms`);
 		}
 
 		const failedCount = preProcessedUsers.length - validUsers.length;
 		if (failedCount > 0) {
-			console.log(`\n   ⚠️  Debugging ${failedCount} failed users...`);
+			console.warn(`   Debugging ${failedCount} failed users...`);
 			const failedSamples = preProcessedUsers.filter((p) => p.status === "rejected").slice(0, 5);
 			failedSamples.forEach((f: any, idx) => {
 				const errMsg = f.reason?.message || String(f.reason);
-				console.log(`   ${idx + 1}. ${errMsg}`);
+				console.warn(`   ${idx + 1}. ${errMsg}`);
 			});
 		}
 
 		// 🔍 PROFILING: Database batch insert
-		console.time("⏱️  3. Database insertion");
+		console.time("3. Database insertion");
 		const dbInsertionStart = Date.now();
 		const batchSize = 250;
 		for (let i = 0; i < validUsers.length; i += batchSize) {
@@ -190,7 +190,7 @@ export const authServices = {
 			const batchNum = Math.floor(i / batchSize) + 1;
 			const totalBatches = Math.ceil(validUsers.length / batchSize);
 
-			console.log(`   📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} users)`);
+			console.info(`   Processing batch ${batchNum}/${totalBatches} (${batch.length} users)`);
 			const batchStart = Date.now();
 
 			try {
@@ -218,22 +218,22 @@ export const authServices = {
 				});
 				const batchTime = Date.now() - batchStart;
 				batchTimings.push({ batchNum, users: batch.length, time: batchTime, status: "success" });
-				console.log(`   ✅ Batch ${batchNum} completed in ${batchTime}ms`);
+				console.info(`   Batch ${batchNum} completed in ${batchTime}ms`);
 			} catch (dbError: any) {
 				const batchTime = Date.now() - batchStart;
 				results.failed += batch.length;
 				results.errors.push({ batch: batchNum, error: `DB Error: ${dbError.message}` });
 				batchTimings.push({ batchNum, users: batch.length, time: batchTime, status: "failed", error: dbError.message });
-				console.log(`   ❌ Batch ${batchNum} failed in ${batchTime}ms: ${dbError.message}`);
+				console.error(`   Batch ${batchNum} failed in ${batchTime}ms: ${dbError.message}`);
 			}
 		}
 		databaseInsertionTime = Date.now() - dbInsertionStart;
-		console.timeEnd("⏱️  3. Database insertion");
+		console.timeEnd("3. Database insertion");
 
 		const totalTime = Date.now() - totalStartTime;
 		const memUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
-		console.log(`\n✅ Bulk register completed in ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
-		console.log(`📊 Success: ${results.success} | Failed: ${results.failed} | Memory used: ${memUsed} MB\n`);
+		console.info(`Bulk register completed in ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
+		console.info(`Success: ${results.success} | Failed: ${results.failed} | Memory used: ${memUsed} MB`);
 
 		// 📄 Generate and save markdown report
 		try {
@@ -267,7 +267,7 @@ export const authServices = {
 
 			await saveBulkRegisterReport(metrics);
 		} catch (reportError: any) {
-			console.error("❌ Failed to generate report:", reportError.message);
+			console.error("Failed to generate report:", reportError.message);
 		}
 
 		return results;
@@ -490,12 +490,12 @@ export const authServices = {
 
 	async getUsers() {
 		// 🔍 PROFILING: Start total time
-		console.log(`\n🚀 Starting get all users`);
+		console.info(`Starting get all users`);
 		const totalStartTime = Date.now();
 		const memStart = process.memoryUsage().heapUsed / 1024 / 1024;
 
 		// 🔍 PROFILING: Database query
-		console.time("⏱️  1. Database query");
+		console.time("1. Database query");
 		const queryStart = Date.now();
 		const users = await prisma.user.findMany({
 			select: {
@@ -513,11 +513,11 @@ export const authServices = {
 			},
 		});
 		const queryTime = Date.now() - queryStart;
-		console.timeEnd("⏱️  1. Database query");
-		console.log(`   📊 Retrieved ${users.length} users`);
+		console.timeEnd("1. Database query");
+		console.info(`   Retrieved ${users.length} users`);
 
 		// 🔍 PROFILING: URL generation
-		console.time("⏱️  2. URL generation");
+		console.time("2. URL generation");
 		const urlGenStart = Date.now();
 		const baseUrl = `${process.env.MINIO_ENDPOINT}/${process.env.MINIO_BUCKET_NAME}/${folder}`;
 
@@ -557,21 +557,21 @@ export const authServices = {
 			};
 		});
 		const urlGenerationTime = Date.now() - urlGenStart;
-		console.timeEnd("⏱️  2. URL generation");
+		console.timeEnd("2. URL generation");
 
 		// Log NIK decryption metrics
 		if (nikDecryptionCount > 0) {
 			const avgNIKDecrypt = (totalNIKDecryptionTime / nikDecryptionCount).toFixed(3);
-			console.log(`   🔓 NIK decrypted: ${nikDecryptionCount} | Avg time: ${avgNIKDecrypt}ms | Total: ${totalNIKDecryptionTime}ms`);
+			console.info(`   NIK decrypted: ${nikDecryptionCount} | Avg time: ${avgNIKDecrypt}ms | Total: ${totalNIKDecryptionTime}ms`);
 		}
 
 		const totalTime = Date.now() - totalStartTime;
 		const memEnd = process.memoryUsage().heapUsed / 1024 / 1024;
 		const memUsed = memEnd - memStart;
 
-		console.log(`\n✅ Get all users completed in ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
-		console.log(`📊 Users with photo: ${usersWithPhoto} | Without photo: ${usersWithoutPhoto}`);
-		console.log(`💾 Memory used: ${memUsed.toFixed(2)} MB\n`);
+		console.info(`Get all users completed in ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
+		console.info(`Users with photo: ${usersWithPhoto} | Without photo: ${usersWithoutPhoto}`);
+		console.info(`Memory used: ${memUsed.toFixed(2)} MB`);
 
 		// 📄 Generate and save markdown report
 		try {
@@ -595,7 +595,7 @@ export const authServices = {
 
 			await saveGetUsersReport(metrics);
 		} catch (reportError: any) {
-			console.error("❌ Failed to generate report:", reportError.message);
+			console.error("Failed to generate report:", reportError.message);
 		}
 
 		return result;

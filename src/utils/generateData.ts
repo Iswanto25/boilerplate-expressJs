@@ -65,7 +65,7 @@ const generateUserData = (count: number): UserData[] => {
 const main = () => {
 	const COUNT = 1000;
 
-	console.log(`🔄 Generating ${COUNT} unique user data...`);
+	console.info(`Generating ${COUNT} unique user data...`);
 
 	const startTime = Date.now();
 	const users = generateUserData(COUNT);
@@ -74,11 +74,11 @@ const main = () => {
 	const outputPath = path.join(process.cwd(), "test_data.json");
 	fs.writeFileSync(outputPath, JSON.stringify(users, null, 2));
 
-	console.log(`✅ Successfully generated ${users.length} users`);
-	console.log(`📁 Saved to: ${outputPath}`);
-	console.log(`⏱️  Time taken: ${endTime - startTime}ms`);
-	console.log(`\n📝 Sample data (first 3 users):`);
-	console.log(JSON.stringify(users.slice(0, 3), null, 2));
+	console.info(`Successfully generated ${users.length} users`);
+	console.info(`Saved to: ${outputPath}`);
+	console.info(`Time taken: ${endTime - startTime}ms`);
+	console.info(`Sample data (first 3 users):`);
+	console.info(JSON.stringify(users.slice(0, 3), null, 2));
 };
 
 // Run if executed directly

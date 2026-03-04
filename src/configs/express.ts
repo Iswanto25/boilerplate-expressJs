@@ -91,7 +91,7 @@ app.use(
 	pinoHttp({
 		logger,
 		// Only log HTTP in development, and make it less verbose
-		autoLogging: process.env.NODE_ENV === "development" ? false : false,
+		autoLogging: process.env.NODE_ENV !== "production",
 		customSuccessMessage: (req, res, responseTime) => {
 			return `${req.method} ${req.url} ${res.statusCode} - ${responseTime}ms`;
 		},

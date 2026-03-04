@@ -9,7 +9,7 @@
  *   "generate-api-key": "ts-node scripts/generateApiKey.ts"
  */
 
-import crypto from "crypto";
+import crypto from "node:crypto";
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -29,8 +29,8 @@ function main() {
 	const secretKey = process.env.SECRET_KEY;
 
 	if (!userKey || !secretKey) {
-		console.error("❌ Error: USER_KEY dan SECRET_KEY harus diset di file .env");
-		console.error("\nTambahkan ke .env:");
+		console.error("Error: USER_KEY dan SECRET_KEY harus diset di file .env");
+		console.error("Tambahkan ke .env:");
 		console.error("USER_KEY=your-user-key");
 		console.error("SECRET_KEY=your-secret-key");
 		process.exit(1);
@@ -38,18 +38,18 @@ function main() {
 
 	const apiKey = generateApiKey(userKey, secretKey);
 
-	console.log("\n========================================");
-	console.log("🔑 API Key Generator");
-	console.log("========================================");
-	console.log(`User Key: ${userKey}`);
-	console.log(`API Key: ${apiKey}`);
-	console.log("========================================");
-	console.log("\n📝 Cara menggunakan:");
-	console.log("Tambahkan header berikut pada request:");
-	console.log(`x-api-key: ${apiKey}`);
-	console.log("\n⏰ Catatan:");
-	console.log("API Key ini valid selama 5 menit");
-	console.log("========================================\n");
+	console.info("========================================");
+	console.info("API Key Generator");
+	console.info("========================================");
+	console.info(`User Key: ${userKey}`);
+	console.info(`API Key: ${apiKey}`);
+	console.info("========================================");
+	console.info("Cara menggunakan:");
+	console.info("Tambahkan header berikut pada request:");
+	console.info(`x-api-key: ${apiKey}`);
+	console.info("Catatan:");
+	console.info("API Key ini valid selama 5 menit");
+	console.info("========================================");
 }
 
 main();
