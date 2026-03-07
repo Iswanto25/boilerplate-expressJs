@@ -3,8 +3,8 @@
  * Menggunakan @faker-js/faker untuk dummy data
  */
 
-import { authServices } from "./authServices";
-import prisma from "../../../configs/database";
+import { authServices } from "./authServices.js";
+import prisma from "../../../configs/database.js";
 import {
 	generateFakeUser,
 	generateFakeRegisterData,
@@ -12,11 +12,11 @@ import {
 	generateBulkRegisterData,
 	setFakerSeed,
 	generateFakeUUID,
-} from "../../../../__tests__/helpers/faker.helper";
-import { encryptPassword, comparePassword } from "../../../utils/utils";
+} from "../../../../__tests__/helpers/faker.helper.js";
+import { encryptPassword, comparePassword } from "../../../utils/utils.js";
 
 // Mock dependencies
-jest.mock("../../../configs/database", () => ({
+jest.mock("../../../configs/database.js", () => ({
 	__esModule: true,
 	default: {
 		user: {
@@ -40,19 +40,19 @@ jest.mock("../../../configs/database", () => ({
 			deleteMany: jest.fn(),
 		},
 		$transaction: jest.fn().mockImplementation(async (callback) => {
-			const tx = require("../../../configs/database").default;
+			const tx = require("../../../configs/database.js").default;
 			return await callback(tx);
 		}),
 	},
 }));
 
-jest.mock("../../../utils/s3", () => ({
+jest.mock("../../../utils/s3.js", () => ({
 	uploadBase64: jest.fn().mockResolvedValue("https://example.com/photo.jpg"),
 	getFile: jest.fn().mockReturnValue("https://example.com/photo.jpg"),
 	deleteFile: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../../utils/jwt", () => ({
+jest.mock("../../../utils/jwt.js", () => ({
 	jwtUtils: {
 		generateAccessToken: jest.fn().mockReturnValue("mock-access-token"),
 		generateRefreshToken: jest.fn().mockReturnValue("mock-refresh-token"),
@@ -60,13 +60,13 @@ jest.mock("../../../utils/jwt", () => ({
 	},
 }));
 
-jest.mock("../../../utils/tokenStore", () => ({
+jest.mock("../../../utils/tokenStore.js", () => ({
 	storeToken: jest.fn().mockResolvedValue(undefined),
 	getToken: jest.fn().mockResolvedValue("mock-refresh-token"),
 	deleteToken: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../../utils/encryption", () => ({
+jest.mock("../../../utils/encryption.js", () => ({
 	encryptionUtils: {
 		encryptSensitive: jest.fn().mockReturnValue({
 			version: "v1",
@@ -201,11 +201,11 @@ describe("Auth Services", () => {
 		it("should register multiple users successfully", async () => {
 			// Arrange
 			const bulkData = generateBulkRegisterData(5);
-			const fakeUsers = bulkData.map((data) => generateFakeUser({ email: data.email }));
+			const fakeUsers = bulkData.map((data: any) => generateFakeUser({ email: data.email }));
 
 			(prisma.user.findMany as jest.Mock).mockResolvedValue([]);
 			(prisma.user.create as jest.Mock).mockImplementation((args) => {
-				const user = fakeUsers.find((u) => u.email === args.data.email);
+				const user = fakeUsers.find((u: any) => u.email === args.data.email);
 				return Promise.resolve(user);
 			});
 
@@ -249,7 +249,7 @@ describe("Auth Services", () => {
 		it("should logout user successfully", async () => {
 			// Arrange
 			const userId = generateFakeUUID();
-			const { deleteToken } = require("../../../utils/tokenStore");
+			const { deleteToken } = require("../../../utils/tokenStore.js");
 
 			// Act
 			await authServices.logout(userId);

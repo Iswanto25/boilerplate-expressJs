@@ -1,4 +1,4 @@
-import { app } from "./configs/express";
+import { app } from "./configs/express.js";
 import http from "http";
 import dotenv from "dotenv";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
