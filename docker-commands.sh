@@ -25,7 +25,7 @@ case "$1" in
   
   logs)
     echo "📋 Viewing logs..."
-    docker compose logs -f ${2:-takalar-sinaka-backend}
+    docker compose logs -f ${2:-boilerplate-express-backend}
     ;;
   
   status)
@@ -35,17 +35,17 @@ case "$1" in
   
   migrate)
     echo "🗄️  Running database migrations..."
-    docker compose exec takalar-sinaka-backend npx prisma migrate deploy
+    docker compose exec boilerplate-express-backend npx prisma migrate deploy
     ;;
   
   shell)
     echo "💻 Opening shell in app container..."
-    docker compose exec takalar-sinaka-backend sh
+    docker compose exec boilerplate-express-backend sh
     ;;
   
   rebuild)
     echo "🔨 Rebuilding and restarting app..."
-    docker compose up -d --build takalar-sinaka-backend
+    docker compose up -d --build boilerplate-express-backend
     ;;
   
   clean)
@@ -76,7 +76,7 @@ case "$1" in
     echo "  start        - Start all services"
     echo "  stop         - Stop all services"
     echo "  restart      - Restart all services"
-    echo "  logs         - View logs (add service name, e.g: logs takalar-sinaka-backend)"
+    echo "  logs         - View logs (add service name, e.g: logs boilerplate-express-backend)"
     echo "  status       - Check service status"
     echo "  migrate      - Run database migrations"
     echo "  shell        - Open shell in app container"
@@ -86,7 +86,7 @@ case "$1" in
     echo ""
     echo "Examples:"
     echo "  ./docker-commands.sh start"
-    echo "  ./docker-commands.sh logs takalar-sinaka-backend"
+    echo "  ./docker-commands.sh logs boilerplate-express-backend"
     echo "  ./docker-commands.sh migrate"
     echo ""
     ;;
