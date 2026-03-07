@@ -1,5 +1,5 @@
-import { redisState } from "../configs/redis";
-import { logger } from "./logger";
+import { redisState } from "../configs/redis.js";
+import { logger } from "./logger.js";
 
 const ACCESS_TOKEN_PREFIX = "access_token:";
 const REFRESH_TOKEN_PREFIX = "refresh_token:";
