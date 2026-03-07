@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { redisState } from "../configs/redis";
-import { HttpStatus, respons } from "./respons";
-import { logger } from "./logger";
+import { redisState } from "../configs/redis.js";
+import { HttpStatus, respons } from "./respons.js";
+import { logger } from "./logger.js";
 
 interface RateLimitOptions {
 	keyPrefix?: string;

@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"description": "",
 	"main": "app.ts",
+	"type": "module",
 	"scripts": {
 		"prettier": "npx prettier . --write",
 		"lint": "eslint \"src/**/*.ts\"",
@@ -65,6 +66,7 @@
 		"@types/moment": "^2.11.29",
 		"@types/multer": "^2.0.0",
 		"@types/node": "^24.9.1",
+		"@types/nodemailer": "^7.0.11",
 		"@types/p-limit": "^2.1.0",
 		"@types/supertest": "^6.0.3",
 		"@typescript-eslint/eslint-plugin": "^8.46.4",

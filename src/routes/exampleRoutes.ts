@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
-import { verifyApiKey } from "../utils/signature";
-import { respons, HttpStatus } from "../utils/respons";
+import { verifyApiKey } from "../utils/signature.js";
+import { respons, HttpStatus } from "../utils/respons.js";
 
 const router = Router();
 
