@@ -1,68 +1,52 @@
 version: "3.8"
 
 services:
-    takalar-sinaka-backend: # PERBAIKAN: Ganti 'app-staging' menjadi nama unik ini
-        image: takalar-sinaka-backend:1.0.0
-        container_name: takalar-sinaka-backend
+    boilerplate-express-backend:
+        image: boilerplate-express-backend:1.0.0
+        container_name: boilerplate-express-backend
         build:
             context: .
             dockerfile: Dockerfile
         volumes:
-            - takalar-sinaka-backend_logs:/src/logs
+            - boilerplate-express-backend_logs:/src/logs
         environment:
             DOCKER_ENV: "true"
-            APP_NAME: ${APP_NAME:-Takalar Sinaka}
-            NODE_ENV: ${NODE_ENV:-development}
-            PORT: ${PORT:-4039}
-            DATABASE_URL: "postgresql://dev:1sampai8@194.233.94.133:5432/takalar-sinaka?schema=public&connection_limit=10&pool_timeout=30&connect_timeout=5&sslmode=prefer"
-            REDIS_HOST: 194.233.94.133
-            REDIS_PORT: ${REDIS_PORT:-6379}
-            REDIS_PASSWORD: ${REDIS_PASSWORD:-redis1sampai8}
-            REDIS_DB: ${REDIS_DB:-0}
-            DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-8c2bbfbfe1d2d32232f18f824e85dd595b4a204b5ac97354259041b72d78114e}
-            JWT_SECRET: ${JWT_SECRET:-supersecret123}
-            JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-refreshsecret456}
-            ACCESS_TOKEN_EXPIRES_IN: ${ACCESS_TOKEN_EXPIRES_IN:-15m}
-            REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-7d}
-            MINIO_ENDPOINT: ${MINIO_ENDPOINT:-storage.zmidevelopment.com}
-            MINIO_PORT: ${MINIO_PORT:-443}
-            MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-PQnQbtjl6uXhWOQmQ9az}
-            MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-zhkA9a3VdCPMnysPBmTdyhQ7hjCi0aFyvSgZT7SI}
-            MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-takalar}
-            MINIO_USE_SSL: ${MINIO_USE_SSL:-true}
-            STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-https://storage.zmidevelopment.com}
-            MINIO_REGION: ${MINIO_REGION:-us-east-1}
-            SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-            SMTP_PORT: ${SMTP_PORT:-587}
-            SMTP_SECURE: ${SMTP_SECURE:-false}
-            SMTP_USER: ${SMTP_USER:-devzen547@gmail.com}
-            SMTP_PASS: ${SMTP_PASS:-rcvw hfuk pmdx rblt}
-            SMTP_FROM: ${SMTP_FROM:-no-reply@yourapp.com}
-            USER_KEY: ${USER_KEY:-superSecret}
-            SECRET_KEY: ${SECRET_KEY:-secretKey}
+            APP_NAME: ${APP_NAME}
+            NODE_ENV: ${NODE_ENV}
+            PORT: ${PORT}
+            DATABASE_URL: ${DATABASE_URL}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REDIS_PASSWORD: ${REDIS_PASSWORD}
+            REDIS_DB: ${REDIS_DB}
+            DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
+            JWT_SECRET: ${JWT_SECRET}
+            JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+            ACCESS_TOKEN_EXPIRES_IN: ${ACCESS_TOKEN_EXPIRES_IN}
+            REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN}
+            MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+            MINIO_PORT: ${MINIO_PORT}
+            MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+            MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+            MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+            MINIO_USE_SSL: ${MINIO_USE_SSL}
+            STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL}
+            MINIO_REGION: ${MINIO_REGION}
+            SMTP_HOST: ${SMTP_HOST}
+            SMTP_PORT: ${SMTP_PORT}
+            SMTP_SECURE: ${SMTP_SECURE}
+            SMTP_USER: ${SMTP_USER}
+            SMTP_PASS: ${SMTP_PASS}
+            SMTP_FROM: ${SMTP_FROM}
+            USER_KEY: ${USER_KEY}
+            SECRET_KEY: ${SECRET_KEY}
         ports:
-            - "${PORT:-4039}:${PORT:-4039}"
+            - "${PORT}:${PORT}"
         extra_hosts:
             - "host.docker.internal:host-gateway"
         restart: unless-stopped
-        networks:
-            - traefik
-        labels:
-            - "traefik.enable=true"
-            - "traefik.docker.network=traefik"
-
-            # Perbaikan Nama Router agar unik & konsisten (takalar-sinaka)
-            - "traefik.http.routers.takalar-sinaka.rule=Host(`api-sinaka.zmidevelopment.com`)"
-            - "traefik.http.routers.takalar-sinaka.entrypoints=websecure"
-            - "traefik.http.routers.takalar-sinaka.tls=true"
-            - "traefik.http.routers.takalar-sinaka.tls.certresolver=letsencryptresolver"
-            - "traefik.http.services.takalar-sinaka.loadbalancer.server.port=4039"
 
 volumes:
-    takalar-sinaka-backend_logs:
+    boilerplate-express-backend_logs:
     uploads_data:
     logger_data:
-
-networks:
-    traefik:
-        external: true
