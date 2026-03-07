@@ -3,9 +3,9 @@
  * Menggunakan @faker-js/faker untuk dummy data
  */
 
-import { authController } from "./authControllers";
-import { authServices } from "../services/authServices";
-import { createMockRequest, createMockResponse, createMockAuthenticatedUser } from "../../../../__tests__/helpers/mock.helper";
+import { authController } from "./authControllers.js";
+import { authServices } from "../services/authServices.js";
+import { createMockRequest, createMockResponse, createMockAuthenticatedUser } from "../../../../__tests__/helpers/mock.helper.js";
 import {
 	generateFakeUser,
 	generateFakeRegisterData,
@@ -13,11 +13,11 @@ import {
 	generateBulkRegisterData,
 	generateFakeTokens,
 	setFakerSeed,
-} from "../../../../__tests__/helpers/faker.helper";
-import { HttpStatus } from "../../../utils/respons";
+} from "../../../../__tests__/helpers/faker.helper.js";
+import { HttpStatus } from "../../../utils/respons.js";
 
 // Mock auth services
-jest.mock("../services/authServices", () => ({
+jest.mock("../services/authServices.js", () => ({
 	authServices: {
 		register: jest.fn(),
 		login: jest.fn(),

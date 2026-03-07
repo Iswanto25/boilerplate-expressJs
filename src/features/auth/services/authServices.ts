@@ -1,15 +1,15 @@
-import { authRepository } from "../repository/authRepository";
-import { uploadBase64, getFile, deleteFile } from "../../../utils/s3";
-import { apiError } from "../../../utils/respons";
-import { jwtUtils } from "../../../utils/jwt";
-import { storeToken, deleteToken } from "../../../utils/tokenStore";
-import { sendEmail } from "../../../utils/smtp";
-import { generateOTP, encryptPassword, comparePassword, isEmailValid, pLimit } from "../../../utils/utils";
-import { generateOTPEmail } from "../../../utils/mail";
+import { authRepository } from "../repository/authRepository.js";
+import { uploadBase64, getFile, deleteFile } from "../../../utils/s3.js";
+import { apiError } from "../../../utils/respons.js";
+import { jwtUtils } from "../../../utils/jwt.js";
+import { storeToken, deleteToken } from "../../../utils/tokenStore.js";
+import { sendEmail } from "../../../utils/smtp.js";
+import { generateOTP, encryptPassword, comparePassword, isEmailValid, pLimit } from "../../../utils/utils.js";
+import { generateOTPEmail } from "../../../utils/mail.js";
 import crypto from "node:crypto";
 import os from "node:os";
-import { encryptionUtils, decryptSensitive } from "../../../utils/encryption";
-import { logger } from "../../../utils/logger";
+import { encryptionUtils, decryptSensitive } from "../../../utils/encryption.js";
+import { logger } from "../../../utils/logger.js";
 
 interface LocalRegister {
 	name: string;
@@ -27,7 +27,7 @@ const limit = pLimit(CONCURRENCY_LIMIT);
 
 export const authServices = {
 	async register(data: LocalRegister) {
-		return await authRepository.transaction(async (tx) => {
+		return await authRepository.transaction(async (tx: any) => {
 			if (!isEmailValid(data.email)) throw new apiError(400, "Invalid email");
 
 			const existing = await authRepository.findUserByEmail(data.email, tx);
@@ -106,17 +106,17 @@ export const authServices = {
 		let nikEncryptionCount = 0;
 
 		const emailValidationStart = Date.now();
-		const emails = users.map((u) => u.email);
+		const emails = users.map((u: any) => u.email);
 
 		const existingUsers = await authRepository.findUsersByEmails(emails);
-		const existingEmailSet = new Set(existingUsers.map((u) => u.email));
+		const existingEmailSet = new Set(existingUsers.map((u: any) => u.email));
 
 		emailValidationTime = Date.now() - emailValidationStart;
 		logger.info(`1. Email validation: ${emailValidationTime}ms`);
 
 		const preprocessingStart = Date.now();
 		const preProcessedUsers = await Promise.allSettled(
-			users.map((u) =>
+			users.map((u: any) =>
 				limit(async () => {
 					if (!isEmailValid(u.email)) throw new Error("Invalid email");
 					if (existingEmailSet.has(u.email)) throw new Error("Email exists");
@@ -171,7 +171,7 @@ export const authServices = {
 			const batchStart = Date.now();
 
 			try {
-				await authRepository.transaction(async (tx) => {
+				await authRepository.transaction(async (tx: any) => {
 					await authRepository.createUsersBatch(
 						batch.map((u) => ({
 							id: u.id,
@@ -210,7 +210,7 @@ export const authServices = {
 		const memUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
 
 		try {
-			const { saveBulkRegisterReport } = await import("../../../utils/bulkRegisterReport");
+			const { saveBulkRegisterReport } = await import("../../../utils/bulkRegisterReport.js");
 			const metrics = {
 				totalUsers: users.length,
 				timestamp: new Date().toISOString(),
@@ -251,7 +251,7 @@ export const authServices = {
 		const user = await authRepository.findUserByEmail(email);
 		if (!user) throw new apiError(400, "User not found");
 
-		const isValid = await comparePassword(password, user.password);
+		const isValid = await comparePassword(password, user.password || "");
 		if (!isValid) throw new apiError(400, "Invalid password");
 
 		await authRepository.deleteRefreshTokensByUserId(user.id);
@@ -358,7 +358,7 @@ export const authServices = {
 	},
 
 	async updateProfile(userId: string, data: Partial<{ name: string; phone: string; address: string; photo: string }>) {
-		return await authRepository.transaction(async (tx) => {
+		return await authRepository.transaction(async (tx: any) => {
 			const currentUser = await authRepository.findUserById(userId, tx);
 			if (!currentUser) throw new apiError(400, "User not found");
 
@@ -396,7 +396,7 @@ export const authServices = {
 	},
 
 	async deleteProfile(userId: string) {
-		return await authRepository.transaction(async (tx) => {
+		return await authRepository.transaction(async (tx: any) => {
 			const user = await authRepository.findUserById(userId, tx);
 			if (!user) throw new apiError(400, "User not found");
 
@@ -468,7 +468,7 @@ export const authServices = {
 		const memUsed = process.memoryUsage().heapUsed / 1024 / 1024 - memStart;
 
 		try {
-			const { saveGetUsersReport } = await import("../../../utils/getUsersReport");
+			const { saveGetUsersReport } = await import("../../../utils/getUsersReport.js");
 			const metrics = {
 				timestamp: new Date().toISOString(),
 				totalUsers: users.length,
