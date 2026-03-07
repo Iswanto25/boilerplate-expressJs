@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { jwtUtils } from "../utils/jwt";
-import { respons, HttpStatus } from "../utils/respons";
-import { getStoredToken } from "../utils/tokenStore";
-import prisma from "../configs/database";
+import { jwtUtils } from "../utils/jwt.js";
+import { respons, HttpStatus } from "../utils/respons.js";
+import { getStoredToken } from "../utils/tokenStore.js";
+import prisma from "../configs/database.js";
 
 export const authenticate = {
 	async checkToken(req: Request): Promise<{ valid: boolean; userId?: string }> {
@@ -23,14 +23,18 @@ export const authenticate = {
 	},
 
 	async verifyToken(req: Request, res: Response, next: NextFunction) {
-		const result = await authenticate.checkToken(req);
+		const result = await (this as any).checkToken(req);
 		if (!result.valid || !result.userId) {
 			return respons.error("Unauthorized", null, HttpStatus.UNAUTHORIZED, res, req);
 		}
 
 		const existingUser = await prisma.user.findUnique({ where: { id: result.userId } });
 
-		req.user = existingUser;
+		if (!existingUser) {
+			return respons.error("User not found", null, HttpStatus.UNAUTHORIZED, res, req);
+		}
+
+		req.user = existingUser as any;
 		next();
 	},
 };

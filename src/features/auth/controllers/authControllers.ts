@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { authServices } from "../services/authServices";
-import { HttpStatus, respons } from "../../../utils/respons";
+import { authServices } from "../services/authServices.js";
+import { HttpStatus, respons } from "../../../utils/respons.js";
 
 export const authController = {
 	register: async (req: Request, res: Response) => {
@@ -52,6 +52,9 @@ export const authController = {
 
 	logout: async (req: Request, res: Response) => {
 		try {
+			if (!req.user) {
+				return respons.error("User tidak ditemukan", null, HttpStatus.UNAUTHORIZED, res, req);
+			}
 			await authServices.logout(req.user.id);
 			return respons.success("Berhasil logout", null, HttpStatus.OK, res, req);
 		} catch (error) {
@@ -85,6 +88,9 @@ export const authController = {
 
 	profile: async (req: Request, res: Response) => {
 		try {
+			if (!req.user) {
+				return respons.error("User tidak ditemukan", null, HttpStatus.UNAUTHORIZED, res, req);
+			}
 			const user = await authServices.profile(req.user.id);
 			return respons.success("Berhasil get profile", user, HttpStatus.OK, res, req);
 		} catch (error) {

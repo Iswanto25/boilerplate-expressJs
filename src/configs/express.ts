@@ -1,15 +1,15 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import cors, { CorsOptions } from "cors";
 import compression from "compression";
-import pinoHttp from "pino-http";
+import { pinoHttp } from "pino-http";
 import helmet from "helmet";
 
-import { logger } from "../utils/logger";
-import { respons, HttpStatus } from "../utils/respons";
-import authRoutes from "../routes/authRoutes";
-import fileRoutes from "../routes/fileRoutes";
-import exampleRoutes from "../routes/exampleRoutes";
-import { errorHandler, notFoundHandler } from "../middlewares/errorHandler";
+import { logger } from "../utils/logger.js";
+import { respons, HttpStatus } from "../utils/respons.js";
+import authRoutes from "../routes/authRoutes.js";
+import fileRoutes from "../routes/fileRoutes.js";
+import exampleRoutes from "../routes/exampleRoutes.js";
+import { errorHandler, notFoundHandler } from "../middlewares/errorHandler.js";
 
 export const app = express();
 
@@ -61,7 +61,7 @@ app.use(
 	}),
 );
 
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next) => {
 	res.setHeader("X-XSS-Protection", "0");
 	res.setHeader(
 		"Permissions-Policy",
@@ -88,7 +88,7 @@ app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
 // Response time tracking middleware
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next) => {
 	req.startTime = Date.now();
 	next();
 });
@@ -98,10 +98,10 @@ app.use(
 		logger,
 		// Only log HTTP in development, and make it less verbose
 		autoLogging: process.env.NODE_ENV !== "production",
-		customSuccessMessage: (req, res, responseTime) => {
+		customSuccessMessage: (req: Request, res: Response, responseTime: number) => {
 			return `${req.method} ${req.url} ${res.statusCode} - ${responseTime}ms`;
 		},
-		customErrorMessage: (req, res, err) => {
+		customErrorMessage: (req: Request, res: Response, err: Error) => {
 			return `${req.method} ${req.url} ${res.statusCode} - ERROR: ${err.message}`;
 		},
 		quietReqLogger: true,

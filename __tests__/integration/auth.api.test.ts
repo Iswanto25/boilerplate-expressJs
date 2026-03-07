@@ -5,12 +5,12 @@
  */
 
 import request from "supertest";
-import { app } from "../../src/configs/express";
-import { generateFakeRegisterData, generateFakeLoginData, generateBulkRegisterData, setFakerSeed } from "../helpers/faker.helper";
-import prisma from "../../src/configs/database";
+import { app } from "../../src/configs/express.js";
+import { generateFakeRegisterData, generateFakeLoginData, generateBulkRegisterData, setFakerSeed } from "../helpers/faker.helper.js";
+import prisma from "../../src/configs/database.js";
 
 // Mock database untuk integration test
-jest.mock("../../src/configs/database", () => ({
+jest.mock("../../src/configs/database.js", () => ({
 	__esModule: true,
 	default: {
 		user: {
