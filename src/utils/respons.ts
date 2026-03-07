@@ -1,7 +1,7 @@
 import { Response, Request } from "express";
-import prisma from "../configs/database";
-import { authenticate } from "../middlewares/authMiddleware";
-import { logger } from "./logger";
+import prisma from "../configs/database.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
+import { logger } from "./logger.js";
 import moment from "moment";
 moment.locale("id");
 
@@ -35,7 +35,7 @@ const getRequestContext = async (req?: Request) => {
 		const result = await authenticate.checkToken(req);
 		if (result.valid && result.userId) {
 			userId = result.userId;
-			user = await prisma.user.findUnique({ where: { id: userId } });
+			user = await prisma.user.findUnique({ where: { id: userId }, include: { profile: true } });
 		}
 	}
 
@@ -58,7 +58,7 @@ export const respons = {
 
 		const logPayload = {
 			userId: user?.id,
-			name: user?.name || "Unknown",
+			name: (user as any)?.profile?.name || "Unknown",
 			role: user?.role,
 			ip: ip,
 			date: dateTimeNow,
@@ -76,7 +76,7 @@ export const respons = {
 
 		// Simplified console log with response time
 		const path = req.path || req.originalUrl;
-		const userName = user?.name || "Guest";
+		const userName = (user as any)?.profile?.name || "Guest";
 		logger.info(`✅ ${req.method} ${path} ${code} | ${userName} | ${responseTime}ms`);
 
 		try {
@@ -103,7 +103,7 @@ export const respons = {
 
 		const logPayload = {
 			userId: user?.id,
-			name: user?.name || "Unknown",
+			name: (user as any)?.profile?.name || "Unknown",
 			role: user?.role,
 			ip: ip,
 			date: dateTimeNow,
@@ -121,7 +121,7 @@ export const respons = {
 
 		// Simplified console log with response time
 		const path = req?.path || req?.originalUrl || "unknown";
-		const userName = user?.name || "Guest";
+		const userName = (user as any)?.profile?.name || "Guest";
 		logger.error(`❌ ${req?.method} ${path} ${code} | ${message} | ${userName} | ${responseTime}ms`);
 
 		try {

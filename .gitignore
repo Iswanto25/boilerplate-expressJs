@@ -43,5 +43,6 @@ temp/
 *.tmp
 
 # Prisma
+src/generated/
 *.db
 *.db-journal

@@ -11,8 +11,8 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
-import { randomString } from "./utils";
-import { logger } from "./logger";
+import { randomString } from "./utils.js";
+import { logger } from "./logger.js";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 function normalizeEndpoint(raw?: string, useSSL?: boolean): string | null {
@@ -391,7 +391,7 @@ export async function deleteByPrefix(prefix: string): Promise<{ deleted: number;
 	let totalErrors = 0;
 
 	do {
-		const listed = await s3.send(
+		const listed: any = await s3.send(
 			new ListObjectsV2Command({
 				Bucket: BUCKET,
 				Prefix: prefix.endsWith("/") ? prefix : `${prefix}/`,
@@ -400,20 +400,20 @@ export async function deleteByPrefix(prefix: string): Promise<{ deleted: number;
 			}),
 		);
 
-		const objects = listed.Contents ?? [];
+		const objects = (listed.Contents as any[]) ?? [];
 		if (!objects.length) break;
 
 		const res = await s3.send(
 			new DeleteObjectsCommand({
 				Bucket: BUCKET,
-				Delete: { Objects: objects.map((o) => ({ Key: o.Key ?? "" })).filter((o) => o.Key), Quiet: true },
+				Delete: { Objects: objects.map((o: any) => ({ Key: o.Key ?? "" })).filter((o: any) => o.Key), Quiet: true },
 			}),
 		);
 
 		totalDeleted += res.Deleted?.length || 0;
 		totalErrors += res.Errors?.length || 0;
 
-		continuationToken = listed.IsTruncated ? listed.NextContinuationToken : undefined;
+		continuationToken = listed.IsTruncated ? (listed.NextContinuationToken as string) : undefined;
 	} while (continuationToken);
 
 	return { deleted: totalDeleted, errors: totalErrors };
