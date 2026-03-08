@@ -1,15 +1,15 @@
-import { authRepository } from "../repository/authRepository.js";
-import { uploadBase64, getFile, deleteFile } from "../../../utils/s3.js";
-import { apiError } from "../../../utils/respons.js";
-import { jwtUtils } from "../../../utils/jwt.js";
-import { storeToken, deleteToken } from "../../../utils/tokenStore.js";
-import { sendEmail } from "../../../utils/smtp.js";
-import { generateOTP, encryptPassword, comparePassword, isEmailValid, pLimit } from "../../../utils/utils.js";
-import { generateOTPEmail } from "../../../utils/mail.js";
+import { authRepository } from "@/features/auth/repository/authRepository.js";
+import { uploadBase64, getFile, deleteFile } from "@/utils/s3.js";
+import { apiError } from "@/utils/respons.js";
+import { jwtUtils } from "@/utils/jwt.js";
+import { storeToken, deleteToken } from "@/utils/tokenStore.js";
+import { sendEmail } from "@/utils/smtp.js";
+import { generateOTP, encryptPassword, comparePassword, isEmailValid, pLimit } from "@/utils/utils.js";
+import { generateOTPEmail } from "@/utils/mail.js";
 import crypto from "node:crypto";
 import os from "node:os";
-import { encryptionUtils, decryptSensitive } from "../../../utils/encryption.js";
-import { logger } from "../../../utils/logger.js";
+import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
+import { logger } from "@/utils/logger.js";
 
 interface LocalRegister {
 	name: string;
@@ -85,165 +85,6 @@ export const authServices = {
 		});
 	},
 
-	async bulkRegister(users: LocalRegister[]) {
-		logger.info(`Starting bulk register for ${users.length} users`);
-		const totalStartTime = Date.now();
-		const results = {
-			total: users.length,
-			success: 0,
-			failed: 0,
-			errors: [] as Array<{ batch: number; error: string }>,
-			uploadedPhotos: 0,
-			failedPhotos: 0,
-		};
-
-		let emailValidationTime = 0;
-		let preprocessingTime = 0;
-		let databaseInsertionTime = 0;
-		const batchTimings: Array<{ batchNum: number; users: number; time: number; status: "success" | "failed"; error?: string }> = [];
-		let totalPhotoSizeMB = 0;
-		let totalNIKEncryptionTime = 0;
-		let nikEncryptionCount = 0;
-
-		const emailValidationStart = Date.now();
-		const emails = users.map((u: any) => u.email);
-
-		const existingUsers = await authRepository.findUsersByEmails(emails);
-		const existingEmailSet = new Set(existingUsers.map((u: any) => u.email));
-
-		emailValidationTime = Date.now() - emailValidationStart;
-		logger.info(`1. Email validation: ${emailValidationTime}ms`);
-
-		const preprocessingStart = Date.now();
-		const preProcessedUsers = await Promise.allSettled(
-			users.map((u: any) =>
-				limit(async () => {
-					if (!isEmailValid(u.email)) throw new Error("Invalid email");
-					if (existingEmailSet.has(u.email)) throw new Error("Email exists");
-
-					const hashedPassword = await encryptPassword(u.password);
-					const userId = crypto.randomUUID();
-
-					let photoFileName: string | null = null;
-					let photoSizeMB = 0;
-					if (u.photo) {
-						try {
-							const uploadResult = await uploadBase64("users", u.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
-							photoFileName = uploadResult.fileName;
-							results.uploadedPhotos++;
-
-							const base64Length = u.photo.replace(/^data:image\/\w+;base64,/, "").length;
-							photoSizeMB = (base64Length * 0.75) / 1024 / 1024;
-							totalPhotoSizeMB += photoSizeMB;
-						} catch {
-							photoFileName = null;
-							results.failedPhotos++;
-						}
-					}
-
-					let encryptedNIK: string | null = null;
-					if (u.NIK) {
-						const nikEncryptStart = Date.now();
-						const { ciphertext } = encryptionUtils.encryptSensitive(u.NIK);
-						encryptedNIK = ciphertext;
-						totalNIKEncryptionTime += Date.now() - nikEncryptStart;
-						nikEncryptionCount++;
-					}
-
-					return { ...u, hashedPassword, id: userId, photoFileName, photoSizeMB, encryptedNIK };
-				}),
-			),
-		);
-		preprocessingTime = Date.now() - preprocessingStart;
-		logger.info(`2. Preprocessing (hash + upload + NIK encrypt): ${preprocessingTime}ms`);
-
-		const validUsers = preProcessedUsers
-			.filter((p): p is PromiseFulfilledResult<any> => p.status === "fulfilled")
-			.map((p) => p.value as Record<string, any>);
-		results.failed += preProcessedUsers.length - validUsers.length;
-
-		const dbInsertionStart = Date.now();
-		const batchSize = 250;
-
-		for (let i = 0; i < validUsers.length; i += batchSize) {
-			const batch = validUsers.slice(i, i + batchSize);
-			const batchNum = Math.floor(i / batchSize) + 1;
-			const batchStart = Date.now();
-
-			try {
-				await authRepository.transaction(async (tx: any) => {
-					await authRepository.createUsersBatch(
-						batch.map((u) => ({
-							id: u.id,
-							email: u.email,
-							password: u.hashedPassword,
-						})),
-						tx,
-					);
-
-					await authRepository.createProfilesBatch(
-						batch.map((u) => ({
-							userId: u.id,
-							name: u.name,
-							address: u.address,
-							phone: u.phone,
-							photo: u.photoFileName,
-							NIK: u.encryptedNIK || null,
-						})),
-						tx,
-					);
-
-					results.success += batch.length;
-				});
-				batchTimings.push({ batchNum, users: batch.length, time: Date.now() - batchStart, status: "success" });
-			} catch (dbError) {
-				const err = dbError as Error;
-				results.failed += batch.length;
-				results.errors.push({ batch: batchNum, error: `DB Error: ${err.message}` });
-				batchTimings.push({ batchNum, users: batch.length, time: Date.now() - batchStart, status: "failed", error: err.message });
-			}
-		}
-		databaseInsertionTime = Date.now() - dbInsertionStart;
-		logger.info(`3. Database insertion: ${databaseInsertionTime}ms`);
-
-		const totalTime = Date.now() - totalStartTime;
-		const memUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
-
-		try {
-			const { saveBulkRegisterReport } = await import("../../../utils/bulkRegisterReport.js");
-			const metrics = {
-				totalUsers: users.length,
-				timestamp: new Date().toISOString(),
-				emailValidationTime,
-				preprocessingTime,
-				databaseInsertionTime,
-				totalTime,
-				successCount: results.success,
-				failedCount: results.failed,
-				existingEmailsCount: existingEmailSet.size,
-				uploadedPhotos: results.uploadedPhotos,
-				failedPhotos: results.failedPhotos,
-				batchSize,
-				totalBatches: Math.ceil(validUsers.length / batchSize),
-				batchTimings,
-				memoryUsedMB: parseFloat(memUsed),
-				averageTimePerUser: totalTime / users.length,
-				throughputUsersPerSecond: (users.length / totalTime) * 1000,
-				cpuCores: os.cpus().length,
-				concurrencyLimit: CONCURRENCY_LIMIT,
-				nikEncryptionTime: totalNIKEncryptionTime,
-				nikEncryptionCount: nikEncryptionCount,
-				averageNIKEncryptTime: nikEncryptionCount > 0 ? totalNIKEncryptionTime / nikEncryptionCount : 0,
-				totalDataSizeMB: totalPhotoSizeMB,
-				averagePhotoSizeMB: results.uploadedPhotos > 0 ? totalPhotoSizeMB / results.uploadedPhotos : 0,
-			};
-			await saveBulkRegisterReport(metrics);
-		} catch (reportError) {
-			logger.error({ err: reportError }, "Failed to generate report");
-		}
-
-		return results;
-	},
 
 	async login(email: string, password: string) {
 		if (!isEmailValid(email)) throw new apiError(400, "Invalid email");
@@ -468,7 +309,7 @@ export const authServices = {
 		const memUsed = process.memoryUsage().heapUsed / 1024 / 1024 - memStart;
 
 		try {
-			const { saveGetUsersReport } = await import("../../../utils/getUsersReport.js");
+			const { saveGetUsersReport } = await import("@/utils/getUsersReport.js");
 			const metrics = {
 				timestamp: new Date().toISOString(),
 				totalUsers: users.length,
