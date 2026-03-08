@@ -5,20 +5,20 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 ## ✨ Fitur Utama
 
 - **Framework**: Express.js v5 dengan TypeScript
-- **ORM**: Prisma untuk database management yang modern dan type-safe
+- **ORM**: Prisma v7 untuk database management yang modern dan type-safe
 - **Authentication**:
     - JWT-based authentication system
     - User registration with profile creation
     - Access & refresh token management
     - Token caching with Redis (optional)
     - Profile management with photo upload
-    - **NIK (National ID) encryption with AES-256-GCM** 🆕
+    - **NIK (National ID) encryption with AES-256-GCM**
 - **Security**:
     - Helmet untuk HTTP headers security
     - CORS dengan konfigurasi environment-based
     - Rate limiting dengan Redis (optional)
     - Data encryption utilities untuk sensitive data
-    - **AES-256-GCM encryption untuk NIK field** 🆕
+    - AES-256-GCM encryption untuk NIK field
     - Input validation
     - API Signature verification untuk endpoint protection (HMAC-SHA256)
     - Password hashing with bcrypt
@@ -37,10 +37,9 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     - Welcome email untuk new users
     - Password change confirmation email
     - Customizable email templates
-- **Performance Profiling & Monitoring** 🆕:
-    - Comprehensive performance profiling untuk bulk register
+- **Performance Monitoring**:
     - Performance profiling untuk get users operations
-    - **Auto-generated markdown performance reports**
+    - Auto-generated markdown performance reports
     - NIK encryption/decryption speed tracking
     - Console logging dengan detailed metrics
     - Bottleneck detection dengan recommendations
@@ -51,9 +50,10 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 - **Code Quality**:
     - ESLint untuk linting
     - Prettier untuk code formatting
-    - Comprehensive test suite dengan Node.js test runner
+    - Comprehensive test suite dengan Jest
 - **Caching**: Redis integration untuk rate limiting dan token storage (optional)
 - **Graceful Degradation**: Aplikasi tetap berjalan meskipun layanan optional tidak dikonfigurasi
+- **Path Alias**: Import menggunakan alias `@/` untuk menggantikan relative path yang panjang
 
 ## 📂 Struktur Proyek
 
@@ -62,7 +62,8 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 ├── docs/                    # Documentation files
 │   └── EMAIL_TEMPLATES.md   # Email template usage guide
 ├── prisma/
-│   ├── schema.prisma        # Database schema with User-Profile 1-to-1 relation
+│   ├── schema.prisma        # Database schema dengan relasi User-Profile 1-to-1
+│   ├── prisma.config.ts     # Prisma v7 config (database URL, schema path)
 │   └── migrations/          # Database migrations
 ├── scripts/
 │   ├── prepare-test-env.cjs # Test environment setup
@@ -71,28 +72,27 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 │   ├── app.ts               # Application entry point
 │   ├── configs/             # Configuration modules
 │   │   ├── database.ts      # Prisma database config
-│   │   ├── express.ts       # Express app config
+│   │   ├── express.ts       # Express app config & route mounting
 │   │   └── redis.ts         # Redis client config (optional)
 │   ├── features/            # Feature-based modules
-│   │   ├── auth/            # Authentication feature
-│   │   │   ├── controllers/ # Auth controllers
-│   │   │   ├── services/    # Auth business logic
-│   │   │   │   └── authServices.ts # Register, login, profile, etc.
-│   │   │   └── validations/ # Input validation schemas
-│   │   └── services/        # Shared services
+│   │   └── auth/            # Authentication feature
+│   │       ├── controllers/ # Auth controllers
+│   │       ├── repository/  # Database access layer
+│   │       ├── services/    # Auth business logic
+│   │       └── validations/ # Input validation schemas
+│   ├── generated/           # Auto-generated files (Prisma Client output)
 │   ├── middlewares/         # Custom middlewares
 │   │   ├── authMiddleware.ts      # JWT authentication
 │   │   ├── errorHandler.ts        # Global error handler
 │   │   └── multerMiddleware.ts    # File upload handler
 │   ├── routes/              # API route definitions
-│   │   ├── apiRoutes.ts     # Main API routes
 │   │   ├── authRoutes.ts    # Authentication routes
 │   │   └── fileRoutes.ts    # File upload routes
 │   └── utils/               # Utility functions
-│       ├── __tests__/       # Unit tests
-│       ├── encryption.ts    # Data encryption utilities
+│       ├── encryption.ts    # Data encryption utilities (AES-256-GCM)
+│       ├── getUsersReport.ts# Performance report generator
 │       ├── jwt.ts           # JWT token utilities
-│       ├── mail.ts          # Email template generator (NEW!)
+│       ├── mail.ts          # Email template generator
 │       ├── rateLimiter.ts   # Rate limiting middleware
 │       ├── respons.ts       # Response formatting
 │       ├── s3.ts            # S3/MinIO file storage
@@ -102,13 +102,10 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 │       └── utils.ts         # General utilities
 ├── .env.example             # Environment variables template
 ├── .env.test                # Test environment variables
-├── .eslintrc.json           # ESLint configuration
-├── .prettierrc              # Prettier configuration
-├── CHANGELOG.md             # Project changelog (NEW!)
-├── CODEOWNERS               # Code ownership
-├── nodemon.json             # Nodemon configuration
+├── CHANGELOG.md             # Project changelog
 ├── package.json
-├── tsconfig.json            # TypeScript configuration
+├── prisma.config.ts         # Prisma v7 configuration file
+├── tsconfig.json            # TypeScript configuration (dengan path alias @/)
 └── README.md
 ```
 
@@ -329,10 +326,10 @@ export default router;
 npm run generate-api-key
 
 # Test protected endpoint
-curl -H "x-api-key: YOUR_GENERATED_API_KEY" http://localhost:3004/api/v1/example/protected
+curl -H "x-api-key: YOUR_GENERATED_API_KEY" http://localhost:3004/api/example/protected
 
 # Test public endpoint (tidak perlu API key)
-curl http://localhost:3004/api/v1/example/public
+curl http://localhost:3004/api/example/public
 ```
 
 ### Response Format
@@ -425,28 +422,33 @@ Response:
 
 ### Authentication
 
-- `POST /api/v1/auth/register` - Register new user with profile & photo upload (base64)
-- `POST /api/v1/auth/bulk-register` - **Bulk register multiple users (array input, up to 1000 users)** 🆕
-- `POST /api/v1/auth/login` - User login (returns user data with photo URL)
-- `POST /api/v1/auth/refresh` - Refresh access token
-- `POST /api/v1/auth/logout` - User logout
-- `GET /api/v1/auth/profile` - Get user profile with photo URL
-- `GET /api/v1/auth/users` - **Get all users with profile data and photo URLs** 🆕
-- `POST /api/v1/auth/forgot-password` - Send OTP email for password reset
-- `PUT /api/v1/auth/profile` - Update user profile (name, phone, address, photo)
-- `DELETE /api/v1/auth/profile` - Delete user account & cleanup S3 files
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | Register user baru dengan profil & foto (base64) |
+| `POST` | `/api/auth/login` | Login user, mengembalikan data user + foto URL |
+| `POST` | `/api/auth/refresh-token` | Refresh access token |
+| `POST` | `/api/auth/logout` | Logout user |
+| `GET` | `/api/auth/profile` | Get profil user dengan foto URL |
+| `GET` | `/api/auth/users` | Get semua user dengan data profil dan foto URL |
+| `POST` | `/api/auth/forgot-password` | Kirim OTP email untuk reset password |
+| `PUT` | `/api/auth/profile` | Update profil user (name, phone, address, photo) |
+| `DELETE` | `/api/auth/profile` | Hapus akun user & cleanup file S3 |
 
 ### File Upload (requires S3/MinIO)
 
-- `POST /api/v1/files/upload` - Upload file (multipart/form-data)
-- `POST /api/v1/files/upload-base64` - Upload base64 encoded file
-- `GET /api/v1/files/:folder/:fileName` - Get presigned URL
-- `DELETE /api/v1/files/:folder/:fileName` - Delete file
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/files/upload` | Upload file (multipart/form-data) |
+| `POST` | `/api/files/upload-base64` | Upload file base64 encoded |
+| `GET` | `/api/files/:folder/:fileName` | Get presigned URL |
+| `DELETE` | `/api/files/:folder/:fileName` | Hapus file |
 
 ### API Signature Examples
 
-- `GET /api/v1/example/protected` - Protected endpoint (requires x-api-key header)
-- `GET /api/v1/example/public` - Public endpoint (no authentication required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/example/protected` | Endpoint dilindungi signature (butuh `x-api-key` header) |
+| `GET` | `/api/example/public` | Endpoint publik (tanpa autentikasi) |
 
 ## 📧 Email Templates
 
@@ -482,7 +484,7 @@ await sendEmail({
 
 - **express** (v5.1.0) - Web framework
 - **typescript** (v5.9.3) - Type safety
-- **@prisma/client** (v6.18.0) - Database ORM
+- **@prisma/client** (v7.4.2) - Database ORM
 - **jsonwebtoken** (v9.0.2) - JWT authentication
 - **bcrypt** (v6.0.0) - Password hashing
 
@@ -506,10 +508,11 @@ await sendEmail({
 
 ### Development
 
-- **nodemon** (v3.1.10) - Hot reload
+- **tsx** (v4.21.0) - TypeScript execution dengan hot-reload
+- **jest** (v30.2.0) - Testing framework
 - **eslint** (v9.39.1) - Linting
 - **prettier** - Code formatting
-- **ts-node** (v10.9.2) - TypeScript execution
+- **tsc-alias** (v1.8.16) - Path alias resolver saat build
 
 ## 🤝 Contributing
 
