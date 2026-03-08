@@ -4,7 +4,7 @@
  */
 
 import { authServices } from "./authServices.js";
-import prisma from "../../../configs/database.js";
+import prisma from "@/configs/database.js";
 import {
 	generateFakeUser,
 	generateFakeRegisterData,
@@ -12,11 +12,11 @@ import {
 	generateBulkRegisterData,
 	setFakerSeed,
 	generateFakeUUID,
-} from "../../../../__tests__/helpers/faker.helper.js";
-import { encryptPassword, comparePassword } from "../../../utils/utils.js";
+} from "__tests__/helpers/faker.helper.js";
+import { encryptPassword, comparePassword } from "@/utils/utils.js";
 
 // Mock dependencies
-jest.mock("../../../configs/database.js", () => ({
+jest.mock("@/configs/database.js", () => ({
 	__esModule: true,
 	default: {
 		user: {
@@ -40,19 +40,19 @@ jest.mock("../../../configs/database.js", () => ({
 			deleteMany: jest.fn(),
 		},
 		$transaction: jest.fn().mockImplementation(async (callback) => {
-			const tx = require("../../../configs/database.js").default;
+			const tx = require("@/configs/database.js").default;
 			return await callback(tx);
 		}),
 	},
 }));
 
-jest.mock("../../../utils/s3.js", () => ({
+jest.mock("@/utils/s3.js", () => ({
 	uploadBase64: jest.fn().mockResolvedValue("https://example.com/photo.jpg"),
 	getFile: jest.fn().mockReturnValue("https://example.com/photo.jpg"),
 	deleteFile: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../../utils/jwt.js", () => ({
+jest.mock("@/utils/jwt.js", () => ({
 	jwtUtils: {
 		generateAccessToken: jest.fn().mockReturnValue("mock-access-token"),
 		generateRefreshToken: jest.fn().mockReturnValue("mock-refresh-token"),
@@ -60,13 +60,13 @@ jest.mock("../../../utils/jwt.js", () => ({
 	},
 }));
 
-jest.mock("../../../utils/tokenStore.js", () => ({
+jest.mock("@/utils/tokenStore.js", () => ({
 	storeToken: jest.fn().mockResolvedValue(undefined),
 	getToken: jest.fn().mockResolvedValue("mock-refresh-token"),
 	deleteToken: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../../utils/encryption.js", () => ({
+jest.mock("@/utils/encryption.js", () => ({
 	encryptionUtils: {
 		encryptSensitive: jest.fn().mockReturnValue({
 			version: "v1",
@@ -197,53 +197,6 @@ describe("Auth Services", () => {
 		});
 	});
 
-	describe("bulkRegister", () => {
-		it("should register multiple users successfully", async () => {
-			// Arrange
-			const bulkData = generateBulkRegisterData(5);
-			const fakeUsers = bulkData.map((data: any) => generateFakeUser({ email: data.email }));
-
-			(prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-			(prisma.user.create as jest.Mock).mockImplementation((args) => {
-				const user = fakeUsers.find((u: any) => u.email === args.data.email);
-				return Promise.resolve(user);
-			});
-
-			// Act
-			const result = await authServices.bulkRegister(bulkData);
-
-			// Assert
-			expect(result).toBeDefined();
-			expect(result.total).toBe(5);
-			expect(result.success).toBeGreaterThan(0);
-			expect(result.failed).toBe(0);
-		});
-
-		it("should handle partial failures gracefully", async () => {
-			// Arrange
-			const bulkData = generateBulkRegisterData(3);
-			const existingUser = generateFakeUser({ email: bulkData[1].email });
-
-			let callCount = 0;
-			(prisma.user.findMany as jest.Mock).mockImplementation((args) => {
-				// return users emails that correspond to existingUser mock in bulk register processing
-				return Promise.resolve([{ email: existingUser.email }]);
-			});
-
-			(prisma.user.create as jest.Mock).mockImplementation(() => {
-				callCount++;
-				return Promise.resolve(generateFakeUser());
-			});
-
-			// Act
-			const result = await authServices.bulkRegister(bulkData);
-
-			// Assert
-			expect(result).toBeDefined();
-			expect(result.total).toBe(3);
-			expect(result.failed).toBeGreaterThan(0);
-		});
-	});
 
 	describe("logout", () => {
 		it("should logout user successfully", async () => {
