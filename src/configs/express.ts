@@ -4,12 +4,11 @@ import compression from "compression";
 import { pinoHttp } from "pino-http";
 import helmet from "helmet";
 
-import { logger } from "../utils/logger.js";
-import { respons, HttpStatus } from "../utils/respons.js";
-import authRoutes from "../routes/authRoutes.js";
-import fileRoutes from "../routes/fileRoutes.js";
-import exampleRoutes from "../routes/exampleRoutes.js";
-import { errorHandler, notFoundHandler } from "../middlewares/errorHandler.js";
+import { logger } from "@/utils/logger.js";
+import { respons, HttpStatus } from "@/utils/respons.js";
+import authRoutes from "@/routes/authRoutes.js";
+import fileRoutes from "@/routes/fileRoutes.js";
+import { errorHandler, notFoundHandler } from "@/middlewares/errorHandler.js";
 
 export const app = express();
 
@@ -118,9 +117,8 @@ app.get("/health", (req, res) => {
 	return respons.success("Service is healthy", data, HttpStatus.OK, res, req);
 });
 
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/files", fileRoutes);
-app.use("/api/v1/example", exampleRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/files", fileRoutes);
 
 app.use(notFoundHandler);
 
