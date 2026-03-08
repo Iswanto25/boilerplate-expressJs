@@ -63,6 +63,9 @@ COPY --from=build --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules
 # Copy compiled prisma config so migrate deploy can load it
 COPY --from=build --chown=nodejs:nodejs /app/dist/prisma.config.js ./prisma.config.js
 
+# Create writable directories for non-root user
+RUN mkdir -p /app/logger /app/uploads && chown -R nodejs:nodejs /app/logger /app/uploads
+
 # Switch to non-root user
 USER nodejs
 
