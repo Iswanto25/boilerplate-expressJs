@@ -1,7 +1,7 @@
 import { defineConfig, env } from "prisma/config";
 import dotenv from "dotenv";
 
-dotenv.config({ quiet: process.env.NODE_ENV === "production" });
+dotenv.config();
 
 export default defineConfig({
 	schema: "prisma/schema.prisma",
@@ -9,6 +9,6 @@ export default defineConfig({
 		path: "prisma/migrations",
 	},
 	datasource: {
-		url: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres",
+		url: env("DATABASE_URL"),
 	},
 });

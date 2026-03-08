@@ -26,8 +26,8 @@ COPY --from=dependencies /app/package*.json ./
 # Copy source code
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Generate Prisma Client (DATABASE_URL is required by prisma.config.ts but not used during generate)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
 
 # Build TypeScript
 RUN npm run build
@@ -59,6 +59,9 @@ COPY --chown=nodejs:nodejs prisma ./prisma/
 # Copy built application from build stage
 COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=build --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
+# Copy compiled prisma config so migrate deploy can load it
+COPY --from=build --chown=nodejs:nodejs /app/dist/prisma.config.js ./prisma.config.js
 
 # Switch to non-root user
 USER nodejs
