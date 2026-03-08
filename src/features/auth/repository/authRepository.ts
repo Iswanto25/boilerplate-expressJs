@@ -1,5 +1,5 @@
-import prisma from "../../../configs/database.js";
-import { Prisma } from "../../../generated/prisma/client.js";
+import prisma from "@/configs/database.js";
+import { Prisma } from "@prisma/client";
 
 type TxClient = Prisma.TransactionClient;
 
@@ -54,14 +54,6 @@ export const authRepository = {
         return await tx.refreshToken.findFirst({
             where: { userId, token },
         });
-    },
-
-    createUsersBatch: async (data: Prisma.userCreateManyInput[], tx: TxClient = prisma) => {
-        return await tx.user.createMany({ data });
-    },
-
-    createProfilesBatch: async (data: Prisma.profileCreateManyInput[], tx: TxClient = prisma) => {
-        return await tx.profile.createMany({ data });
     },
 
     updateUserProfile: async (userId: string, profileData: Prisma.profileUpdateWithoutUserInput, tx: TxClient = prisma) => {

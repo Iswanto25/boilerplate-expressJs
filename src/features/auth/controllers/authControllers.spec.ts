@@ -2,10 +2,9 @@
  * Unit Test untuk Auth Controllers
  * Menggunakan @faker-js/faker untuk dummy data
  */
-
 import { authController } from "./authControllers.js";
-import { authServices } from "../services/authServices.js";
-import { createMockRequest, createMockResponse, createMockAuthenticatedUser } from "../../../../__tests__/helpers/mock.helper.js";
+import { authServices } from "@/features/auth/services/authServices.js";
+import { createMockRequest, createMockResponse, createMockAuthenticatedUser } from "__tests__/helpers/mock.helper.js";
 import {
 	generateFakeUser,
 	generateFakeRegisterData,
@@ -13,11 +12,11 @@ import {
 	generateBulkRegisterData,
 	generateFakeTokens,
 	setFakerSeed,
-} from "../../../../__tests__/helpers/faker.helper.js";
-import { HttpStatus } from "../../../utils/respons.js";
+} from "__tests__/helpers/faker.helper.js";
+import { HttpStatus } from "@/utils/respons.js";
 
 // Mock auth services
-jest.mock("../services/authServices.js", () => ({
+jest.mock("@/features/auth/services/authServices.js", () => ({
 	authServices: {
 		register: jest.fn(),
 		login: jest.fn(),
@@ -281,96 +280,6 @@ describe("Auth Controllers", () => {
 			// Assert
 			expect(authServices.forgotPassword).not.toHaveBeenCalled();
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-		});
-	});
-
-	describe("bulkRegister", () => {
-		it("should bulk register users successfully", async () => {
-			// Arrange
-			const bulkData = generateBulkRegisterData(10);
-			const req = createMockRequest({ body: bulkData });
-			const res = createMockResponse();
-
-			const bulkResult = {
-				total: 10,
-				success: 10,
-				failed: 0,
-				uploadedPhotos: 8,
-				failedPhotos: 2,
-			};
-
-			(authServices.bulkRegister as jest.Mock).mockResolvedValue(bulkResult);
-
-			// Act
-			await authController.bulkRegister(req as any, res as any);
-
-			// Assert
-			expect(authServices.bulkRegister).toHaveBeenCalledWith(bulkData);
-			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
-			expect(res.json).toHaveBeenCalledWith(
-				expect.objectContaining({
-					status: "success",
-					message: "Bulk register selesai",
-					data: expect.objectContaining({
-						total: 10,
-						success: 10,
-						successRate: "100.00%",
-					}),
-				}),
-			);
-		});
-
-		it("should return error if data is not an array", async () => {
-			// Arrange
-			const req = createMockRequest({ body: { notAnArray: true } });
-			const res = createMockResponse();
-
-			// Act
-			await authController.bulkRegister(req as any, res as any);
-
-			// Assert
-			expect(authServices.bulkRegister).not.toHaveBeenCalled();
-			expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-			expect(res.json).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: "Data harus berupa array",
-				}),
-			);
-		});
-
-		it("should return error if array is empty", async () => {
-			// Arrange
-			const req = createMockRequest({ body: [] });
-			const res = createMockResponse();
-
-			// Act
-			await authController.bulkRegister(req as any, res as any);
-
-			// Assert
-			expect(authServices.bulkRegister).not.toHaveBeenCalled();
-			expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-		});
-
-		it("should return error if users have incomplete data", async () => {
-			// Arrange
-			const incompleteUsers = [
-				{ name: "User 1", email: "user1@example.com" }, // missing password
-				{ name: "User 2", password: "pass123" }, // missing email
-			];
-			const req = createMockRequest({ body: incompleteUsers });
-			const res = createMockResponse();
-
-			// Act
-			await authController.bulkRegister(req as any, res as any);
-
-			// Assert
-			expect(authServices.bulkRegister).not.toHaveBeenCalled();
-			expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-			expect(res.json).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: "2 user memiliki data tidak lengkap",
-				}),
-			);
 		});
 	});
 

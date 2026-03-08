@@ -5,8 +5,11 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+        env_file:
+            - .env
         volumes:
-            - boilerplate-express-backend_logs:/src/logs
+            - boilerplate-express-backend_logs:/app/logger
+            - uploads_data:/app/uploads
         environment:
             DOCKER_ENV: "true"
             APP_NAME: ${APP_NAME:-}
