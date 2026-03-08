@@ -10,7 +10,7 @@
 		"lint:fix": "eslint \"src/**/*.ts\" --fix",
 		"pretest": "node scripts/prepare-test-env.cjs",
 		"start": "node dist/src/app.js",
-		"dev": "nodemon src/app.ts",
+		"dev": "tsx watch src/app.ts",
 		"start:migrate": "prisma migrate deploy && npm run start",
 		"build": "tsc && tsc-alias",
 		"test": "npm run build && node --test --experimental-test-module-mocks dist/utils/__tests__/*.test.js",
@@ -81,6 +81,7 @@
 		"ts-jest": "^29.4.6",
 		"ts-node": "^10.9.2",
 		"tsc-alias": "^1.8.16",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.56.1"
 	},
