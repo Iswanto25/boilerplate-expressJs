@@ -77,8 +77,13 @@ export const authRepository = {
         });
     },
 
-    getAllUsersWithProfile: async (tx: TxClient = prisma) => {
-        return await tx.user.findMany({
+    getAllUsersWithProfile: async (params: { where: Prisma.userWhereInput; take?: number; skip?: number }, tx: TxClient = prisma) => {
+        const { where, take, skip } = params;
+        const total = await tx.user.count({ where });
+        const users = await tx.user.findMany({
+            where,
+            take,
+            skip,
             select: {
                 id: true,
                 email: true,
@@ -93,5 +98,8 @@ export const authRepository = {
                 },
             },
         });
+        console.log(users);
+        
+        return { total, users };
     },
 };
