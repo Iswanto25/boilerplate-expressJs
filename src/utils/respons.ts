@@ -49,7 +49,7 @@ const getRequestContext = async (req?: Request) => {
 };
 
 export const respons = {
-	async success(message: string, data: unknown, code: number, res: Response, req: Request) {
+	async success(message: string, data: unknown, code: number, res: Response, req: Request, pagination?: any) {
 		const { user, ip, host, userAgent, dateTimeNow } = await getRequestContext(req);
 
 		// Calculate response time
@@ -87,10 +87,12 @@ export const respons = {
 			logger.warn({ dbError }, "Failed to write success log to database");
 		}
 
+		const responseData = pagination ? { items: data, pagination } : data;
+
 		res.status(code).json({
 			status: code,
 			message,
-			data,
+			data: responseData,
 		});
 	},
 

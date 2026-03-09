@@ -7,9 +7,10 @@ import { sendEmail } from "@/utils/smtp.js";
 import { generateOTP, encryptPassword, comparePassword, isEmailValid, pLimit } from "@/utils/utils.js";
 import { generateOTPEmail } from "@/utils/mail.js";
 import crypto from "node:crypto";
-import os from "node:os";
 import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
+import { paginate } from "@/utils/pagination.js";
 import { logger } from "@/utils/logger.js";
+import { Prisma } from "@prisma/client";
 
 interface LocalRegister {
 	name: string;
@@ -84,7 +85,6 @@ export const authServices = {
 			};
 		});
 	},
-
 
 	async login(email: string, password: string) {
 		if (!isEmailValid(email)) throw new apiError(400, "Invalid email");
@@ -256,37 +256,29 @@ export const authServices = {
 		});
 	},
 
-	async getUsers() {
-		logger.info(`Starting get all users`);
-		const totalStartTime = Date.now();
-		const memStart = process.memoryUsage().heapUsed / 1024 / 1024;
+	async getUsers(page: number = 1, limit: number = 10, search?: string) {
+		const whereCondition: Prisma.userWhereInput = {};
 
-		const queryStart = Date.now();
+		if (search) {
+			whereCondition.OR = [
+				{ email: { contains: search, mode: "insensitive" } },
+				{ profile: { name: { contains: search, mode: "insensitive" } } },
+				{ profile: { phone: { contains: search, mode: "insensitive" } } },
+				{ profile: { address: { contains: search, mode: "insensitive" } } },
+			];
+		}
 
-		const users = await authRepository.getAllUsersWithProfile();
+		const { total: totalData } = await authRepository.getAllUsersWithProfile({ where: whereCondition });
+		const { skip, take, pagination } = paginate(page, limit, totalData);
 
-		const queryTime = Date.now() - queryStart;
-		logger.info(`1. Database query: ${queryTime}ms`);
-
-		const urlGenStart = Date.now();
+		const { users } = await authRepository.getAllUsersWithProfile({ where: whereCondition, skip, take });
 		const baseUrl = `${process.env.MINIO_ENDPOINT}/${process.env.MINIO_BUCKET_NAME}/${folder}`;
 
-		let usersWithPhoto = 0;
-		let usersWithoutPhoto = 0;
-		let totalNIKDecryptionTime = 0;
-		let nikDecryptionCount = 0;
-
 		const result = users.map((user) => {
-			if (user.profile?.photo) usersWithPhoto++;
-			else usersWithoutPhoto++;
-
 			let decryptedNIK: string | null = null;
 			if (user.profile?.NIK) {
-				const nikDecryptStart = Date.now();
 				try {
 					decryptedNIK = decryptSensitive({ version: 1, ciphertext: user.profile.NIK });
-					totalNIKDecryptionTime += Date.now() - nikDecryptStart;
-					nikDecryptionCount++;
 				} catch (error) {
 					logger.error({ err: error, userId: user.id }, "Failed to decrypt NIK");
 				}
@@ -302,35 +294,7 @@ export const authServices = {
 				NIK: decryptedNIK,
 			};
 		});
-		const urlGenerationTime = Date.now() - urlGenStart;
-		logger.info(`2. URL generation: ${urlGenerationTime}ms`);
 
-		const totalTime = Date.now() - totalStartTime;
-		const memUsed = process.memoryUsage().heapUsed / 1024 / 1024 - memStart;
-
-		try {
-			const { saveGetUsersReport } = await import("@/utils/getUsersReport.js");
-			const metrics = {
-				timestamp: new Date().toISOString(),
-				totalUsers: users.length,
-				queryTime,
-				urlGenerationTime,
-				totalTime,
-				usersWithPhoto,
-				usersWithoutPhoto,
-				memoryUsedMB: memUsed,
-				cpuCores: os.cpus().length,
-				averageTimePerUser: totalTime / users.length,
-				throughputUsersPerSecond: (users.length / totalTime) * 1000,
-				nikDecryptionTime: totalNIKDecryptionTime,
-				nikDecryptionCount: nikDecryptionCount,
-				averageNIKDecryptTime: nikDecryptionCount > 0 ? totalNIKDecryptionTime / nikDecryptionCount : 0,
-			};
-			await saveGetUsersReport(metrics);
-		} catch (reportError) {
-			logger.error({ err: reportError }, "Failed to generate report");
-		}
-
-		return result;
+		return { users: result, pagination };
 	},
 };

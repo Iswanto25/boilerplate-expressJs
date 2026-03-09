@@ -124,8 +124,12 @@ export const authController = {
 
 	getUsers: async (req: Request, res: Response) => {
 		try {
-			const users = await authServices.getUsers();
-			return respons.success("Berhasil get users", users, HttpStatus.OK, res, req);
+			const page = Number(req.query.page) || 1;
+			const limit = Number(req.query.limit) || 10;
+			const search = req.query.search as string;
+
+			const { users, pagination } = await authServices.getUsers(page, limit, search);
+			return respons.success("Berhasil get users", users, HttpStatus.OK, res, req, pagination);
 		} catch (error) {
 			const err = error as { statusCode?: number; message?: string };
 			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
