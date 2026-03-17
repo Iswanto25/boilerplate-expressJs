@@ -107,7 +107,7 @@ test("respons.success logs and responds with payload", async () => {
 
 		assert.equal(res.statusCode, 200);
 		assert.deepEqual(res.payload, {
-			status: 200,
+			success: true,
 			message: "Success message",
 			data: { hello: "world" },
 		});
@@ -135,7 +135,7 @@ test("respons.error logs warning when database write fails", async () => {
 
 		assert.equal(res.statusCode, 400);
 		assert.deepEqual(res.payload, {
-			status: 400,
+			success: false,
 			message: "Error message",
 			error: { reason: "failure" },
 		});
