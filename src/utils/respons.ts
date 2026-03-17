@@ -90,7 +90,7 @@ export const respons = {
 		const responseData = pagination ? { items: data, pagination } : data;
 
 		res.status(code).json({
-			status: code,
+			success: true,
 			message,
 			data: responseData,
 		});
@@ -134,7 +134,7 @@ export const respons = {
 			logger.warn({ dbError }, "Failed to write error log to database");
 		}
 		res.status(code).json({
-			status: code,
+			success: false,
 			message,
 			error,
 		});

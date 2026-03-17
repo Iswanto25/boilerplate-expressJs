@@ -98,8 +98,6 @@ export const authRepository = {
                 },
             },
         });
-        console.log(users);
-        
         return { total, users };
     },
 };
