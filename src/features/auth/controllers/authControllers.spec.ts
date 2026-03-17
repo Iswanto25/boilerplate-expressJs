@@ -61,7 +61,7 @@ describe("Auth Controllers", () => {
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
-					status: "success",
+					success: true,
 					message: "Berhasil register",
 				}),
 			);
@@ -82,7 +82,7 @@ describe("Auth Controllers", () => {
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
-					status: "error",
+					success: false,
 					message: "Data tidak lengkap",
 				}),
 			);
@@ -103,7 +103,7 @@ describe("Auth Controllers", () => {
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
-					status: "error",
+					success: false,
 					message: "Email sudah terdaftar",
 				}),
 			);
@@ -128,7 +128,7 @@ describe("Auth Controllers", () => {
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
-					status: "success",
+					success: true,
 					message: "Berhasil login",
 				}),
 			);
@@ -164,7 +164,7 @@ describe("Auth Controllers", () => {
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
-					status: "error",
+					success: false,
 					message: "User tidak ditemukan",
 				}),
 			);
@@ -188,7 +188,7 @@ describe("Auth Controllers", () => {
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
-					status: "success",
+					success: true,
 					message: "Berhasil logout",
 				}),
 			);
@@ -245,7 +245,7 @@ describe("Auth Controllers", () => {
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
-					status: "success",
+					success: true,
 					data: fakeUser,
 				}),
 			);
@@ -300,7 +300,7 @@ describe("Auth Controllers", () => {
 			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
-					status: "success",
+					success: true,
 					data: fakeUsers,
 				}),
 			);
