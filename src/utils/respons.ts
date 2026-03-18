@@ -87,12 +87,11 @@ export const respons = {
 			logger.warn({ dbError }, "Failed to write success log to database");
 		}
 
-		const responseData = pagination ? { items: data, pagination } : data;
-
 		res.status(code).json({
 			success: true,
 			message,
-			data: responseData,
+			data: data,
+			...(pagination && { pagination }),
 		});
 	},
 
