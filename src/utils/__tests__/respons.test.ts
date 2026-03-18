@@ -3,11 +3,12 @@ import test, { mock } from "node:test";
 import { createRequire } from "node:module";
 import path from "node:path";
 
-const requireModule = createRequire(__filename);
+const requireModule = createRequire(import.meta.url);
+const __dirname = import.meta.dirname;
 const modulePath = "../respons";
-const prismaPath = path.join(__dirname, "../../configs/database");
-const authPath = path.join(__dirname, "../../middlewares/authMiddleware");
-const loggerPath = path.join(__dirname, "../logger");
+const prismaPath = path.join(__dirname!, "../../configs/database");
+const authPath = path.join(__dirname!, "../../middlewares/authMiddleware");
+const loggerPath = path.join(__dirname!, "../logger");
 
 const stubModule = (specifier: string, exports: any): (() => void) => {
 	const resolved = requireModule.resolve(specifier);
@@ -122,7 +123,28 @@ test("respons.success logs and responds with payload", async () => {
 	}
 });
 
+test("respons.success with pagination", async () => {
+	const { module, restoreAll } = await setup();
+	const { req, res } = createReqRes();
+	const pagination = { currentPage: 1, totalPages: 1, totalData: 1, limit: 10 };
+
+	try {
+		await module.respons.success("Success with pagination", [{ id: 1 }], module.HttpStatus.OK, res, req, pagination);
+
+		assert.equal(res.statusCode, 200);
+		assert.deepEqual(res.payload, {
+			success: true,
+			message: "Success with pagination",
+			data: [{ id: 1 }],
+			pagination,
+		});
+	} finally {
+		restoreAll();
+	}
+});
+
 test("respons.error logs warning when database write fails", async () => {
+
 	const failingLog = mock.fn(async () => {
 		throw new Error("db failure");
 	});
