@@ -50,6 +50,10 @@ export const authRepository = {
         return await tx.refreshToken.deleteMany({ where: { userId } });
     },
 
+    deleteRefreshToken: async (userId: string, token: string, tx: TxClient = prisma) => {
+        return await tx.refreshToken.deleteMany({ where: { userId, token } });
+    },
+
     findRefreshToken: async (userId: string, token: string, tx: TxClient = prisma) => {
         return await tx.refreshToken.findFirst({
             where: { userId, token },
@@ -77,8 +81,19 @@ export const authRepository = {
         });
     },
 
-    getAllUsersWithProfile: async (params: { where: Prisma.userWhereInput; take?: number; skip?: number }, tx: TxClient = prisma) => {
-        const { where, take, skip } = params;
+    getAllUsersWithProfile: async (params: { search?: string; take?: number; skip?: number }, tx: TxClient = prisma) => {
+        const { search, take, skip } = params;
+        const where: Prisma.userWhereInput = {};
+
+        if (search) {
+            where.OR = [
+                { email: { contains: search, mode: "insensitive" } },
+                { profile: { name: { contains: search, mode: "insensitive" } } },
+                { profile: { phone: { contains: search, mode: "insensitive" } } },
+                { profile: { address: { contains: search, mode: "insensitive" } } },
+            ];
+        }
+
         const total = await tx.user.count({ where });
         const users = await tx.user.findMany({
             where,
@@ -98,8 +113,6 @@ export const authRepository = {
                 },
             },
         });
-        console.log(users);
-        
         return { total, users };
     },
 };

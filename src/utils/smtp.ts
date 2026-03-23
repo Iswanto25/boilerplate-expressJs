@@ -11,7 +11,7 @@ interface SendEmailOptions {
 	fromEmail?: string;
 }
 
-const isSMTPConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+export const isSMTPConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
 if (!isSMTPConfigured) {
 	console.warn("⚠️  SMTP not configured (SMTP_HOST, SMTP_USER, SMTP_PASS) - email sending will be skipped");
