@@ -18,6 +18,10 @@ module.exports = {
 	],
 
 	moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+	moduleNameMapper: {
+		"^@/(.*)$": "<rootDir>/src/$1",
+		"^__tests__/(.*)$": "<rootDir>/__tests__/$1",
+	},
 
 	collectCoverageFrom: [
 		"src/**/*.{ts,tsx}",
@@ -29,7 +33,7 @@ module.exports = {
 
 	coverageDirectory: "coverage",
 	coverageReporters: ["text", "lcov", "html", "json-summary"],
-	setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+	setupFilesAfterEnv: ["<rootDir>/jest.setup.cjs"],
 	testTimeout: 10000,
 	verbose: true,
 	clearMocks: true,
@@ -37,7 +41,7 @@ module.exports = {
 	restoreMocks: true,
 
 	// Ignore transforming ESM modules
-	transformIgnorePatterns: ["node_modules/(?!(@faker-js|uuid|p-limit|nanoid)/)"],
+	transformIgnorePatterns: ["node_modules/(?!(@faker-js)/)"],
 
 	// ESM support
 	extensionsToTreatAsEsm: [".ts"],

@@ -1,16 +1,15 @@
 import { authRepository } from "@/features/auth/repository/authRepository.js";
-import { uploadBase64, getFile, deleteFile } from "@/utils/s3.js";
+import { uploadBase64, deleteFile, getPublicUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
 import { jwtUtils } from "@/utils/jwt.js";
 import { storeToken, deleteToken } from "@/utils/tokenStore.js";
 import { sendEmail } from "@/utils/smtp.js";
-import { generateOTP, encryptPassword, comparePassword, isEmailValid, pLimit } from "@/utils/utils.js";
+import { generateOTP, encryptPassword, comparePassword, isEmailValid } from "@/utils/utils.js";
 import { generateOTPEmail } from "@/utils/mail.js";
 import crypto from "node:crypto";
 import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
 import { paginate } from "@/utils/pagination.js";
 import { logger } from "@/utils/logger.js";
-import { Prisma } from "@prisma/client";
 
 interface LocalRegister {
 	name: string;
@@ -23,8 +22,6 @@ interface LocalRegister {
 }
 
 const folder = "profile";
-const CONCURRENCY_LIMIT = 20;
-const limit = pLimit(CONCURRENCY_LIMIT);
 
 export const authServices = {
 	async register(data: LocalRegister) {
@@ -42,6 +39,8 @@ export const authServices = {
 
 			const hashedPassword = await encryptPassword(data.password);
 
+			const ciphertext = data.NIK ? encryptionUtils.encryptSensitive(data.NIK).ciphertext : null;
+
 			const user = await authRepository.createUser(
 				{
 					email: data.email,
@@ -51,6 +50,7 @@ export const authServices = {
 						address: data.address,
 						phone: data.phone,
 						photo: photoFileName,
+						NIK: ciphertext,
 					},
 				},
 				tx,
@@ -71,14 +71,12 @@ export const authServices = {
 				tx,
 			);
 
-			const photoUrl = user.profile?.photo ? await getFile(folder, user.profile.photo) : null;
-
 			return {
 				user: {
 					id: user.id,
 					name: user.profile?.name || null,
 					email: user.email,
-					photo: photoUrl,
+					photo: photoFileName,
 				},
 				accessToken,
 				refreshToken,
@@ -111,7 +109,8 @@ export const authServices = {
 		await storeToken(user.id, accessToken, "access", 24 * 60 * 60);
 		await storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60);
 
-		const photoUrl = user.profile?.photo ? await getFile(folder, user.profile.photo) : null;
+		const photoUrl = user.profile?.photo ? getPublicUrl(folder, user.profile.photo) : null;
+
 
 		return {
 			user: {
@@ -134,9 +133,9 @@ export const authServices = {
 		const tokenRecord = await authRepository.findRefreshToken(user.id, oldToken);
 		if (!tokenRecord) throw new apiError(400, "Invalid token");
 
-		await authRepository.deleteRefreshTokensByUserId(user.id);
-		await deleteToken(user.id, "access");
-		await deleteToken(user.id, "refresh");
+		// Only delete the used refresh token, not all of them
+		// This enables multi-device support
+		await authRepository.deleteRefreshToken(user.id, oldToken);
 
 		const newAccessToken = jwtUtils.generateAccessToken({ id: user.id, email: user.email });
 		const newRefreshToken = jwtUtils.generateRefreshToken({ id: user.id, email: user.email });
@@ -165,7 +164,7 @@ export const authServices = {
 		const user = await authRepository.findUserById(userId);
 		if (!user) throw new apiError(400, "User not found");
 
-		const photoUrl = user.profile?.photo ? await getFile(folder, user.profile.photo) : null;
+		const photoUrl = user.profile?.photo ? getPublicUrl(folder, user.profile.photo) : null;
 
 		return {
 			id: user.id,
@@ -223,7 +222,7 @@ export const authServices = {
 			};
 
 			const updatedUser = await authRepository.updateUserProfile(userId, profileData, tx);
-			const photoUrl = updatedUser.profile?.photo ? await getFile(folder, updatedUser.profile.photo) : null;
+			const photoUrl = updatedUser.profile?.photo ? getPublicUrl(folder, updatedUser.profile.photo) : null;
 
 			return {
 				id: updatedUser.id,
@@ -257,22 +256,10 @@ export const authServices = {
 	},
 
 	async getUsers(page: number = 1, limit: number = 10, search?: string) {
-		const whereCondition: Prisma.userWhereInput = {};
-
-		if (search) {
-			whereCondition.OR = [
-				{ email: { contains: search, mode: "insensitive" } },
-				{ profile: { name: { contains: search, mode: "insensitive" } } },
-				{ profile: { phone: { contains: search, mode: "insensitive" } } },
-				{ profile: { address: { contains: search, mode: "insensitive" } } },
-			];
-		}
-
-		const { total: totalData } = await authRepository.getAllUsersWithProfile({ where: whereCondition });
+		const { total: totalData } = await authRepository.getAllUsersWithProfile({ search });
 		const { skip, take, pagination } = paginate(page, limit, totalData);
 
-		const { users } = await authRepository.getAllUsersWithProfile({ where: whereCondition, skip, take });
-		const baseUrl = `${process.env.MINIO_ENDPOINT}/${process.env.MINIO_BUCKET_NAME}/${folder}`;
+		const { users } = await authRepository.getAllUsersWithProfile({ search, skip, take });
 
 		const result = users.map((user) => {
 			let decryptedNIK: string | null = null;
@@ -290,7 +277,7 @@ export const authServices = {
 				name: user.profile?.name || null,
 				phone: user.profile?.phone || null,
 				address: user.profile?.address || null,
-				photo: user.profile?.photo ? `${baseUrl}/${user.profile.photo}` : null,
+				photo: user.profile?.photo ? getPublicUrl(folder, user.profile.photo) : null,
 				NIK: decryptedNIK,
 			};
 		});

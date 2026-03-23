@@ -1,42 +1,44 @@
 import pino from "pino";
 import path from "path";
 import fs from "fs";
-import moment from "moment";
 import dotenv from "dotenv";
 
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 const isProd = process.env.NODE_ENV === "production";
 
+// Create logger directory if it doesn't exist
 const logDir = path.join(process.cwd(), "logger");
 if (!fs.existsSync(logDir)) {
 	fs.mkdirSync(logDir, { recursive: true });
 }
 
-const filePath = path.join(logDir, `${moment().format("YYYY-MM-DD")}.log`);
+// Generate filename using native Date: YYYY-MM-DD.log
+const now = new Date();
+const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+const filePath = path.join(logDir, `${dateStr}.log`);
 
-const devTransport = pino.transport({
+const transport = pino.transport({
 	targets: [
 		{
-			target: "pino-pretty",
-			options: {
-				colorize: true,
-				translateTime: "HH:MM:ss",
-				ignore: "pid,hostname,req,res",
-				singleLine: true,
-				messageFormat: "{msg}",
-			},
+			target: "pino/file",
+			options: { destination: filePath as any, mkdir: true, append: true },
+			level: isProd ? "info" : "debug",
 		},
 		{
-			target: "pino/file",
-			options: { destination: filePath, mkdir: true, append: true },
+			target: isProd ? "pino/file" : "pino-pretty",
+			options: isProd
+				? ({ destination: 1 } as any)
+				: {
+						colorize: true,
+						translateTime: "HH:MM:ss",
+						ignore: "pid,hostname,req,res",
+						singleLine: true,
+						messageFormat: "{msg}",
+					},
+			level: isProd ? "info" : "debug",
 		},
 	],
-});
-
-const prodTransport = pino.transport({
-	target: "pino/file",
-	options: { destination: filePath, mkdir: true, append: true },
 });
 
 export const logger = pino(
@@ -55,5 +57,5 @@ export const logger = pino(
 			}),
 		},
 	},
-	isProd ? prodTransport : devTransport,
+	transport,
 );
