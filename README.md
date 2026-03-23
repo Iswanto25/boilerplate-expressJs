@@ -5,6 +5,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 ## ✨ Fitur Utama
 
 - **Framework**: Express.js v5 dengan TypeScript
+- **Architecture**: Modular Feature-based Architecture dengan Repository Pattern
 - **ORM**: Prisma v7 untuk database management yang modern dan type-safe
 - **Authentication**:
     - JWT-based authentication system
@@ -59,8 +60,6 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 
 ```
 /
-├── docs/                    # Documentation files
-│   └── EMAIL_TEMPLATES.md   # Email template usage guide
 ├── prisma/
 │   ├── schema.prisma        # Database schema dengan relasi User-Profile 1-to-1
 │   ├── prisma.config.ts     # Prisma v7 config (database URL, schema path)
@@ -440,7 +439,7 @@ Response:
 |--------|----------|-------------|
 | `POST` | `/api/files/upload` | Upload file (multipart/form-data) |
 | `POST` | `/api/files/upload-base64` | Upload file base64 encoded |
-| `GET` | `/api/files/:folder/:fileName` | Get presigned URL |
+| `GET` | `/api/files/:folder/:fileName` | Get direct public URL (`urlStorage`) |
 | `DELETE` | `/api/files/:folder/:fileName` | Hapus file |
 
 ### API Signature Examples
@@ -504,7 +503,6 @@ await sendEmail({
 - **ioredis** (v5.8.2) - Redis client
 - **nodemailer** (v7.0.10) - Email sending
 - **dotenv** (v17.2.3) - Environment variables
-- **nanoid** (v5.1.6) - Unique ID generation
 
 ### Development
 

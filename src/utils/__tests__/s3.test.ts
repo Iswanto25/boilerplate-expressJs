@@ -89,10 +89,6 @@ const setup = async (): Promise<SetupResult> => {
 		_Object: class {},
 	});
 
-	const restoreHandler = stubModule("@aws-sdk/node-http-handler", {
-		NodeHttpHandler: class {},
-	});
-
 	const restorePresigner = stubModule("@aws-sdk/s3-request-presigner", {
 		getSignedUrl,
 	});
@@ -107,7 +103,6 @@ const setup = async (): Promise<SetupResult> => {
 		getSignedUrl,
 		restoreAll: () => {
 			restoreClient();
-			restoreHandler();
 			restorePresigner();
 		},
 	};
