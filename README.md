@@ -5,13 +5,14 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 ## ✨ Fitur Utama
 
 - **Framework**: Express.js v5 dengan TypeScript
+- **Architecture**: Modular Feature-based Architecture dengan Repository Pattern
 - **ORM**: Prisma v7 untuk database management yang modern dan type-safe
 - **Authentication**:
     - JWT-based authentication system
     - User registration with profile creation
-    - Access & refresh token management
+    - Access & refresh token management (Multi-device support)
     - Token caching with Redis (optional)
-    - Profile management with photo upload
+    - Profile management with photo upload (Public URL access)
     - **NIK (National ID) encryption with AES-256-GCM**
 - **Security**:
     - Helmet untuk HTTP headers security
@@ -27,7 +28,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     - Integrasi S3/MinIO (optional)
     - Support base64 upload untuk images
     - Automatic file cleanup saat update
-    - Presigned URL generation untuk secure file access
+    - Public URL access for secure and fast file delivery
     - Photo size & format validation
 - **Email System**:
     - SMTP integration (optional)
@@ -59,8 +60,6 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 
 ```
 /
-├── docs/                    # Documentation files
-│   └── EMAIL_TEMPLATES.md   # Email template usage guide
 ├── prisma/
 │   ├── schema.prisma        # Database schema dengan relasi User-Profile 1-to-1
 │   ├── prisma.config.ts     # Prisma v7 config (database URL, schema path)
@@ -440,7 +439,7 @@ Response:
 |--------|----------|-------------|
 | `POST` | `/api/files/upload` | Upload file (multipart/form-data) |
 | `POST` | `/api/files/upload-base64` | Upload file base64 encoded |
-| `GET` | `/api/files/:folder/:fileName` | Get presigned URL |
+| `GET` | `/api/files/:folder/:fileName` | Get direct public URL (`urlStorage`) |
 | `DELETE` | `/api/files/:folder/:fileName` | Hapus file |
 
 ### API Signature Examples
@@ -504,7 +503,6 @@ await sendEmail({
 - **ioredis** (v5.8.2) - Redis client
 - **nodemailer** (v7.0.10) - Email sending
 - **dotenv** (v17.2.3) - Environment variables
-- **nanoid** (v5.1.6) - Unique ID generation
 
 ### Development
 

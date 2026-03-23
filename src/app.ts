@@ -1,6 +1,8 @@
 import { app } from "./configs/express.js";
 import http from "http";
 import dotenv from "dotenv";
+import { logger } from "./utils/logger.js";
+import { checkServicesHealth } from "./utils/healthCheck.js";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 const PORT = Number(process.env.PORT) || 3006;
@@ -28,6 +30,11 @@ server.listen(PORT, HOST, () => {
 	console.info(`Environment: ${NODE_ENV}`);
 	console.info(`URL: ${baseUrl}`);
 	console.info("========================================");
+
+	// Run health check
+	checkServicesHealth().catch((err) => {
+		logger.error({ err }, "Unexpected error during health check");
+	});
 });
 
 process.on("SIGTERM", () => {
