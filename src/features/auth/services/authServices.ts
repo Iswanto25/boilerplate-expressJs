@@ -4,13 +4,12 @@ import { apiError } from "@/utils/respons.js";
 import { jwtUtils } from "@/utils/jwt.js";
 import { storeToken, deleteToken } from "@/utils/tokenStore.js";
 import { sendEmail } from "@/utils/smtp.js";
-import { generateOTP, encryptPassword, comparePassword, isEmailValid, pLimit } from "@/utils/utils.js";
+import { generateOTP, encryptPassword, comparePassword, isEmailValid } from "@/utils/utils.js";
 import { generateOTPEmail } from "@/utils/mail.js";
 import crypto from "node:crypto";
 import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
 import { paginate } from "@/utils/pagination.js";
 import { logger } from "@/utils/logger.js";
-import { Prisma } from "@prisma/client";
 
 interface LocalRegister {
 	name: string;
@@ -23,8 +22,6 @@ interface LocalRegister {
 }
 
 const folder = "profile";
-const CONCURRENCY_LIMIT = 20;
-const limit = pLimit(CONCURRENCY_LIMIT);
 
 export const authServices = {
 	async register(data: LocalRegister) {
@@ -259,21 +256,10 @@ export const authServices = {
 	},
 
 	async getUsers(page: number = 1, limit: number = 10, search?: string) {
-		const whereCondition: Prisma.userWhereInput = {};
-
-		if (search) {
-			whereCondition.OR = [
-				{ email: { contains: search, mode: "insensitive" } },
-				{ profile: { name: { contains: search, mode: "insensitive" } } },
-				{ profile: { phone: { contains: search, mode: "insensitive" } } },
-				{ profile: { address: { contains: search, mode: "insensitive" } } },
-			];
-		}
-
-		const { total: totalData } = await authRepository.getAllUsersWithProfile({ where: whereCondition });
+		const { total: totalData } = await authRepository.getAllUsersWithProfile({ search });
 		const { skip, take, pagination } = paginate(page, limit, totalData);
 
-		const { users } = await authRepository.getAllUsersWithProfile({ where: whereCondition, skip, take });
+		const { users } = await authRepository.getAllUsersWithProfile({ search, skip, take });
 
 		const result = users.map((user) => {
 			let decryptedNIK: string | null = null;
