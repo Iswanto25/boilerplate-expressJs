@@ -8,6 +8,20 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-03-24
+
+### ✨ Added
+- **Multi-device Support**: Perbaikan manajemen refresh token yang memungkinkan user login di banyak perangkat sekaligus.
+- **Native Concurrency**: Implementasi `pLimit` secara native di `utils.ts` untuk menggantikan dependency `p-limit`.
+
+### 🔄 Changed
+- **Storage Refactor**: Semua operasi "get" file kini menggunakan URL publik langsung (`urlStorage`) melalui fungsi utilitas `getPublicUrl` di `s3.ts`.
+- **Response Standardization**: Field `status` dihapus dari body respons sukses untuk menyederhanakan data (status tetap ada di HTTP header).
+- **NIK Encryption**: Peningkatan penanganan enkripsi NIK menggunakan AES-256-GCM.
+
+### 🔧 Fixed
+- **Base64 Upload**: Perbaikan validasi dan penanganan error pada upload file dalam format base64.
+
 ## [2.0.0] - 2026-03-08
 
 ### ⚡ Breaking Changes

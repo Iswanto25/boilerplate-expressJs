@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { uploadFile, getFile, deleteFile, uploadBase64, isS3Configured } from "../utils/s3.js";
+import { uploadFile, getFile, deleteFile, uploadBase64, isS3Configured, getPublicUrl } from "../utils/s3.js";
 import { respons, HttpStatus } from "../utils/respons.js";
 import { createUploader } from "../middlewares/multerMiddleware.js";
 
@@ -66,15 +66,14 @@ router.post("/upload-base64", requireS3, async (req: Request, res: Response, nex
 router.get("/:folder/:fileName", requireS3, async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { folder, fileName } = req.params;
-		const expiresIn = parseInt(req.query.expiresIn as string) || 3600;
 
-		const url = await getFile(folder, fileName, expiresIn, { ensureExists: true });
+		const url = getPublicUrl(folder, fileName);
 
 		if (!url) {
 			return respons.error("File not found", null, HttpStatus.NOT_FOUND, res, req);
 		}
 
-		return respons.success("File URL generated", { url, expiresIn }, HttpStatus.OK, res, req);
+		return respons.success("File URL generated", { url }, HttpStatus.OK, res, req);
 	} catch (error) {
 		next(error);
 	}
