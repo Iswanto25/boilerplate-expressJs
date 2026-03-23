@@ -15,7 +15,7 @@ import { randomString } from "./utils.js";
 import { logger } from "./logger.js";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
-function normalizeEndpoint(raw?: string, useSSL?: boolean): string | null {
+function normalizeEndpoint(raw?: string, useSSL?: boolean, port?: string): string | null {
 	if (!raw?.trim()) return null;
 	// Remove trailing slashes without regex (avoids ReDoS)
 	let e = raw.trim();
@@ -25,11 +25,24 @@ function normalizeEndpoint(raw?: string, useSSL?: boolean): string | null {
 	if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
 		e = `${useSSL ? "https" : "http"}://${e}`;
 	}
+	if (port) {
+		try {
+			const u = new URL(e);
+			if (!u.port) {
+				u.port = port;
+				e = u.toString();
+				while (e.endsWith("/")) e = e.slice(0, -1);
+			}
+		} catch {
+			// ignore URL parsing errors
+		}
+	}
 	return e;
 }
 
 const USE_SSL = String(process.env.MINIO_USE_SSL || "").toLowerCase() === "true";
-const ENDPOINT = normalizeEndpoint(process.env.MINIO_ENDPOINT, USE_SSL);
+const MINIO_PORT = process.env.MINIO_PORT?.trim();
+const ENDPOINT = normalizeEndpoint(process.env.MINIO_ENDPOINT, USE_SSL, MINIO_PORT);
 const REGION = process.env.MINIO_REGION?.trim() || "us-east-1";
 const BUCKET = process.env.MINIO_BUCKET_NAME?.trim();
 const ACCESS_KEY = process.env.MINIO_ACCESS_KEY?.trim();
@@ -60,6 +73,12 @@ if (isS3Configured) {
 
 function publicUrl(key: string): string {
 	return `${ENDPOINT}/${BUCKET}/${key}`;
+}
+
+export function getPublicUrl(folder: string, file: string): string {
+	const publicBaseUrl = (process.env.STORAGE_PUBLIC_URL || "").replace(/^"|"$/g, "").replace(/\/$/, "");
+	const bucket = (process.env.MINIO_BUCKET_NAME || "").trim();
+	return `${publicBaseUrl}/${bucket}/${folder}/${file}`;
 }
 
 function throwS3NotConfigured(): never {

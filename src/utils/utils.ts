@@ -1,8 +1,5 @@
-import moment from "moment";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import crypto from "node:crypto";
-
-moment.locale("id");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const ALPHABET_LENGTH = alphabet.length;
@@ -13,11 +10,29 @@ function cryptoRandomString(length: number): string {
 		.map((b) => alphabet[b % ALPHABET_LENGTH])
 		.join("");
 }
+
+export function formatDate(date: Date = new Date()): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${year}${month}${day}`;
+}
+
+export function formatDateTime(date: Date = new Date()): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	const hours = String(date.getHours()).padStart(2, "0");
+	const minutes = String(date.getMinutes()).padStart(2, "0");
+	const seconds = String(date.getSeconds()).padStart(2, "0");
+	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 const saltHast = process.env.SALT_HASH || "default";
 const saltRounds = process.env.SALT_ROUNDS || 5;
 
 export function randomString(): string {
-	const datePart = moment().format("YYYYMMDD");
+	const datePart = formatDate();
 	return `${datePart}-${cryptoRandomString(10)}`;
 }
 

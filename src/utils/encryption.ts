@@ -4,14 +4,13 @@ const ENCRYPTION_ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const DEFAULT_VERSION = 1;
 
-const DATA_ENCRYPTION_KEY = process.env.DATA_ENCRYPTION_KEY;
 let cachedKey: Buffer | null = null;
-
-const loadKey = (): Buffer => {
-	if (cachedKey) return cachedKey;
-
-	const keySource = DATA_ENCRYPTION_KEY;
-	if (!keySource) throw new Error("DATA_ENCRYPTION_KEY is required for encryption");
+ 
+ const loadKey = (): Buffer => {
+ 	if (cachedKey) return cachedKey;
+ 
+	const keySource = process.env.DATA_ENCRYPTION_KEY;
+ 	if (!keySource) throw new Error("DATA_ENCRYPTION_KEY is required for encryption");
 
 	let keyBuffer: Buffer;
 	if (/^[0-9a-fA-F]{64}$/.test(keySource)) {
