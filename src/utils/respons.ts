@@ -2,8 +2,7 @@ import { Response, Request } from "express";
 import prisma from "../configs/database.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { logger } from "./logger.js";
-import moment from "moment";
-moment.locale("id");
+import { formatDateTime } from "./utils.js";
 
 export enum HttpStatus {
 	OK = 200,
@@ -24,7 +23,6 @@ export enum HttpStatus {
 
 const getRequestContext = async (req?: Request) => {
 	if (!req) return { user: null, ip: "", host: "", userAgent: "", ua: { source: "Unknown" }, dateTimeNow: "" };
-	moment.locale("id");
 	const auth = req.headers?.authorization;
 
 	let user = null;
@@ -43,7 +41,7 @@ const getRequestContext = async (req?: Request) => {
 	const ip = forwardedForHeader?.toString().split(",")[0].trim() || req.socket?.remoteAddress || "unknown";
 	const host = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
 	const userAgent = req.headers["user-agent"] || "Unknown";
-	const dateTimeNow = moment().format("YYYY-MM-DD HH:mm:ss");
+	const dateTimeNow = formatDateTime();
 
 	return { user, ip, host, userAgent, dateTimeNow };
 };
@@ -116,6 +114,7 @@ export const respons = {
 				timestamp: dateTimeNow,
 				source: "Error",
 				message,
+				hint: (error as any)?.hint || (error as any)?.code || undefined,
 				error: error as any,
 			},
 		};
@@ -123,7 +122,8 @@ export const respons = {
 		// Simplified console log with response time
 		const path = req?.path || req?.originalUrl || "unknown";
 		const userName = (user as any)?.profile?.name || "Guest";
-		logger.error(`❌ ${req?.method} ${path} ${code} | ${message} | ${userName} | ${responseTime}ms`);
+		const errorHint = (error as any)?.hint || (error as any)?.code || "";
+		logger.error(`❌ ${req?.method} ${path} ${code} | ${message} ${errorHint ? `(${errorHint}) ` : ""}| ${userName} | ${responseTime}ms`);
 
 		try {
 			await prisma.logs.create({
@@ -135,6 +135,7 @@ export const respons = {
 		res.status(code).json({
 			success: false,
 			message,
+			hint: (error as any)?.hint || (error as any)?.code || undefined,
 			error,
 		});
 	},
@@ -142,11 +143,13 @@ export const respons = {
 
 export class apiError extends Error {
 	public statusCode: number;
+	public hint?: string;
 
-	constructor(statusCode: number, message: string) {
+	constructor(statusCode: number, message: string, hint?: string) {
 		super(message);
 		this.statusCode = statusCode;
-		logger.error(message);
+		this.hint = hint;
+		logger.error(`${message}${hint ? ` (Hint: ${hint})` : ""}`);
 		Error.captureStackTrace(this, this.constructor);
 	}
 }

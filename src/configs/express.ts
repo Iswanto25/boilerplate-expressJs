@@ -83,8 +83,8 @@ app.use(cors(corsOptions));
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use(compression());
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Response time tracking middleware
 app.use((req: Request, res: Response, next) => {

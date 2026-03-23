@@ -50,6 +50,10 @@ export const authRepository = {
         return await tx.refreshToken.deleteMany({ where: { userId } });
     },
 
+    deleteRefreshToken: async (userId: string, token: string, tx: TxClient = prisma) => {
+        return await tx.refreshToken.deleteMany({ where: { userId, token } });
+    },
+
     findRefreshToken: async (userId: string, token: string, tx: TxClient = prisma) => {
         return await tx.refreshToken.findFirst({
             where: { userId, token },

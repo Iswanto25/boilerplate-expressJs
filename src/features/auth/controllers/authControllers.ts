@@ -12,6 +12,7 @@ export const authController = {
 				address: req.body.address,
 				phone: req.body.phone,
 				photo: req.body.photo,
+				NIK: req.body.NIK,
 			};
 
 			if (!data.name || !data.email || !data.password) {

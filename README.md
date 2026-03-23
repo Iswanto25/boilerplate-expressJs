@@ -9,9 +9,9 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 - **Authentication**:
     - JWT-based authentication system
     - User registration with profile creation
-    - Access & refresh token management
+    - Access & refresh token management (Multi-device support)
     - Token caching with Redis (optional)
-    - Profile management with photo upload
+    - Profile management with photo upload (Public URL access)
     - **NIK (National ID) encryption with AES-256-GCM**
 - **Security**:
     - Helmet untuk HTTP headers security
@@ -27,7 +27,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     - Integrasi S3/MinIO (optional)
     - Support base64 upload untuk images
     - Automatic file cleanup saat update
-    - Presigned URL generation untuk secure file access
+    - Public URL access for secure and fast file delivery
     - Photo size & format validation
 - **Email System**:
     - SMTP integration (optional)
