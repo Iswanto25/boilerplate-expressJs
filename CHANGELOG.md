@@ -18,6 +18,9 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 - **Storage Refactor**: Semua operasi "get" file kini menggunakan URL publik langsung (`urlStorage`) melalui fungsi utilitas `getPublicUrl` di `s3.ts`.
 - **Response Standardization**: Field `status` dihapus dari body respons sukses untuk menyederhanakan data (status tetap ada di HTTP header).
 - **NIK Encryption**: Peningkatan penanganan enkripsi NIK menggunakan AES-256-GCM.
+- **Service Refactor**: Memindahkan semua logika query Prisma dari `authServices.ts` ke `authRepository.ts` untuk meningkatkan separasi perhatian (separation of concerns).
+- **ID Generation**: Menggunakan `crypto.randomUUID()` secara eksplisit di backend untuk pembuatan ID yang konsisten dan aman, tanpa mengandalkan default database.
+- **Dependency Cleanup**: Menghapus library yang tidak digunakan lagi seperti `uuid`, `nanoid`, dan `@aws-sdk/node-http-handler` untuk mengoptimalkan ukuran proyek dan performa.
 
 ### 🔧 Fixed
 - **Base64 Upload**: Perbaikan validasi dan penanganan error pada upload file dalam format base64.

@@ -41,7 +41,7 @@ module.exports = {
 	restoreMocks: true,
 
 	// Ignore transforming ESM modules
-	transformIgnorePatterns: ["node_modules/(?!(@faker-js|uuid|p-limit|nanoid)/)"],
+	transformIgnorePatterns: ["node_modules/(?!(@faker-js)/)"],
 
 	// ESM support
 	extensionsToTreatAsEsm: [".ts"],
