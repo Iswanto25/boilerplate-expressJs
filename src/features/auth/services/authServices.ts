@@ -155,7 +155,6 @@ export const authServices = {
 
 	async logout(userId: string): Promise<void> {
 		await Promise.all([authRepository.deleteRefreshTokensByUserId(userId), deleteToken(userId, "access"), deleteToken(userId, "refresh")]);
-		
 	},
 
 	async profile(userId: string) {
@@ -166,11 +165,10 @@ export const authServices = {
 
 		return {
 			id: user.id,
+			NIK: user.profile?.NIK ? decryptSensitive({ version: 1, ciphertext: user.profile.NIK }) : null,
 			email: user.email,
 			role: user.role,
 			isActive: user.isActive,
-			createdAt: user.createdAt,
-			updatedAt: user.updatedAt,
 			name: user.profile?.name || null,
 			phone: user.profile?.phone || null,
 			address: user.profile?.address || null,
