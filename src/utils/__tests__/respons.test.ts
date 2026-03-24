@@ -144,7 +144,6 @@ test("respons.success with pagination", async () => {
 });
 
 test("respons.error logs warning when database write fails", async () => {
-
 	const failingLog = mock.fn(async () => {
 		throw new Error("db failure");
 	});

@@ -16,7 +16,7 @@ export const authController = {
 			};
 
 			if (!data.name || !data.email || !data.password) {
-				return respons.error("Data tidak lengkap", null, HttpStatus.BAD_REQUEST, res, req);
+				return respons.error("Data tidak lengkap", "Data tidak lengkap", HttpStatus.BAD_REQUEST, res, req);
 			}
 
 			const user = await authServices.register(data);
@@ -27,7 +27,7 @@ export const authController = {
 			let message = err.message || "Terjadi kesalahan pada server";
 
 			if (message === "Email already exists") message = "Email sudah terdaftar";
-			return respons.error(message, null, statusCode, res, req);
+			return respons.error(message, message, statusCode, res, req);
 		}
 	},
 
@@ -36,7 +36,7 @@ export const authController = {
 			const { email, password } = req.body;
 
 			if (!email || !password) {
-				return respons.error("Data tidak lengkap", null, HttpStatus.BAD_REQUEST, res, req);
+				return respons.error("Data tidak lengkap", "Data tidak lengkap", HttpStatus.BAD_REQUEST, res, req);
 			}
 
 			const user = await authServices.login(email, password);
@@ -47,24 +47,24 @@ export const authController = {
 			let message = err.message || "Terjadi kesalahan pada server";
 
 			if (message === "User not found") message = "User tidak ditemukan";
-			return respons.error(message, null, statusCode, res, req);
+			return respons.error(message, message, statusCode, res, req);
 		}
 	},
 
 	logout: async (req: Request, res: Response) => {
 		try {
 			if (!req.user) {
-				return respons.error("User tidak ditemukan", null, HttpStatus.UNAUTHORIZED, res, req);
+				return respons.error("User tidak ditemukan", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
 			}
 			await authServices.logout(req.user.id);
-			return respons.success("Berhasil logout", null, HttpStatus.OK, res, req);
+			return respons.success("Berhasil logout", {}, HttpStatus.OK, res, req);
 		} catch (error) {
 			const err = error as { statusCode?: number; message?: string };
 			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
 			let message = err.message || "Terjadi kesalahan pada server";
 
 			if (message === "User not found") message = "User tidak ditemukan";
-			return respons.error(message, null, statusCode, res, req);
+			return respons.error(message, message, statusCode, res, req);
 		}
 	},
 
@@ -72,7 +72,7 @@ export const authController = {
 		try {
 			const { refreshToken } = req.body;
 			if (!refreshToken) {
-				return respons.error("Data tidak lengkap", null, HttpStatus.BAD_REQUEST, res, req);
+				return respons.error("Data tidak lengkap", "Data tidak lengkap", HttpStatus.BAD_REQUEST, res, req);
 			}
 
 			const user = await authServices.refreshToken(refreshToken);
@@ -83,14 +83,14 @@ export const authController = {
 			let message = err.message || "Terjadi kesalahan pada server";
 
 			if (message === "User not found") message = "User tidak ditemukan";
-			return respons.error(message, null, statusCode, res, req);
+			return respons.error(message, message, statusCode, res, req);
 		}
 	},
 
 	profile: async (req: Request, res: Response) => {
 		try {
 			if (!req.user) {
-				return respons.error("User tidak ditemukan", null, HttpStatus.UNAUTHORIZED, res, req);
+				return respons.error("User tidak ditemukan", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
 			}
 			const user = await authServices.profile(req.user.id);
 			return respons.success("Berhasil get profile", user, HttpStatus.OK, res, req);
@@ -100,7 +100,7 @@ export const authController = {
 			let message = err.message || "Terjadi kesalahan pada server";
 
 			if (message === "User not found") message = "User tidak ditemukan";
-			return respons.error(message, null, statusCode, res, req);
+			return respons.error(message, message, statusCode, res, req);
 		}
 	},
 
@@ -109,7 +109,7 @@ export const authController = {
 			const email = req.body.email;
 
 			if (!email) {
-				return respons.error("Data tidak lengkap", null, HttpStatus.BAD_REQUEST, res, req);
+				return respons.error("Data tidak lengkap", "Data tidak lengkap", HttpStatus.BAD_REQUEST, res, req);
 			}
 			const result = await authServices.forgotPassword(email);
 			return respons.success("Berhasil kirim email", result, HttpStatus.OK, res, req);
@@ -119,7 +119,7 @@ export const authController = {
 			let message = err.message || "Terjadi kesalahan pada server";
 
 			if (message === "User not found") message = "User tidak ditemukan";
-			return respons.error(message, null, statusCode, res, req);
+			return respons.error(message, message, statusCode, res, req);
 		}
 	},
 
@@ -135,7 +135,7 @@ export const authController = {
 			const err = error as { statusCode?: number; message?: string };
 			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
 			const message = err.message || "Terjadi kesalahan pada server";
-			return respons.error(message, null, statusCode, res, req);
+			return respons.error(message, message, statusCode, res, req);
 		}
 	},
 };
