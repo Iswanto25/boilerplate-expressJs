@@ -1,23 +1,19 @@
 import { Request, Response } from "express";
 import { authServices } from "@/features/auth/services/authServices.js";
 import { HttpStatus, respons } from "@/utils/respons.js";
+import { authValidation } from "@/features/auth/validations/authValidation.js";
 
 export const authController = {
 	register: async (req: Request, res: Response) => {
 		try {
-			const data = {
-				name: req.body.name,
-				email: req.body.email,
-				password: req.body.password,
-				address: req.body.address,
-				phone: req.body.phone,
-				photo: req.body.photo,
-				NIK: req.body.NIK,
-			};
+			const validation = authValidation.register.safeParse(req.body);
 
-			if (!data.name || !data.email || !data.password) {
-				return respons.error("Data tidak lengkap", "Data tidak lengkap", HttpStatus.BAD_REQUEST, res, req);
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
 			}
+
+			const data = validation.data;
 
 			const user = await authServices.register(data);
 			return respons.success("Berhasil register", user, HttpStatus.OK, res, req);
@@ -33,11 +29,14 @@ export const authController = {
 
 	login: async (req: Request, res: Response) => {
 		try {
-			const { email, password } = req.body;
+			const validation = authValidation.login.safeParse(req.body);
 
-			if (!email || !password) {
-				return respons.error("Data tidak lengkap", "Data tidak lengkap", HttpStatus.BAD_REQUEST, res, req);
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
 			}
+
+			const { email, password } = validation.data;
 
 			const user = await authServices.login(email, password);
 			return respons.success("Berhasil login", user, HttpStatus.OK, res, req);
@@ -70,10 +69,14 @@ export const authController = {
 
 	refreshToken: async (req: Request, res: Response) => {
 		try {
-			const { refreshToken } = req.body;
-			if (!refreshToken) {
-				return respons.error("Data tidak lengkap", "Data tidak lengkap", HttpStatus.BAD_REQUEST, res, req);
+			const validation = authValidation.refreshToken.safeParse(req.body);
+			
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
 			}
+
+			const { refreshToken } = validation.data;
 
 			const user = await authServices.refreshToken(refreshToken);
 			return respons.success("Berhasil refresh token", user, HttpStatus.OK, res, req);
@@ -106,11 +109,13 @@ export const authController = {
 
 	forgotPassword: async (req: Request, res: Response) => {
 		try {
-			const email = req.body.email;
+			const validation = authValidation.forgotPassword.safeParse(req.body);
 
-			if (!email) {
-				return respons.error("Data tidak lengkap", "Data tidak lengkap", HttpStatus.BAD_REQUEST, res, req);
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
 			}
+			const { email } = validation.data;
 			const result = await authServices.forgotPassword(email);
 			return respons.success("Berhasil kirim email", result, HttpStatus.OK, res, req);
 		} catch (error) {
@@ -125,9 +130,14 @@ export const authController = {
 
 	getUsers: async (req: Request, res: Response) => {
 		try {
-			const page = Number(req.query.page) || 1;
-			const limit = Number(req.query.limit) || 10;
-			const search = req.query.search as string;
+			const validation = authValidation.getUsers.safeParse(req.query);
+			
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
+			}
+			
+			const { page, limit, search } = validation.data;
 
 			const { users, pagination } = await authServices.getUsers(page, limit, search);
 			return respons.success("Berhasil get users", users, HttpStatus.OK, res, req, pagination);

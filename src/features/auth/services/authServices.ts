@@ -15,9 +15,9 @@ interface LocalRegister {
 	name: string;
 	email: string;
 	password: string;
-	address: string;
-	phone: string;
-	photo: string;
+	address?: string;
+	phone?: string;
+	photo?: string;
 	NIK?: string;
 }
 
