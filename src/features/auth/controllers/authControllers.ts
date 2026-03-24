@@ -69,14 +69,14 @@ export const authController = {
 
 	refreshToken: async (req: Request, res: Response) => {
 		try {
-			const validation = authValidation.refreshToken.safeParse(req.body);
-			
+			const validation = authValidation.refreshToken.safeParse(req.body.refreshToken);
+
 			if (!validation.success) {
 				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
 				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
 			}
 
-			const { refreshToken } = validation.data;
+			const refreshToken = validation.data;
 
 			const user = await authServices.refreshToken(refreshToken);
 			return respons.success("Berhasil refresh token", user, HttpStatus.OK, res, req);
@@ -131,12 +131,12 @@ export const authController = {
 	getUsers: async (req: Request, res: Response) => {
 		try {
 			const validation = authValidation.getUsers.safeParse(req.query);
-			
+
 			if (!validation.success) {
 				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
 				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
 			}
-			
+
 			const { page, limit, search } = validation.data;
 
 			const { users, pagination } = await authServices.getUsers(page, limit, search);

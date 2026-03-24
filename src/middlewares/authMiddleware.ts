@@ -23,15 +23,15 @@ export const authenticate = {
 	},
 
 	async verifyToken(req: Request, res: Response, next: NextFunction) {
-		const result = await (this as any).checkToken(req);
+		const result = await authenticate.checkToken(req);
 		if (!result.valid || !result.userId) {
-			return respons.error("Unauthorized", null, HttpStatus.UNAUTHORIZED, res, req);
+			return respons.error("Unauthorized", "Token tidak valid", HttpStatus.UNAUTHORIZED, res, req);
 		}
 
 		const existingUser = await prisma.user.findUnique({ where: { id: result.userId } });
 
 		if (!existingUser) {
-			return respons.error("User not found", null, HttpStatus.UNAUTHORIZED, res, req);
+			return respons.error("User not found", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
 		}
 
 		req.user = existingUser as any;
