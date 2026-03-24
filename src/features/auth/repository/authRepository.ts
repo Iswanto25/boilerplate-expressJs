@@ -18,7 +18,21 @@ export const authRepository = {
 	findUserById: async (id: string, tx: TxClient = prisma) => {
 		return await tx.user.findUnique({
 			where: { id },
-			include: { profile: true },
+			select: {
+				id: true,
+				isActive: true,
+				role: true,
+				email: true,
+				profile: {
+					select: {
+						name: true,
+						NIK: true,
+						phone: true,
+						photo: true,
+						address: true
+					}
+				}
+			}
 		});
 	},
 
