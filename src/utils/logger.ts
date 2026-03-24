@@ -27,9 +27,10 @@ const transport = pino.transport({
 		},
 		{
 			target: isProd ? "pino/file" : "pino-pretty",
-			options: isProd
-				? ({ destination: 1 } as any)
-				: {
+			options:
+				isProd ?
+					({ destination: 1 } as any)
+				:	{
 						colorize: true,
 						translateTime: "HH:MM:ss",
 						ignore: "pid,hostname,req,res",

@@ -28,7 +28,8 @@ const stubModule = (specifier: string, exports: any): (() => void) => {
 };
 
 type SetupResult = {
-	module: typeof import("../s3.js");	handlers: Map<string, (command: { input: any }) => any>;
+	module: typeof import("../s3.js");
+	handlers: Map<string, (command: { input: any }) => any>;
 	sendMock: ReturnType<typeof mock.fn>;
 	getSignedUrl: ReturnType<typeof mock.fn>;
 	restoreAll: () => void;

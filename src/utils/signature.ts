@@ -13,14 +13,7 @@ const hashPayload = (body: unknown): string => {
  * Generate a secure API Key with HMAC signature
  * Includes method, url, and body hash to prevent replay and tampering
  */
-export function generateApiKey(
-	userKey: string,
-	secretKey: string,
-	syncedTimestamp: number,
-	method: string,
-	url: string,
-	body: unknown,
-): string {
+export function generateApiKey(userKey: string, secretKey: string, syncedTimestamp: number, method: string, url: string, body: unknown): string {
 	const timestampStr = syncedTimestamp.toString();
 	const bodyHash = hashPayload(body);
 	const dataToSign = `${userKey}:${timestampStr}:${bodyHash}:${method.toUpperCase()}:${url}`;
