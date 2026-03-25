@@ -15,9 +15,9 @@ interface LocalRegister {
 	name: string;
 	email: string;
 	password: string;
-	address: string;
-	phone: string;
-	photo: string;
+	address?: string;
+	phone?: string;
+	photo?: string;
 	NIK?: string;
 }
 
@@ -59,17 +59,18 @@ export const authServices = {
 			const accessToken = jwtUtils.generateAccessToken({ id: user.id, email: user.email });
 			const refreshToken = jwtUtils.generateRefreshToken({ id: user.id, email: user.email });
 
-			await storeToken(user.id, accessToken, "access", 24 * 60 * 60);
-			await storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60);
-
-			await authRepository.createRefreshToken(
-				{
-					id: crypto.randomUUID(),
-					userId: user.id,
-					token: refreshToken,
-				},
-				tx,
-			);
+			await Promise.all([
+				storeToken(user.id, accessToken, "access", 24 * 60 * 60),
+				storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60),
+				authRepository.createRefreshToken(
+					{
+						id: crypto.randomUUID(),
+						userId: user.id,
+						token: refreshToken,
+					},
+					tx,
+				),
+			]);
 
 			return {
 				user: {
@@ -93,24 +94,22 @@ export const authServices = {
 		const isValid = await comparePassword(password, user.password || "");
 		if (!isValid) throw new apiError(400, "Invalid password");
 
-		await authRepository.deleteRefreshTokensByUserId(user.id);
-		await deleteToken(user.id, "access");
-		await deleteToken(user.id, "refresh");
+		await Promise.all([authRepository.deleteRefreshTokensByUserId(user.id), deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
 
 		const accessToken = jwtUtils.generateAccessToken({ id: user.id, email: user.email });
 		const refreshToken = jwtUtils.generateRefreshToken({ id: user.id, email: user.email });
 
-		await authRepository.createRefreshToken({
-			id: crypto.randomUUID(),
-			userId: user.id,
-			token: refreshToken,
-		});
-
-		await storeToken(user.id, accessToken, "access", 24 * 60 * 60);
-		await storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60);
+		await Promise.all([
+			authRepository.createRefreshToken({
+				id: crypto.randomUUID(),
+				userId: user.id,
+				token: refreshToken,
+			}),
+			storeToken(user.id, accessToken, "access", 24 * 60 * 60),
+			storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60),
+		]);
 
 		const photoUrl = user.profile?.photo ? getPublicUrl(folder, user.profile.photo) : null;
-
 
 		return {
 			user: {
@@ -127,37 +126,33 @@ export const authServices = {
 	async refreshToken(oldToken: string) {
 		const decoded = jwtUtils.verifyRefreshToken(oldToken);
 
-		const user = await authRepository.findUserById(decoded.id);
+		const [user, tokenRecord] = await Promise.all([
+			authRepository.findUserById(decoded.id),
+			authRepository.findRefreshToken(decoded.id, oldToken),
+		]);
 		if (!user) throw new apiError(400, "User not found");
-
-		const tokenRecord = await authRepository.findRefreshToken(user.id, oldToken);
 		if (!tokenRecord) throw new apiError(400, "Invalid token");
 
-		// Only delete the used refresh token, not all of them
-		// This enables multi-device support
-		await authRepository.deleteRefreshToken(user.id, oldToken);
+		await Promise.all([authRepository.deleteRefreshTokensByUserId(user.id), deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
 
 		const newAccessToken = jwtUtils.generateAccessToken({ id: user.id, email: user.email });
 		const newRefreshToken = jwtUtils.generateRefreshToken({ id: user.id, email: user.email });
 
-		await authRepository.createRefreshToken({
-			id: crypto.randomUUID(),
-			userId: user.id,
-			token: newRefreshToken,
-		});
-
-		await storeToken(user.id, newAccessToken, "access", 24 * 60 * 60);
-		await storeToken(user.id, newRefreshToken, "refresh", 7 * 24 * 60 * 60);
+		await Promise.all([
+			authRepository.createRefreshToken({
+				id: crypto.randomUUID(),
+				userId: user.id,
+				token: newRefreshToken,
+			}),
+			storeToken(user.id, newAccessToken, "access", 24 * 60 * 60),
+			storeToken(user.id, newRefreshToken, "refresh", 7 * 24 * 60 * 60),
+		]);
 
 		return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 	},
 
-	async logout(userId: string) {
-		await authRepository.deleteRefreshTokensByUserId(userId);
-		await deleteToken(userId, "access");
-		await deleteToken(userId, "refresh");
-
-		return { message: "Logout berhasil" };
+	async logout(userId: string): Promise<void> {
+		await Promise.all([authRepository.deleteRefreshTokensByUserId(userId), deleteToken(userId, "access"), deleteToken(userId, "refresh")]);
 	},
 
 	async profile(userId: string) {
@@ -168,11 +163,10 @@ export const authServices = {
 
 		return {
 			id: user.id,
+			NIK: user.profile?.NIK ? decryptSensitive({ version: 1, ciphertext: user.profile.NIK }) : null,
 			email: user.email,
 			role: user.role,
 			isActive: user.isActive,
-			createdAt: user.createdAt,
-			updatedAt: user.updatedAt,
 			name: user.profile?.name || null,
 			phone: user.profile?.phone || null,
 			address: user.profile?.address || null,
@@ -197,8 +191,8 @@ export const authServices = {
 		});
 	},
 
-	async updateProfile(userId: string, data: Partial<{ name: string; phone: string; address: string; photo: string }>) {
-		return await authRepository.transaction(async (tx: any) => {
+	async updateProfile(userId: string, data: Partial<{ name: string; phone: string; address: string; photo: string; NIK: string; email: string }>): Promise<void> {
+		await authRepository.transaction(async (tx: any) => {
 			const currentUser = await authRepository.findUserById(userId, tx);
 			if (!currentUser) throw new apiError(400, "User not found");
 
@@ -214,29 +208,33 @@ export const authServices = {
 				}
 			}
 
+			let encryptNik: string | undefined = undefined;
+			if (data.NIK) {
+				encryptNik = encryptionUtils.encryptSensitive(data.NIK).ciphertext;
+			}
+
+			let newEmail: string | undefined = undefined;
+			if (data.email && data.email !== currentUser.email) {
+				if (!isEmailValid(data.email)) throw new apiError(400, "Invalid email format");
+				const existing = await authRepository.findUserByEmail(data.email, tx);
+				if (existing) throw new apiError(400, "Email already exists");
+				newEmail = data.email;
+			}
+
 			const profileData = {
 				...(data.name !== undefined && { name: data.name }),
 				...(data.phone !== undefined && { phone: data.phone }),
 				...(data.address !== undefined && { address: data.address }),
 				...(photoFileName !== undefined && { photo: photoFileName }),
+				...(encryptNik !== undefined && { NIK: encryptNik }),
 			};
 
-			const updatedUser = await authRepository.updateUserProfile(userId, profileData, tx);
-			const photoUrl = updatedUser.profile?.photo ? getPublicUrl(folder, updatedUser.profile.photo) : null;
-
-			return {
-				id: updatedUser.id,
-				email: updatedUser.email,
-				name: updatedUser.profile?.name || null,
-				phone: updatedUser.profile?.phone || null,
-				address: updatedUser.profile?.address || null,
-				photo: photoUrl,
-			};
+			await authRepository.updateUserProfile(userId, profileData, newEmail, tx);
 		});
 	},
 
-	async deleteProfile(userId: string) {
-		return await authRepository.transaction(async (tx: any) => {
+	async deleteProfile(userId: string): Promise<void> {
+		await authRepository.transaction(async (tx: any) => {
 			const user = await authRepository.findUserById(userId, tx);
 			if (!user) throw new apiError(400, "User not found");
 
@@ -250,16 +248,15 @@ export const authServices = {
 
 			await deleteToken(userId, "access");
 			await deleteToken(userId, "refresh");
-
-			return { message: "Profile deleted successfully" };
 		});
 	},
 
 	async getUsers(page: number = 1, limit: number = 10, search?: string) {
-		const { total: totalData } = await authRepository.getAllUsersWithProfile({ search });
-		const { skip, take, pagination } = paginate(page, limit, totalData);
+		const take = limit;
+		const skip = (page - 1) * limit;
 
-		const { users } = await authRepository.getAllUsersWithProfile({ search, skip, take });
+		const { total: totalData, users } = await authRepository.getAllUsersWithProfile({ search, skip, take });
+		const { pagination } = paginate(page, limit, totalData);
 
 		const result = users.map((user) => {
 			let decryptedNIK: string | null = null;
