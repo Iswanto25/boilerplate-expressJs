@@ -421,33 +421,33 @@ Response:
 
 ### Authentication
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/register` | Register user baru dengan profil & foto (base64) |
-| `POST` | `/api/auth/login` | Login user, mengembalikan data user + foto URL |
-| `POST` | `/api/auth/refresh-token` | Refresh access token |
-| `POST` | `/api/auth/logout` | Logout user |
-| `GET` | `/api/auth/profile` | Get profil user dengan foto URL |
-| `GET` | `/api/auth/users` | Get semua user dengan data profil dan foto URL |
-| `POST` | `/api/auth/forgot-password` | Kirim OTP email untuk reset password |
-| `PUT` | `/api/auth/profile` | Update profil user (name, phone, address, photo) |
-| `DELETE` | `/api/auth/profile` | Hapus akun user & cleanup file S3 |
+| Method   | Endpoint                    | Description                                      |
+| -------- | --------------------------- | ------------------------------------------------ |
+| `POST`   | `/api/auth/register`        | Register user baru dengan profil & foto (base64) |
+| `POST`   | `/api/auth/login`           | Login user, mengembalikan data user + foto URL   |
+| `POST`   | `/api/auth/refresh-token`   | Refresh access token                             |
+| `POST`   | `/api/auth/logout`          | Logout user                                      |
+| `GET`    | `/api/auth/profile`         | Get profil user dengan foto URL                  |
+| `GET`    | `/api/auth/users`           | Get semua user dengan data profil dan foto URL   |
+| `POST`   | `/api/auth/forgot-password` | Kirim OTP email untuk reset password             |
+| `PUT`    | `/api/auth/profile`         | Update profil user (name, phone, address, photo) |
+| `DELETE` | `/api/auth/profile`         | Hapus akun user & cleanup file S3                |
 
 ### File Upload (requires S3/MinIO)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/files/upload` | Upload file (multipart/form-data) |
-| `POST` | `/api/files/upload-base64` | Upload file base64 encoded |
-| `GET` | `/api/files/:folder/:fileName` | Get direct public URL (`urlStorage`) |
-| `DELETE` | `/api/files/:folder/:fileName` | Hapus file |
+| Method   | Endpoint                       | Description                          |
+| -------- | ------------------------------ | ------------------------------------ |
+| `POST`   | `/api/files/upload`            | Upload file (multipart/form-data)    |
+| `POST`   | `/api/files/upload-base64`     | Upload file base64 encoded           |
+| `GET`    | `/api/files/:folder/:fileName` | Get direct public URL (`urlStorage`) |
+| `DELETE` | `/api/files/:folder/:fileName` | Hapus file                           |
 
 ### API Signature Examples
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/example/protected` | Endpoint dilindungi signature (butuh `x-api-key` header) |
-| `GET` | `/api/example/public` | Endpoint publik (tanpa autentikasi) |
+| Method | Endpoint                 | Description                                              |
+| ------ | ------------------------ | -------------------------------------------------------- |
+| `GET`  | `/api/example/protected` | Endpoint dilindungi signature (butuh `x-api-key` header) |
+| `GET`  | `/api/example/public`    | Endpoint publik (tanpa autentikasi)                      |
 
 ## 📧 Email Templates
 

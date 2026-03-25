@@ -23,9 +23,7 @@ export const errorHandler = (err: AppError, req: Request, res: Response, _next: 
 	// Jika di produksi dan ini adalah error 500 (internal server error),
 	// sembunyikan detail error agar tidak membocorkan struktur sistem/database.
 	const message =
-		isProduction && statusCode === HttpStatus.INTERNAL_SERVER_ERROR ?
-			"Internal server error"
-		:	(err.message || "Internal server error");
+		isProduction && statusCode === HttpStatus.INTERNAL_SERVER_ERROR ? "Internal server error" : err.message || "Internal server error";
 
 	return respons.error(message, null, statusCode, res, req);
 };

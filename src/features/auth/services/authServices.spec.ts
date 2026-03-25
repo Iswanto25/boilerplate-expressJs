@@ -197,7 +197,6 @@ describe("Auth Services", () => {
 		});
 	});
 
-
 	describe("logout", () => {
 		it("should logout user successfully", async () => {
 			// Arrange
