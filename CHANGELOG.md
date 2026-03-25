@@ -11,10 +11,12 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 ## [2.1.0] - 2026-03-24
 
 ### ✨ Added
+
 - **Multi-device Support**: Perbaikan manajemen refresh token yang memungkinkan user login di banyak perangkat sekaligus.
 - **Native Concurrency**: Implementasi `pLimit` secara native di `utils.ts` untuk menggantikan dependency `p-limit`.
 
 ### 🔄 Changed
+
 - **Storage Refactor**: Semua operasi "get" file kini menggunakan URL publik langsung (`urlStorage`) melalui fungsi utilitas `getPublicUrl` di `s3.ts`.
 - **Response Standardization**: Field `status` dihapus dari body respons sukses untuk menyederhanakan data (status tetap ada di HTTP header).
 - **NIK Encryption**: Peningkatan penanganan enkripsi NIK menggunakan AES-256-GCM.
@@ -23,6 +25,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 - **Dependency Cleanup**: Menghapus library yang tidak digunakan lagi seperti `uuid`, `nanoid`, dan `@aws-sdk/node-http-handler` untuk mengoptimalkan ukuran proyek dan performa.
 
 ### 🔧 Fixed
+
 - **Base64 Upload**: Perbaikan validasi dan penanganan error pada upload file dalam format base64.
 
 ## [2.0.0] - 2026-03-08
@@ -30,25 +33,25 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 ### ⚡ Breaking Changes
 
 - **Prisma upgrade ke v7**: Upgrade `prisma`, `@prisma/client`, dan `@prisma/adapter-pg` dari v6 ke **v7.4.2**
-  - `url` di `datasource` block pada `schema.prisma` tidak lagi didukung di Prisma v7 — konfigurasi koneksi database sepenuhnya dipindahkan ke `prisma.config.ts`
+    - `url` di `datasource` block pada `schema.prisma` tidak lagi didukung di Prisma v7 — konfigurasi koneksi database sepenuhnya dipindahkan ke `prisma.config.ts`
 - **API route prefix diubah**: Semua endpoint tidak lagi menggunakan prefix `/v1`
-  - `POST /api/v1/auth/*` → `POST /api/auth/*`
-  - `POST /api/v1/files/*` → `POST /api/files/*`
+    - `POST /api/v1/auth/*` → `POST /api/auth/*`
+    - `POST /api/v1/files/*` → `POST /api/files/*`
 
 ### 🗑️ Removed
 
 - **Bulk Register** fitur dihapus:
-  - `POST /api/auth/bulk-register` endpoint dihapus dari `authRoutes.ts`
-  - `authController.bulkRegister` dihapus dari `authControllers.ts`
-  - `authServices.bulkRegister` dihapus dari `authServices.ts`
-  - `authRepository.createUsersBatch` dan `authRepository.createProfilesBatch` dihapus dari `authRepository.ts`
-  - Test case `bulkRegister` dihapus dari `authControllers.spec.ts` dan `authServices.spec.ts`
-  - `src/utils/bulkRegisterReport.ts` tidak lagi digunakan
+    - `POST /api/auth/bulk-register` endpoint dihapus dari `authRoutes.ts`
+    - `authController.bulkRegister` dihapus dari `authControllers.ts`
+    - `authServices.bulkRegister` dihapus dari `authServices.ts`
+    - `authRepository.createUsersBatch` dan `authRepository.createProfilesBatch` dihapus dari `authRepository.ts`
+    - Test case `bulkRegister` dihapus dari `authControllers.spec.ts` dan `authServices.spec.ts`
+    - `src/utils/bulkRegisterReport.ts` tidak lagi digunakan
 
 ### ✨ Changed
 
 - **Import path alias**: Semua import path diubah dari relative path (`../../../utils/...`) ke alias `@/` (`@/utils/...`) untuk keterbacaan dan konsistensi
-  - Berlaku di `authControllers.ts`, `authServices.ts`, dan file lainnya
+    - Berlaku di `authControllers.ts`, `authServices.ts`, dan file lainnya
 - **`schema.prisma`**: Field `url` dihapus dari blok `datasource db` (dipindahkan ke `prisma.config.ts` sesuai Prisma v7)
 - **`src/generated/`**: Folder disiapkan untuk output custom Prisma Client
 
@@ -59,12 +62,12 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 ### ✨ Added
 
 - **Docker support**: Konfigurasi Docker dan Docker Compose untuk containerized deployment
-  - `Dockerfile` dengan multi-stage build
-  - `docker-compose.yml` dengan service database, Redis, dan aplikasi
-  - Environment variable-based configuration untuk semua Docker services
-  - Auto-run `prisma migrate deploy` saat container start
+    - `Dockerfile` dengan multi-stage build
+    - `docker-compose.yml` dengan service database, Redis, dan aplikasi
+    - Environment variable-based configuration untuk semua Docker services
+    - Auto-run `prisma migrate deploy` saat container start
 - **`prisma.config.ts`**: File konfigurasi Prisma terpusat (menggunakan Prisma Config API)
-  - Mendukung pembacaan `DATABASE_URL` dari environment variable
+    - Mendukung pembacaan `DATABASE_URL` dari environment variable
 
 ### 🔧 Fixed
 
@@ -78,13 +81,13 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 - **NIK encryption**: Enkripsi field NIK dengan AES-256-GCM di `encryption.ts`
 - **Bulk register** endpoint: `POST /api/v1/auth/bulk-register` untuk mendaftarkan banyak user sekaligus (array input, hingga 1000 user) dengan:
-  - Concurrency control via `p-limit`
-  - Batch database insert (250 per batch)
-  - Auto photo upload ke S3/MinIO
-  - Performance profiling & markdown report generation
+    - Concurrency control via `p-limit`
+    - Batch database insert (250 per batch)
+    - Auto photo upload ke S3/MinIO
+    - Performance profiling & markdown report generation
 - **Performance profiling utilities**:
-  - `src/utils/bulkRegisterReport.ts` — generate laporan performa bulk register
-  - `src/utils/getUsersReport.ts` — generate laporan performa get users
+    - `src/utils/bulkRegisterReport.ts` — generate laporan performa bulk register
+    - `src/utils/getUsersReport.ts` — generate laporan performa get users
 - **API Signature** (`signature.ts`): Verifikasi endpoint dengan HMAC-SHA256
 - **`scripts/generateApiKey.ts`**: Generate API key untuk testing signature endpoint
 
@@ -99,10 +102,10 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 ### ✨ Added
 
 - **Email template system** (`src/utils/mail.ts`): Template modular untuk berbagai jenis email
-  - OTP Email untuk password reset
-  - Verification Email untuk aktivasi akun
-  - Welcome Email untuk pengguna baru
-  - Password Changed Email
+    - OTP Email untuk password reset
+    - Verification Email untuk aktivasi akun
+    - Welcome Email untuk pengguna baru
+    - Password Changed Email
 - **`docs/EMAIL_TEMPLATES.md`**: Dokumentasi penggunaan email template
 - **Get Users** endpoint: `GET /api/v1/auth/users` mengembalikan semua user lengkap dengan data profil dan URL foto
 
@@ -120,10 +123,10 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 - **Rate limiting** (`src/utils/rateLimiter.ts`): Berbasis Redis, graceful fallback jika Redis tidak tersedia
 - **Token store** (`src/utils/tokenStore.ts`): Menyimpan refresh token di Redis
 - **S3/MinIO integration** (`src/utils/s3.ts`):
-  - Upload file multipart dan base64
-  - Presigned URL generation
-  - Validasi format dan ukuran file
-  - Auto-delete file lama saat update profil
+    - Upload file multipart dan base64
+    - Presigned URL generation
+    - Validasi format dan ukuran file
+    - Auto-delete file lama saat update profil
 - **SMTP integration** (`src/utils/smtp.ts`): Email sending dengan Nodemailer
 - **Forgot password & OTP flow**: Reset password menggunakan OTP via email
 - **Profile management**: Update dan delete profil user termasuk cleanup S3 files
@@ -138,11 +141,11 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 - **Express.js v5** dengan TypeScript
 - **Prisma ORM** untuk database management
 - **Authentication**:
-  - Register dengan pembuatan profil
-  - Login dengan JWT (access token + refresh token)
-  - Logout
-  - Refresh token
-  - Get profile
+    - Register dengan pembuatan profil
+    - Login dengan JWT (access token + refresh token)
+    - Logout
+    - Refresh token
+    - Get profile
 - **JWT utilities** (`src/utils/jwt.ts`): Sign dan verify token
 - **Encryption utilities** (`src/utils/encryption.ts`): AES-256-GCM untuk data sensitif
 - **Response formatting** (`src/utils/respons.ts`): Format standar JSON response
