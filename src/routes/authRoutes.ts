@@ -12,5 +12,7 @@ router.post("/refresh-token", authenticate.verifyToken, authController.refreshTo
 router.get("/profile", authenticate.verifyToken, rateLimiter({ windowInSeconds: 30, maxRequests: 3, useUserId: true }), authController.profile);
 router.post("/forgot-password", authController.forgotPassword);
 router.get("/users", authenticate.verifyToken, authController.getUsers);
+router.patch("/profile", authenticate.verifyToken, authController.updateProfile);
+router.delete("/profile/:id", authenticate.verifyToken, authController.deleteProfile);
 
 export default router;
