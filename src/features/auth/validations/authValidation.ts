@@ -33,7 +33,17 @@ export const authValidation = {
 		limit: z.coerce.number().int().positive().default(10),
 		search: z.string().optional(),
 	}),
+
+	updateProfile: z.object({
+		name: z.string().optional(),
+		phone: z.string().optional(),
+		address: z.string().optional(),
+		photo: z.string().optional(),
+		NIK: z.string().optional(),
+		email: z.string().optional()
+	}),
 };
 
 export type RegisterInput = z.infer<typeof authValidation.register>;
 export type GetUsersQuery = z.infer<typeof authValidation.getUsers>;
+export type UpdateProfileInput = z.infer<typeof authValidation.updateProfile>;
