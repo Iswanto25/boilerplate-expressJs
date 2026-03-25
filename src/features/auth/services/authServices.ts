@@ -94,7 +94,6 @@ export const authServices = {
 		const isValid = await comparePassword(password, user.password || "");
 		if (!isValid) throw new apiError(400, "Invalid password");
 
-		// Hapus semua token di database dan redis (force single device)
 		await Promise.all([authRepository.deleteRefreshTokensByUserId(user.id), deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
 
 		const accessToken = jwtUtils.generateAccessToken({ id: user.id, email: user.email });
@@ -134,7 +133,6 @@ export const authServices = {
 		if (!user) throw new apiError(400, "User not found");
 		if (!tokenRecord) throw new apiError(400, "Invalid token");
 
-		// Hapus semua refresh token dan redis token (disable multi-device)
 		await Promise.all([authRepository.deleteRefreshTokensByUserId(user.id), deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
 
 		const newAccessToken = jwtUtils.generateAccessToken({ id: user.id, email: user.email });
@@ -193,7 +191,7 @@ export const authServices = {
 		});
 	},
 
-	async updateProfile(userId: string, data: Partial<{ name: string; phone: string; address: string; photo: string }>): Promise<void> {
+	async updateProfile(userId: string, data: Partial<{ name: string; phone: string; address: string; photo: string; NIK: string; email: string }>): Promise<void> {
 		await authRepository.transaction(async (tx: any) => {
 			const currentUser = await authRepository.findUserById(userId, tx);
 			if (!currentUser) throw new apiError(400, "User not found");
@@ -210,14 +208,28 @@ export const authServices = {
 				}
 			}
 
+			let encryptNik: string | undefined = undefined;
+			if (data.NIK) {
+				encryptNik = encryptionUtils.encryptSensitive(data.NIK).ciphertext;
+			}
+
+			let newEmail: string | undefined = undefined;
+			if (data.email && data.email !== currentUser.email) {
+				if (!isEmailValid(data.email)) throw new apiError(400, "Invalid email format");
+				const existing = await authRepository.findUserByEmail(data.email, tx);
+				if (existing) throw new apiError(400, "Email already exists");
+				newEmail = data.email;
+			}
+
 			const profileData = {
 				...(data.name !== undefined && { name: data.name }),
 				...(data.phone !== undefined && { phone: data.phone }),
 				...(data.address !== undefined && { address: data.address }),
 				...(photoFileName !== undefined && { photo: photoFileName }),
+				...(encryptNik !== undefined && { NIK: encryptNik }),
 			};
 
-			await authRepository.updateUserProfile(userId, profileData, tx);
+			await authRepository.updateUserProfile(userId, profileData, newEmail, tx);
 		});
 	},
 

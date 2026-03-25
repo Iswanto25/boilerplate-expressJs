@@ -148,4 +148,41 @@ export const authController = {
 			return respons.error(message, message, statusCode, res, req);
 		}
 	},
+
+	updateProfile: async (req: Request, res: Response) => {
+		try {
+			if (!req.user) {
+				return respons.error("User tidak ditemukan", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
+			}
+			const validation = authValidation.updateProfile.safeParse(req.body);
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
+			}
+			
+			await authServices.updateProfile(req.user.id, validation.data);
+			return respons.success("Berhasil update profile", {}, HttpStatus.OK, res, req);
+		} catch (error) {
+			const err = error as { statusCode?: number; message?: string };
+			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			const message = err.message || "Terjadi kesalahan pada server";
+			return respons.error(message, message, statusCode, res, req);
+		}
+	},
+
+	deleteProfile: async (req: Request, res: Response) => {
+		try {
+			const id = req.params.id
+			if (!req.params.id) {
+				return respons.error("Id cannot empty", "Id tidak boleh kosong", HttpStatus.BAD_REQUEST, res, req);
+			}
+			await authServices.deleteProfile(id as string);
+			return respons.success("Berhasil menghapus profile", {}, HttpStatus.OK, res, req);
+		} catch (error) {
+			const err = error as { statusCode?: number; message?: string };
+			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			const message = err.message || "Terjadi kesalahan pada server";
+			return respons.error(message, message, statusCode, res, req);
+		}
+	}
 };

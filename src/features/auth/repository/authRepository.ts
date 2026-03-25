@@ -70,10 +70,11 @@ export const authRepository = {
 		});
 	},
 
-	updateUserProfile: async (userId: string, profileData: Prisma.profileUpdateWithoutUserInput, tx: TxClient = prisma) => {
+	updateUserProfile: async (userId: string, profileData: Prisma.profileUpdateWithoutUserInput, email?: string, tx: TxClient = prisma) => {
 		return await tx.user.update({
 			where: { id: userId },
 			data: {
+				...(email && { email }),
 				profile: {
 					update: {
 						where: { userId: userId },
