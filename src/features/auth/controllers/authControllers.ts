@@ -159,7 +159,7 @@ export const authController = {
 				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
 				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
 			}
-			
+
 			await authServices.updateProfile(req.user.id, validation.data);
 			return respons.success("Berhasil update profile", {}, HttpStatus.OK, res, req);
 		} catch (error) {
@@ -172,7 +172,7 @@ export const authController = {
 
 	deleteProfile: async (req: Request, res: Response) => {
 		try {
-			const id = req.params.id
+			const id = req.params.id;
 			if (!req.params.id) {
 				return respons.error("Id cannot empty", "Id tidak boleh kosong", HttpStatus.BAD_REQUEST, res, req);
 			}
@@ -184,5 +184,5 @@ export const authController = {
 			const message = err.message || "Terjadi kesalahan pada server";
 			return respons.error(message, message, statusCode, res, req);
 		}
-	}
+	},
 };
