@@ -62,14 +62,6 @@ export const authServices = {
 			await Promise.all([
 				storeToken(user.id, accessToken, "access", 24 * 60 * 60),
 				storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60),
-				authRepository.createRefreshToken(
-					{
-						id: crypto.randomUUID(),
-						userId: user.id,
-						token: refreshToken,
-					},
-					tx,
-				),
 			]);
 
 			return {
@@ -94,20 +86,12 @@ export const authServices = {
 		const isValid = await comparePassword(password, user.password || "");
 		if (!isValid) throw new apiError(400, "Invalid password");
 
-		await Promise.all([authRepository.deleteRefreshTokensByUserId(user.id), deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
+		await Promise.all([deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
 
 		const accessToken = jwtUtils.generateAccessToken({ id: user.id, email: user.email });
 		const refreshToken = jwtUtils.generateRefreshToken({ id: user.id, email: user.email });
 
-		await Promise.all([
-			authRepository.createRefreshToken({
-				id: crypto.randomUUID(),
-				userId: user.id,
-				token: refreshToken,
-			}),
-			storeToken(user.id, accessToken, "access", 24 * 60 * 60),
-			storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60),
-		]);
+		await Promise.all([storeToken(user.id, accessToken, "access", 24 * 60 * 60), storeToken(user.id, refreshToken, "refresh", 7 * 24 * 60 * 60)]);
 
 		const photoUrl = user.profile?.photo ? getPublicUrl(folder, user.profile.photo) : null;
 
@@ -126,24 +110,15 @@ export const authServices = {
 	async refreshToken(oldToken: string) {
 		const decoded = jwtUtils.verifyRefreshToken(oldToken);
 
-		const [user, tokenRecord] = await Promise.all([
-			authRepository.findUserById(decoded.id),
-			authRepository.findRefreshToken(decoded.id, oldToken),
-		]);
+		const user = await authRepository.findUserById(decoded.id);
 		if (!user) throw new apiError(400, "User not found");
-		if (!tokenRecord) throw new apiError(400, "Invalid token");
 
-		await Promise.all([authRepository.deleteRefreshTokensByUserId(user.id), deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
+		await Promise.all([deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
 
 		const newAccessToken = jwtUtils.generateAccessToken({ id: user.id, email: user.email });
 		const newRefreshToken = jwtUtils.generateRefreshToken({ id: user.id, email: user.email });
 
 		await Promise.all([
-			authRepository.createRefreshToken({
-				id: crypto.randomUUID(),
-				userId: user.id,
-				token: newRefreshToken,
-			}),
 			storeToken(user.id, newAccessToken, "access", 24 * 60 * 60),
 			storeToken(user.id, newRefreshToken, "refresh", 7 * 24 * 60 * 60),
 		]);
@@ -152,7 +127,7 @@ export const authServices = {
 	},
 
 	async logout(userId: string): Promise<void> {
-		await Promise.all([authRepository.deleteRefreshTokensByUserId(userId), deleteToken(userId, "access"), deleteToken(userId, "refresh")]);
+		await Promise.all([deleteToken(userId, "access"), deleteToken(userId, "refresh")]);
 	},
 
 	async profile(userId: string) {
@@ -191,7 +166,10 @@ export const authServices = {
 		});
 	},
 
-	async updateProfile(userId: string, data: Partial<{ name: string; phone: string; address: string; photo: string; NIK: string; email: string }>): Promise<void> {
+	async updateProfile(
+		userId: string,
+		data: Partial<{ name: string; phone: string; address: string; photo: string; NIK: string; email: string }>,
+	): Promise<void> {
 		await authRepository.transaction(async (tx: any) => {
 			const currentUser = await authRepository.findUserById(userId, tx);
 			if (!currentUser) throw new apiError(400, "User not found");

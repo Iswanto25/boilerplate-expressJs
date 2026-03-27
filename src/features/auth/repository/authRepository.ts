@@ -29,10 +29,10 @@ export const authRepository = {
 						NIK: true,
 						phone: true,
 						photo: true,
-						address: true
-					}
-				}
-			}
+						address: true,
+					},
+				},
+			},
 		});
 	},
 
@@ -53,20 +53,6 @@ export const authRepository = {
 				},
 			},
 			include: { profile: true },
-		});
-	},
-
-	createRefreshToken: async (data: { id: string; userId: string; token: string }, tx: TxClient = prisma) => {
-		return await tx.refreshToken.create({ data });
-	},
-
-	deleteRefreshTokensByUserId: async (userId: string, tx: TxClient = prisma) => {
-		return await tx.refreshToken.deleteMany({ where: { userId } });
-	},
-
-	findRefreshToken: async (userId: string, token: string, tx: TxClient = prisma) => {
-		return await tx.refreshToken.findFirst({
-			where: { userId, token },
 		});
 	},
 

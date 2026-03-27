@@ -1,15 +1,26 @@
 import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
-import pg from "pg";
-import { logger } from "../utils/logger.js";
-import dotenv from "dotenv";
+import { logger } from "@/utils/logger.js";
 
-dotenv.config();
+let connectionString = process.env.DATABASE_URL || "";
+let sslConfig: { rejectUnauthorized: boolean } | undefined = undefined;
+
+if (connectionString.includes("sslmode=")) {
+	sslConfig = { rejectUnauthorized: false };
+	// Remove sslmode query param so it does not override Node Pool ssl config
+	connectionString = connectionString.replace(/([&?])sslmode=[^&]*/, "");
+	// Cleanup dangling ? or &
+	connectionString = connectionString.replace(/\?&/, "?").replace(/[?&]$/, "");
+}
+
+const pool = new Pool({
+	connectionString,
+	ssl: sslConfig,
+});
+const adapter = new PrismaPg(pool);
 
 const isDevelopment = process.env.NODE_ENV === "development";
-
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
 
 const prisma = new PrismaClient({
 	adapter,
@@ -26,17 +37,16 @@ const prisma = new PrismaClient({
 			],
 });
 
-// Only log errors and warnings (not every query)
-prisma.$on("error", (e: any) => {
+prisma.$on("error", (e) => {
 	logger.error(`Database Error: ${e.message}`);
 });
 
-prisma.$on("warn", (e: any) => {
+prisma.$on("warn", (e) => {
 	logger.warn(`Database Warning: ${e.message}`);
 });
 
 if (isDevelopment) {
-	prisma.$on("query", (e: any) => {
+	prisma.$on("query", (e) => {
 		logger.debug(`Query: ${e.query} | Duration: ${e.duration}ms`);
 	});
 }

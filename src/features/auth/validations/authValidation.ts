@@ -40,7 +40,7 @@ export const authValidation = {
 		address: z.string().optional(),
 		photo: z.string().optional(),
 		NIK: z.string().optional(),
-		email: z.string().optional()
+		email: z.string().optional(),
 	}),
 };
 
