@@ -2,7 +2,7 @@ import { authRepository } from "@/features/auth/repository/authRepository.js";
 import { uploadBase64, deleteFile, getPublicUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
 import { jwtUtils } from "@/utils/jwt.js";
-import { storeToken, deleteToken } from "@/utils/tokenStore.js";
+import { storeToken, deleteToken, getStoredToken } from "@/utils/tokenStore.js";
 import { sendEmail } from "@/utils/smtp.js";
 import { generateOTP, encryptPassword, comparePassword, isEmailValid } from "@/utils/utils.js";
 import { generateOTPEmail } from "@/utils/mail.js";
@@ -112,6 +112,9 @@ export const authServices = {
 
 		const user = await authRepository.findUserById(decoded.id);
 		if (!user) throw new apiError(400, "User not found");
+
+		const tokenRecord = await getStoredToken(user.id, "refresh");
+		if (!tokenRecord) throw new apiError(400, "Invalid token");
 
 		await Promise.all([deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
 
