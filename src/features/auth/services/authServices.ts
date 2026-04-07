@@ -10,21 +10,12 @@ import crypto from "node:crypto";
 import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
 import { paginate } from "@/utils/pagination.js";
 import { logger } from "@/utils/logger.js";
-
-interface LocalRegister {
-	name: string;
-	email: string;
-	password: string;
-	address?: string;
-	phone?: string;
-	photo?: string;
-	NIK?: string;
-}
+import { RegisterInput, UpdateProfileInput } from "@/features/auth/types/authTypes.js";
 
 const folder = "profile";
 
 export const authServices = {
-	async register(data: LocalRegister) {
+	async register(data: RegisterInput) {
 		return await authRepository.transaction(async (tx: any) => {
 			if (!isEmailValid(data.email)) throw new apiError(400, "Invalid email");
 
@@ -169,10 +160,7 @@ export const authServices = {
 		});
 	},
 
-	async updateProfile(
-		userId: string,
-		data: Partial<{ name: string; phone: string; address: string; photo: string; NIK: string; email: string }>,
-	): Promise<void> {
+	async updateProfile(userId: string, data: UpdateProfileInput): Promise<void> {
 		await authRepository.transaction(async (tx: any) => {
 			const currentUser = await authRepository.findUserById(userId, tx);
 			if (!currentUser) throw new apiError(400, "User not found");
