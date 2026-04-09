@@ -6,10 +6,49 @@ datasource db {
   provider = "postgresql"
 }
 
-enum UserRole {
-  SUPERADMIN
-  ADMIN
-  USER
+model role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            user[]
+  rolePermissions  rolePermission[]
+}
+
+model module {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  resources resource[]
+}
+
+model resource {
+  id               String   @id @default(uuid())
+  name             String
+  moduleId         String 
+  module           module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  availableActions String[] 
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  rolePermissions  rolePermission[]
+}
+
+model rolePermission {
+  id             String   @id @default(uuid())
+  roleId         String
+  role           role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  resourceId     String
+  resource       resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  grantedActions String[] 
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([roleId, resourceId])
 }
 
 model logs {
@@ -32,7 +71,8 @@ model logs {
 
 model user {
   id        String   @id @default(uuid())
-  role      UserRole @default(USER)
+  roleId    String
+  role      role     @relation(fields: [roleId], references: [id])
   email     String   @unique
   password  String?
   isActive  Boolean  @default(true)
