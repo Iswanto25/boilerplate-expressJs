@@ -33,7 +33,7 @@ const getRequestContext = async (req?: Request) => {
 		const result = await authenticate.checkToken(req);
 		if (result.valid && result.userId) {
 			userId = result.userId;
-			user = await prisma.user.findUnique({ where: { id: userId }, include: { profile: true } });
+			user = await prisma.user.findUnique({ where: { id: userId }, include: { profile: true, role: true } });
 		}
 	}
 
@@ -57,7 +57,7 @@ export const respons = {
 		const logPayload = {
 			userId: user?.id,
 			name: (user as any)?.profile?.name || "Unknown",
-			role: user?.role,
+			role: (user as any)?.role?.name || null,
 			ip: ip,
 			date: dateTimeNow,
 			host,
@@ -103,7 +103,7 @@ export const respons = {
 		const logPayload = {
 			userId: user?.id,
 			name: (user as any)?.profile?.name || "Unknown",
-			role: user?.role,
+			role: (user as any)?.role?.name || null,
 			ip: ip,
 			date: dateTimeNow,
 			host,
