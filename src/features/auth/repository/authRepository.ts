@@ -21,7 +21,7 @@ export const authRepository = {
 			select: {
 				id: true,
 				isActive: true,
-				role: true,
+				role: { select: { name: true } },
 				email: true,
 				profile: {
 					select: {
@@ -43,11 +43,12 @@ export const authRepository = {
 		});
 	},
 
-	createUser: async (data: { email: string; password: string; profile: Prisma.profileCreateWithoutUserInput }, tx: TxClient = prisma) => {
+	createUser: async (data: { email: string; password: string; profile: Prisma.profileCreateWithoutUserInput; roleId: string }, tx: TxClient = prisma) => {
 		return await tx.user.create({
 			data: {
 				email: data.email,
 				password: data.password,
+				roleId: data.roleId,
 				profile: {
 					create: data.profile,
 				},

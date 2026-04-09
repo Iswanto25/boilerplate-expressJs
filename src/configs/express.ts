@@ -15,6 +15,7 @@ export const app = express();
 interface DecodedToken {
 	id: string;
 	email: string;
+	roleId: string;
 }
 
 declare module "express-serve-static-core" {
