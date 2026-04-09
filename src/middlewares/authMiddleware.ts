@@ -34,7 +34,11 @@ export const authenticate = {
 			return respons.error("User not found", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
 		}
 
-		req.user = existingUser as any;
+		req.user = {
+			id: existingUser.id,
+			email: existingUser.email,
+			roleId: existingUser.roleId,
+		};
 		next();
 	},
 };
