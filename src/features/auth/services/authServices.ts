@@ -32,10 +32,14 @@ export const authServices = {
 
 			const ciphertext = data.NIK ? encryptionUtils.encryptSensitive(data.NIK).ciphertext : null;
 
+			const defaultRole = await tx.role.findUnique({ where: { name: "USER" } });
+			if (!defaultRole) throw new apiError(500, "Default role 'USER' not found");
+
 			const user = await authRepository.createUser(
 				{
 					email: data.email,
 					password: hashedPassword,
+					roleId: defaultRole.id,
 					profile: {
 						name: data.name,
 						address: data.address,
@@ -58,7 +62,7 @@ export const authServices = {
 			return {
 				user: {
 					id: user.id,
-					name: user.profile?.name || null,
+					name: data.name || null,
 					email: user.email,
 					photo: photoFileName,
 				},
@@ -134,7 +138,7 @@ export const authServices = {
 			id: user.id,
 			NIK: user.profile?.NIK ? decryptSensitive({ version: 1, ciphertext: user.profile.NIK }) : null,
 			email: user.email,
-			role: user.role,
+			role: (user as any).role?.name || null,
 			isActive: user.isActive,
 			name: user.profile?.name || null,
 			phone: user.profile?.phone || null,
