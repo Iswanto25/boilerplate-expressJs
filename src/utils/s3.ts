@@ -11,8 +11,8 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
-import { randomString } from "./utils.js";
-import { logger } from "./logger.js";
+import { randomString } from "@/utils/utils.js";
+import { logger } from "@/utils/logger.js";
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 function normalizeEndpoint(raw?: string, useSSL?: boolean, port?: string): string | null {

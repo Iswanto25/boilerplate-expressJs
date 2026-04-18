@@ -3,7 +3,7 @@ import test from "node:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
-const modulePath = "../jwt";
+const modulePath = "@/utils/jwt";
 
 const reloadJwtModule = async () => {
 	delete requireModule.cache[requireModule.resolve(modulePath)];

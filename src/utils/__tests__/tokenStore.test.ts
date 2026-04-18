@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
 import test, { mock } from "node:test";
 import { createRequire } from "node:module";
-import path from "node:path";
 
 const requireModule = createRequire(__filename);
-const modulePath = "../tokenStore";
-const redisPath = path.join(__dirname, "../../configs/redis");
+const modulePath = "@/utils/tokenStore";
+const redisPath = "@/configs/redis";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {
 	const resolved = requireModule.resolve(specifier);

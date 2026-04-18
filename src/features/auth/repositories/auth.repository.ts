@@ -43,7 +43,10 @@ export const authRepository = {
 		});
 	},
 
-	createUser: async (data: { email: string; password: string; profile: Prisma.profileCreateWithoutUserInput; roleId: string }, tx: TxClient = prisma) => {
+	createUser: async (
+		data: { email: string; password: string; profile: Prisma.profileCreateWithoutUserInput; roleId: string },
+		tx: TxClient = prisma,
+	) => {
 		return await tx.user.create({
 			data: {
 				email: data.email,

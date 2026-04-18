@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { respons, HttpStatus } from "../utils/respons.js";
-import prisma from "../configs/database.js";
+import { respons, HttpStatus } from "@/utils/respons.js";
+import prisma from "@/configs/database.js";
 
 export const requirePermission = (resourceName: string, action: string) => {
 	return async (req: Request, res: Response, next: NextFunction) => {
@@ -23,17 +23,11 @@ export const requirePermission = (resourceName: string, action: string) => {
 			}
 
 			if (!rolePermission.grantedActions.includes(action)) {
-				return respons.error(
-					"Forbidden",
-					`Anda tidak memiliki izin aksi '${action}' pada resource ini`,
-					HttpStatus.FORBIDDEN,
-					res,
-					req
-				);
+				return respons.error("Forbidden", `Anda tidak memiliki izin aksi '${action}' pada resource ini`, HttpStatus.FORBIDDEN, res, req);
 			}
 
 			next();
-		} catch (error) {
+		} catch {
 			return respons.error("Internal Server Error", "Gagal memverifikasi izin auth", HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 		}
 	};

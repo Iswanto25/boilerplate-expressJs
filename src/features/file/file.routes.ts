@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { uploadFile, getFile, deleteFile, uploadBase64, isS3Configured, getPublicUrl } from "../utils/s3.js";
-import { respons, HttpStatus } from "../utils/respons.js";
-import { createUploader } from "../middlewares/multerMiddleware.js";
+import { uploadFile, deleteFile, uploadBase64, isS3Configured, getPublicUrl } from "@/utils/s3.js";
+import { respons, HttpStatus } from "@/utils/respons.js";
+import { createUploader } from "@/middlewares/multerMiddleware.js";
 
 const router = Router();
 
