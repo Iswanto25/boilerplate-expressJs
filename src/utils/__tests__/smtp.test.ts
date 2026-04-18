@@ -3,7 +3,7 @@ import test, { mock } from "node:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
-const modulePath = "../smtp";
+const modulePath = "@/utils/smtp";
 const nodemailerPath = "nodemailer";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {

@@ -3,7 +3,7 @@
  * Menggunakan @faker-js/faker untuk dummy data
  */
 
-import { authServices } from "./authServices.js";
+import { authServices } from "@/features/auth/services/auth.service.js";
 import prisma from "@/configs/database.js";
 import {
 	generateFakeUser,
@@ -201,7 +201,7 @@ describe("Auth Services", () => {
 		it("should logout user successfully", async () => {
 			// Arrange
 			const userId = generateFakeUUID();
-			const { deleteToken } = require("../../../utils/tokenStore.js");
+			const { deleteToken } = require("@/utils/tokenStore.js");
 
 			// Act
 			await authServices.logout(userId);

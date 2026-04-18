@@ -1,8 +1,8 @@
 import { Response, Request } from "express";
-import prisma from "../configs/database.js";
-import { authenticate } from "../middlewares/authMiddleware.js";
-import { logger } from "./logger.js";
-import { formatDateTime } from "./utils.js";
+import prisma from "@/configs/database.js";
+import { authenticate } from "@/middlewares/authMiddleware.js";
+import { logger } from "@/utils/logger.js";
+import { formatDateTime } from "@/utils/utils.js";
 
 export enum HttpStatus {
 	OK = 200,

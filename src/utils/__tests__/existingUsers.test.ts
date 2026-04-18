@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
 import test, { mock } from "node:test";
 import { createRequire } from "node:module";
-import path from "node:path";
 
 const requireModule = createRequire(__filename);
-const modulePath = "../existingUsers";
-const prismaPath = path.join(__dirname, "../../configs/database");
+const modulePath = "@/utils/existingUsers";
+const prismaPath = "@/configs/database";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {
 	const resolved = requireModule.resolve(specifier);

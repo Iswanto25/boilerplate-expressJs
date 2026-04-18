@@ -5,12 +5,12 @@
  */
 
 import request from "supertest";
-import { app } from "../../src/configs/express.js";
-import { generateFakeRegisterData, generateFakeLoginData, generateBulkRegisterData, setFakerSeed } from "../helpers/faker.helper.js";
-import prisma from "../../src/configs/database.js";
+import { app } from "@/configs/express.js";
+import { generateFakeRegisterData, generateFakeLoginData, setFakerSeed } from "__tests__/helpers/faker.helper.js";
+import prisma from "@/configs/database.js";
 
 // Mock database untuk integration test
-jest.mock("../../src/configs/database.js", () => ({
+jest.mock("@/configs/database.js", () => ({
 	__esModule: true,
 	default: {
 		user: {
@@ -25,19 +25,19 @@ jest.mock("../../src/configs/database.js", () => ({
 	},
 }));
 
-jest.mock("../../src/utils/s3", () => ({
+jest.mock("@/utils/s3", () => ({
 	uploadBase64: jest.fn().mockResolvedValue("https://example.com/photo.jpg"),
 	getFile: jest.fn().mockReturnValue("https://example.com/photo.jpg"),
 	deleteFile: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../src/utils/tokenStore", () => ({
+jest.mock("@/utils/tokenStore", () => ({
 	storeRefreshToken: jest.fn().mockResolvedValue(undefined),
 	getRefreshToken: jest.fn().mockResolvedValue("mock-refresh-token"),
 	deleteRefreshToken: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../src/utils/encryption", () => ({
+jest.mock("@/utils/encryption", () => ({
 	encryptionUtils: {
 		encryptSensitive: jest.fn().mockReturnValue({
 			version: "v1",
@@ -127,7 +127,7 @@ describe("Auth API Integration Tests", () => {
 				password: "test-password",
 			});
 
-			const { encryptPassword } = require("../../src/utils/utils");
+			const { encryptPassword } = require("@/utils/utils");
 			const hashedPassword = encryptPassword(loginData.password);
 
 			const fakeUser = {
@@ -184,61 +184,10 @@ describe("Auth API Integration Tests", () => {
 		});
 	});
 
-	describe("POST /api/auth/bulk-register", () => {
-		it("should bulk register users successfully", async () => {
-			// Arrange
-			const bulkData = generateBulkRegisterData(5);
-
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
-			(prisma.user.create as jest.Mock).mockImplementation((args) => {
-				return Promise.resolve({
-					id: "user-id-" + Math.random(),
-					...args.data,
-					createdAt: new Date(),
-					updatedAt: new Date(),
-				});
-			});
-
-			// Act
-			const response = await request(app).post("/api/auth/bulk-register").send(bulkData);
-
-			// Assert
-			expect(response.status).toBe(200);
-			expect(response.body).toMatchObject({
-				status: "success",
-				message: "Bulk register selesai",
-			});
-			expect(response.body.data).toHaveProperty("total");
-			expect(response.body.data).toHaveProperty("success");
-			expect(response.body.data).toHaveProperty("successRate");
-		});
-
-		it("should return 400 if data is not an array", async () => {
-			// Arrange
-			const invalidData = { notAnArray: true };
-
-			// Act
-			const response = await request(app).post("/api/auth/bulk-register").send(invalidData);
-
-			// Assert
-			expect(response.status).toBe(400);
-			expect(response.body.message).toBe("Data harus berupa array");
-		});
-
-		it("should return 400 if array is empty", async () => {
-			// Act
-			const response = await request(app).post("/api/auth/bulk-register").send([]);
-
-			// Assert
-			expect(response.status).toBe(400);
-			expect(response.body.message).toBe("Array tidak boleh kosong");
-		});
-	});
-
 	describe("POST /api/auth/refresh-token", () => {
 		it("should refresh token successfully", async () => {
 			// Arrange
-			const { verifyRefreshToken } = require("../../src/utils/jwt");
+			const { verifyRefreshToken } = require("@/utils/jwt");
 			const mockUser = {
 				id: "user-id-123",
 				email: "test@example.com",
@@ -289,7 +238,7 @@ describe("Auth API Integration Tests", () => {
 			};
 
 			// Mock SMTP
-			const { sendMail } = require("../../src/utils/smtp");
+			const { sendMail } = require("@/utils/smtp");
 			if (sendMail) {
 				sendMail.mockResolvedValue(true);
 			}

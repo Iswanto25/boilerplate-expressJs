@@ -1,8 +1,8 @@
-import prisma from "../configs/database.js";
-import { redisState } from "../configs/redis.js";
-import { isS3Configured } from "./s3.js";
-import { isSMTPConfigured } from "./smtp.js";
-import { logger } from "./logger.js";
+import prisma from "@/configs/database.js";
+import { redisState } from "@/configs/redis.js";
+import { isS3Configured } from "@/utils/s3.js";
+import { isSMTPConfigured } from "@/utils/smtp.js";
+import { logger } from "@/utils/logger.js";
 
 export async function checkServicesHealth() {
 	logger.info("========================================");
