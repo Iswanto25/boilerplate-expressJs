@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { jwtUtils } from "../utils/jwt.js";
-import { respons, HttpStatus } from "../utils/respons.js";
-import { getStoredToken } from "../utils/tokenStore.js";
-import prisma from "../configs/database.js";
+import { jwtUtils } from "@/utils/jwt.js";
+import { respons, HttpStatus } from "@/utils/respons.js";
+import { getStoredToken } from "@/utils/tokenStore.js";
+import prisma from "@/configs/database.js";
 
 export const authenticate = {
 	async checkToken(req: Request): Promise<{ valid: boolean; userId?: string }> {

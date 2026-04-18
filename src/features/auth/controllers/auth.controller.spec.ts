@@ -2,8 +2,8 @@
  * Unit Test untuk Auth Controllers
  * Menggunakan @faker-js/faker untuk dummy data
  */
-import { authController } from "./authControllers.js";
-import { authServices } from "@/features/auth/services/authServices.js";
+import { authController } from "@/features/auth/controllers/auth.controller.js";
+import { authServices } from "@/features/auth/services/auth.service.js";
 import { createMockRequest, createMockResponse, createMockAuthenticatedUser } from "__tests__/helpers/mock.helper.js";
 import {
 	generateFakeUser,
@@ -16,7 +16,7 @@ import {
 import { HttpStatus } from "@/utils/respons.js";
 
 // Mock auth services
-jest.mock("@/features/auth/services/authServices.js", () => ({
+jest.mock("@/features/auth/services/auth.service.js", () => ({
 	authServices: {
 		register: jest.fn(),
 		login: jest.fn(),
@@ -26,6 +26,8 @@ jest.mock("@/features/auth/services/authServices.js", () => ({
 		forgotPassword: jest.fn(),
 		bulkRegister: jest.fn(),
 		getUsers: jest.fn(),
+		updateProfile: jest.fn(),
+		deleteProfile: jest.fn(),
 	},
 }));
 
@@ -83,7 +85,7 @@ describe("Auth Controllers", () => {
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
 					success: false,
-					message: "Data tidak lengkap",
+					message: "Name is required",
 				}),
 			);
 		});
@@ -304,6 +306,68 @@ describe("Auth Controllers", () => {
 					data: fakeUsers,
 				}),
 			);
+		});
+	});
+
+	describe("updateProfile", () => {
+		it("should update profile successfully", async () => {
+			// Arrange
+			const authenticatedUser = createMockAuthenticatedUser();
+			const updateData = { name: "New Name" };
+			const req = createMockRequest({ user: authenticatedUser, body: updateData });
+			const res = createMockResponse();
+
+			(authServices.updateProfile as jest.Mock).mockResolvedValue(undefined);
+
+			// Act
+			await authController.updateProfile(req as any, res as any);
+
+			// Assert
+			expect(authServices.updateProfile).toHaveBeenCalledWith(authenticatedUser.id, updateData);
+			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+			expect(res.json).toHaveBeenCalledWith(
+				expect.objectContaining({
+					success: true,
+					message: "Berhasil update profile",
+				}),
+			);
+		});
+	});
+
+	describe("deleteProfile", () => {
+		it("should delete profile successfully", async () => {
+			// Arrange
+			const profileId = "profile-to-delete";
+			const req = createMockRequest({ params: { id: profileId } });
+			const res = createMockResponse();
+
+			(authServices.deleteProfile as jest.Mock).mockResolvedValue(undefined);
+
+			// Act
+			await authController.deleteProfile(req as any, res as any);
+
+			// Assert
+			expect(authServices.deleteProfile).toHaveBeenCalledWith(profileId);
+			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+			expect(res.json).toHaveBeenCalledWith(
+				expect.objectContaining({
+					success: true,
+					message: "Berhasil menghapus profile",
+				}),
+			);
+		});
+
+		it("should return error if id is missing", async () => {
+			// Arrange
+			const req = createMockRequest({ params: {} });
+			const res = createMockResponse();
+
+			// Act
+			await authController.deleteProfile(req as any, res as any);
+
+			// Assert
+			expect(authServices.deleteProfile).not.toHaveBeenCalled();
+			expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
 		});
 	});
 });

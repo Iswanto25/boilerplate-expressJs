@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { logger } from "../utils/logger.js";
+import { logger } from "@/utils/logger.js";
 
 const redisState: { client: Redis | null; isAvailable: boolean } = {
 	client: null,

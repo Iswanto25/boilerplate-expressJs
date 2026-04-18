@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import type { Express } from "express";
 
 const requireModule = createRequire(__filename);
-const modulePath = "../s3";
+const modulePath = "@/utils/s3";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {
 	const resolved = requireModule.resolve(specifier);
@@ -28,7 +28,7 @@ const stubModule = (specifier: string, exports: any): (() => void) => {
 };
 
 type SetupResult = {
-	module: typeof import("../s3.js");
+	module: typeof import("@/utils/s3.js");
 	handlers: Map<string, (command: { input: any }) => any>;
 	sendMock: ReturnType<typeof mock.fn>;
 	getSignedUrl: ReturnType<typeof mock.fn>;

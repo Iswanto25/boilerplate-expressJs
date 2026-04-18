@@ -3,7 +3,7 @@ import test from "node:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
-const modulePath = "../encryption";
+const modulePath = "@/utils/encryption";
 
 const reloadEncryptionModule = async () => {
 	delete requireModule.cache[requireModule.resolve(modulePath)];

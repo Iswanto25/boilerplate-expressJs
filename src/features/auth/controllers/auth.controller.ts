@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { authServices } from "@/features/auth/services/authServices.js";
+import { authServices } from "@/features/auth/services/auth.service.js";
 import { HttpStatus, respons } from "@/utils/respons.js";
-import { authValidation } from "@/features/auth/validations/authValidation.js";
+import { authValidation } from "@/features/auth/validations/auth.validation.js";
 
 export const authController = {
 	register: async (req: Request, res: Response) => {

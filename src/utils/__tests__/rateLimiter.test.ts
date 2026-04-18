@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
 import test, { mock } from "node:test";
 import { createRequire } from "node:module";
-import path from "node:path";
 
 const requireModule = createRequire(__filename);
-const modulePath = "../rateLimiter";
-const redisPath = path.join(__dirname, "../../configs/redis");
-const responsPath = path.join(__dirname, "../respons");
-const loggerPath = path.join(__dirname, "../logger");
+const modulePath = "@/utils/rateLimiter";
+const redisPath = "@/configs/redis";
+const responsPath = "@/utils/respons";
+const loggerPath = "@/utils/logger";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {
 	const resolvedPath = requireModule.resolve(specifier);

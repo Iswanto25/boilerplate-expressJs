@@ -2,8 +2,8 @@ import multer from "multer";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { Request, Response, NextFunction } from "express";
-import { respons, HttpStatus } from "../utils/respons.js";
-import { logger } from "../utils/logger.js";
+import { respons, HttpStatus } from "@/utils/respons.js";
+import { logger } from "@/utils/logger.js";
 
 type FieldConfig = {
 	type: "single" | "array";

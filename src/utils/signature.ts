@@ -74,7 +74,7 @@ export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
 		}
 
 		next();
-	} catch (error) {
+	} catch {
 		return res.status(401).json({ success: false, message: "Gagal memproses kunci" });
 	}
 }
