@@ -83,7 +83,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 - **Bulk register** endpoint: `POST /api/v1/auth/bulk-register` untuk mendaftarkan banyak user sekaligus (array input, hingga 1000 user) dengan:
     - Concurrency control via `p-limit`
     - Batch database insert (250 per batch)
-    - Auto photo upload ke S3/MinIO
+    - Auto photo upload ke S3 Storage
     - Performance profiling & markdown report generation
 - **Performance profiling utilities**:
     - `src/utils/bulkRegisterReport.ts` — generate laporan performa bulk register
@@ -122,7 +122,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 - **Redis integration** (`src/configs/redis.ts`): Opsional untuk rate limiting dan token caching
 - **Rate limiting** (`src/utils/rateLimiter.ts`): Berbasis Redis, graceful fallback jika Redis tidak tersedia
 - **Token store** (`src/utils/tokenStore.ts`): Menyimpan refresh token di Redis
-- **S3/MinIO integration** (`src/utils/s3.ts`):
+- **S3 Storage integration** (`src/utils/s3.ts`):
     - Upload file multipart dan base64
     - Presigned URL generation
     - Validasi format dan ukuran file

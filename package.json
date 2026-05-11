@@ -86,7 +86,7 @@
 			"JWT utilities sign and verify access/refresh tokens with provided secrets.",
 			"Response helpers log payloads and format JSON responses when dependencies succeed or fail.",
 			"Rate limiter middleware enforces request windows and handles Redis errors gracefully.",
-			"S3 helpers validate inputs, upload/delete objects, and surface MinIO configuration errors.",
+			"S3 helpers validate inputs, upload/delete objects, and surface S3 Storage configuration errors.",
 			"SMTP helper builds transporter configuration and propagates send failures.",
 			"Token store persists, loads, and deletes tokens using Redis."
 		]

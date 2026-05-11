@@ -40,13 +40,13 @@ function normalizeEndpoint(raw?: string, useSSL?: boolean, port?: string): strin
 	return e;
 }
 
-const USE_SSL = String(process.env.MINIO_USE_SSL || "").toLowerCase() === "true";
-const MINIO_PORT = process.env.MINIO_PORT?.trim();
-const ENDPOINT = normalizeEndpoint(process.env.MINIO_ENDPOINT, USE_SSL, MINIO_PORT);
-const REGION = process.env.MINIO_REGION?.trim() || "us-east-1";
-const BUCKET = process.env.MINIO_BUCKET_NAME?.trim();
-const ACCESS_KEY = process.env.MINIO_ACCESS_KEY?.trim();
-const SECRET_KEY = process.env.MINIO_SECRET_KEY?.trim();
+const USE_SSL = String(process.env.S3_USE_SSL || "").toLowerCase() === "true";
+const S3_PORT = process.env.S3_PORT?.trim();
+const ENDPOINT = normalizeEndpoint(process.env.S3_ENDPOINT, USE_SSL, S3_PORT);
+const REGION = process.env.S3_REGION?.trim() || "us-east-1";
+const BUCKET = process.env.S3_BUCKET_NAME?.trim();
+const ACCESS_KEY = process.env.S3_ACCESS_KEY?.trim();
+const SECRET_KEY = process.env.S3_SECRET_KEY?.trim();
 
 const isS3Configured = !!(ENDPOINT && BUCKET && ACCESS_KEY && SECRET_KEY);
 
@@ -60,14 +60,14 @@ if (isS3Configured) {
 			forcePathStyle: true,
 			credentials: { accessKeyId: ACCESS_KEY, secretAccessKey: SECRET_KEY },
 		});
-		console.info("S3/MinIO configured successfully");
+		console.info("S3 Storage configured successfully");
 	} catch {
-		console.warn("S3/MinIO initialization failed - file upload features will be disabled");
+		console.warn("S3 Storage initialization failed - file upload features will be disabled");
 		s3Holder.client = null;
 	}
 } else {
 	console.warn(
-		"S3/MinIO not configured (MINIO_ENDPOINT, MINIO_BUCKET_NAME, MINIO_ACCESS_KEY, MINIO_SECRET_KEY) - file upload features will be disabled",
+		"S3 Storage not configured (S3_ENDPOINT, S3_BUCKET_NAME, S3_ACCESS_KEY, S3_SECRET_KEY) - file upload features will be disabled",
 	);
 }
 
@@ -77,16 +77,16 @@ function publicUrl(key: string): string {
 
 export function getPublicUrl(folder: string, file: string): string {
 	const publicBaseUrl = (process.env.STORAGE_PUBLIC_URL || "").replace(/^"|"$/g, "").replace(/\/$/, "");
-	const bucket = (process.env.MINIO_BUCKET_NAME || "").trim();
+	const bucket = (process.env.S3_BUCKET_NAME || "").trim();
 	return `${publicBaseUrl}/${bucket}/${folder}/${file}`;
 }
 
 function throwS3NotConfigured(): never {
-	throw Object.assign(new Error("S3/MinIO storage is not configured"), {
+	throw Object.assign(new Error("S3 Storage is not configured"), {
 		name: "S3NotConfiguredError",
 		code: "S3_NOT_CONFIGURED",
 		httpStatus: 503,
-		hint: "Please configure MINIO_ENDPOINT, MINIO_BUCKET_NAME, MINIO_ACCESS_KEY, and MINIO_SECRET_KEY in your environment variables",
+		hint: "Please configure S3_ENDPOINT, S3_BUCKET_NAME, S3_ACCESS_KEY, and S3_SECRET_KEY in your environment variables",
 	});
 }
 
@@ -276,8 +276,8 @@ export async function uploadBase64(folder: string, file: string, maxSizeInMB: nu
 			name: "UploadBase64Error",
 			code: "STORAGE_WRITE_FAILED",
 			httpStatus: 502,
-			details: { storage: "minio/s3", message: (e as Error)?.message },
-			hint: "Periksa koneksi ke MinIO, credential, permission bucket, dan endpoint.",
+			details: { storage: "s3", message: (e as Error)?.message },
+			hint: "Periksa koneksi ke S3 Storage, credential, permission bucket, dan endpoint.",
 		});
 	}
 
@@ -300,7 +300,7 @@ export async function getFile(
 	},
 ): Promise<string | null> {
 	if (!s3Holder.client) {
-		console.warn("S3/MinIO not configured - cannot generate presigned URL");
+		console.warn("S3 Storage not configured - cannot generate presigned URL");
 		return null;
 	}
 	const s3 = s3Holder.client;
@@ -324,7 +324,7 @@ export async function getFile(
 
 		return await getSignedUrl(s3, command, { expiresIn: expired });
 	} catch (error) {
-		logger.error({ err: error }, "Error getFile from MinIO");
+		logger.error({ err: error }, "Error getFile from S3 Storage");
 		return null;
 	}
 }
@@ -335,7 +335,7 @@ export async function deleteFile(
 	opts?: { strict?: boolean; verifyAfter?: boolean },
 ): Promise<{ deleted: boolean; key: string; reason?: "not_found" | "still_exists" | "error" | "s3_not_configured" }> {
 	if (!s3Holder.client) {
-		console.warn("S3/MinIO not configured - cannot delete file");
+		console.warn("S3 Storage not configured - cannot delete file");
 		return { deleted: false, key: `${folder}/${file}`, reason: "s3_not_configured" };
 	}
 	const s3 = s3Holder.client;
@@ -359,14 +359,14 @@ export async function deleteFile(
 
 		return { deleted: true, key: Key };
 	} catch (error) {
-		logger.error({ err: error }, "Error deleteFile from MinIO");
+		logger.error({ err: error }, "Error deleteFile from S3 Storage");
 		return { deleted: false, key: Key, reason: "error" };
 	}
 }
 
 export async function deleteMany(items: Array<{ folder: string; file: string }>): Promise<{ deleted: string[]; errors: string[] }> {
 	if (!s3Holder.client) {
-		console.warn("S3/MinIO not configured - cannot delete files");
+		console.warn("S3 Storage not configured - cannot delete files");
 		return { deleted: [], errors: items.map((i) => `${i.folder}/${i.file}: S3 not configured`) };
 	}
 	const s3 = s3Holder.client;
@@ -400,7 +400,7 @@ export async function deleteMany(items: Array<{ folder: string; file: string }>)
 
 export async function deleteByPrefix(prefix: string): Promise<{ deleted: number; errors: number }> {
 	if (!s3Holder.client) {
-		console.warn("S3/MinIO not configured - cannot delete by prefix");
+		console.warn("S3 Storage not configured - cannot delete by prefix");
 		return { deleted: 0, errors: 0 };
 	}
 	const s3 = s3Holder.client;
