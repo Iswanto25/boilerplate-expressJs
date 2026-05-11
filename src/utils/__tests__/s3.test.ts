@@ -36,12 +36,12 @@ type SetupResult = {
 };
 
 const setup = async (): Promise<SetupResult> => {
-	process.env.MINIO_ENDPOINT = "http://localhost:9000";
-	process.env.MINIO_BUCKET_NAME = "test-bucket";
-	process.env.MINIO_ACCESS_KEY = "access";
-	process.env.MINIO_SECRET_KEY = "secret";
-	process.env.MINIO_REGION = "us-east-1";
-	delete process.env.MINIO_USE_SSL;
+	process.env.S3_ENDPOINT = "http://localhost:9000";
+	process.env.S3_BUCKET_NAME = "test-bucket";
+	process.env.S3_ACCESS_KEY = "access";
+	process.env.S3_SECRET_KEY = "secret";
+	process.env.S3_REGION = "us-east-1";
+	delete process.env.S3_USE_SSL;
 
 	const handlers = new Map<string, (command: { input: any }) => any>();
 

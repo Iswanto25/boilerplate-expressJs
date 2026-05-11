@@ -25,7 +25,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     - Password hashing with bcrypt
 - **File Management**:
     - Upload file dengan Multer
-    - Integrasi S3/MinIO (optional)
+    - Integrasi S3 Storage (optional)
     - Support base64 upload untuk images
     - Automatic file cleanup saat update
     - Public URL access for secure and fast file delivery
@@ -94,7 +94,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 │       ├── mail.ts          # Email template generator
 │       ├── rateLimiter.ts   # Rate limiting middleware
 │       ├── respons.ts       # Response formatting
-│       ├── s3.ts            # S3/MinIO file storage
+│       ├── s3.ts            # S3 Storage file storage
 │       ├── signature.ts     # API signature verification
 │       ├── smtp.ts          # Email sending
 │       ├── tokenStore.ts    # Token caching with Redis
@@ -171,13 +171,13 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     REDIS_PASSWORD=
     REDIS_DB=0
 
-    # S3/MinIO (Optional - for file uploads)
-    MINIO_ENDPOINT=localhost:9000
-    MINIO_BUCKET_NAME=your-bucket
-    MINIO_ACCESS_KEY=your-access-key
-    MINIO_SECRET_KEY=your-secret-key
-    MINIO_USE_SSL=false
-    MINIO_REGION=us-east-1
+    # S3 Storage (Optional - for file uploads)
+    S3_ENDPOINT=localhost:9000
+    S3_BUCKET_NAME=your-bucket
+    S3_ACCESS_KEY=your-access-key
+    S3_SECRET_KEY=your-secret-key
+    S3_USE_SSL=false
+    S3_REGION=us-east-1
 
     # SMTP (Optional - for email sending)
     SMTP_HOST=smtp.gmail.com
@@ -380,7 +380,7 @@ curl http://localhost:3004/api/example/public
     - Token storage dilewati dengan warning log
     - Aplikasi tetap berjalan normal
 
-### S3/MinIO (Optional)
+### S3 Storage (Optional)
 
 - **Purpose**: File upload dan storage
 - **If not configured**:
@@ -433,7 +433,7 @@ Response:
 | `PUT`    | `/api/auth/profile`         | Update profil user (name, phone, address, photo) |
 | `DELETE` | `/api/auth/profile`         | Hapus akun user & cleanup file S3                |
 
-### File Upload (requires S3/MinIO)
+### File Upload (requires S3 Storage)
 
 | Method   | Endpoint                       | Description                          |
 | -------- | ------------------------------ | ------------------------------------ |
@@ -534,6 +534,11 @@ Created by [Iswanto25](https://github.com/Iswanto25)
 - **Repository**: [github.com/Iswanto25/boilerplate-expressJs](https://github.com/Iswanto25/boilerplate-expressJs)
 - **Issues**: [Report a bug or request a feature](https://github.com/Iswanto25/boilerplate-expressJs/issues)
 - **Pull Requests**: [Contribute to the project](https://github.com/Iswanto25/boilerplate-expressJs/pulls)
+
+---
+
+**Happy Coding! 🚀**
+ressJs/pulls)
 
 ---
 

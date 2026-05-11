@@ -24,11 +24,11 @@ export async function checkServicesHealth() {
 		logger.warn("⚠️  Redis: Not available (Running without cache)");
 	}
 
-	// 3. S3/MinIO
+	// 3. S3 Storage
 	if (isS3Configured) {
-		logger.info("✅ S3/MinIO: Configured");
+		logger.info("✅ S3 Storage: Configured");
 	} else {
-		logger.warn("⚠️  S3/MinIO: Not configured (File uploads disabled)");
+		logger.warn("⚠️  S3 Storage: Not configured (File uploads disabled)");
 	}
 
 	// 4. SMTP

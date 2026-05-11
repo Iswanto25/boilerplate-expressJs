@@ -9,7 +9,7 @@ const requireS3 = (req: Request, res: Response, next: NextFunction) => {
 	if (!isS3Configured) {
 		return respons.error(
 			"File storage not configured",
-			"S3/MinIO is not configured. Please set MINIO_ENDPOINT, MINIO_BUCKET_NAME, MINIO_ACCESS_KEY, and MINIO_SECRET_KEY in your environment variables.",
+			"S3 Storage is not configured. Please set S3_ENDPOINT, S3_BUCKET_NAME, S3_ACCESS_KEY, and S3_SECRET_KEY in your environment variables.",
 			HttpStatus.SERVICE_UNAVAILABLE,
 			res,
 			req,
