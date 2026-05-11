@@ -195,7 +195,7 @@ ${metrics.cpuUsagePercent == null ? "" : `| **CPU Usage** | ${metrics.cpuUsagePe
 
 	if (metrics.failedPhotos > metrics.uploadedPhotos * 0.1) {
 		report += `- ⚠️ **High photo upload failure rate** (${((metrics.failedPhotos / (metrics.uploadedPhotos + metrics.failedPhotos)) * 100).toFixed(2)}%)\n`;
-		report += `  - Check MinIO connection stability\n`;
+		report += `  - Check S3 Storage connection stability\n`;
 		report += `  - Validate photo format before upload\n`;
 		report += `  - Increase upload timeout\n\n`;
 	}
