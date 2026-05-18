@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { uploadFile, deleteFile, uploadBase64, isS3Configured, getPublicUrl } from "@/utils/s3.js";
 import { respons, HttpStatus } from "@/utils/respons.js";
 import { createUploader } from "@/middlewares/multerMiddleware.js";
+import { uploadQueue } from "@/queues/upload.queue.js";
 
 const router = Router();
 
@@ -89,6 +90,26 @@ router.delete("/:folder/:fileName", requireS3, async (req: Request, res: Respons
 		}
 
 		return respons.success("File deleted successfully", result, HttpStatus.OK, res, req);
+	} catch (error) {
+		next(error);
+	}
+});
+
+router.post("/upload-job", async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { fileName, userId } = req.body;
+
+		if (!fileName || !userId) {
+			return respons.error("fileName and userId are required", null, HttpStatus.BAD_REQUEST, res, req);
+		}
+
+		const job = await uploadQueue.add("process-upload", {
+			fileId: Math.random().toString(36).substring(7),
+			fileName,
+			userId,
+		});
+
+		return respons.success("Job added to queue", { jobId: job.id }, HttpStatus.CREATED, res, req);
 	} catch (error) {
 		next(error);
 	}

@@ -3,6 +3,7 @@ import http from "http";
 import dotenv from "dotenv";
 import { logger } from "@/utils/logger.js";
 import { checkServicesHealth } from "@/utils/healthCheck.js";
+import "@/workers/upload.worker.js";
 
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
@@ -41,8 +42,13 @@ server.listen(PORT, HOST, () => {
 
 process.on("SIGTERM", () => {
 	console.info("SIGTERM signal received: closing HTTP server");
-	server.close(() => {
+	server.close(async () => {
 		console.info("HTTP server closed gracefully");
+		
+		const { uploadWorker } = await import("@/workers/upload.worker.js");
+		await uploadWorker.close();
+		console.info("Upload worker closed gracefully");
+		
 		process.exit(0);
 	});
 });
