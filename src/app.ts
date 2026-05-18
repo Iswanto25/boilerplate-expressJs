@@ -21,7 +21,6 @@ if (isProd) {
 	console.info("Running in PRODUCTION mode");
 } else {
 	console.info("Running in DEVELOPMENT mode");
-	console.info("Tips: Gunakan nodemon untuk auto-reload saat development");
 }
 
 server.listen(PORT, HOST, () => {
