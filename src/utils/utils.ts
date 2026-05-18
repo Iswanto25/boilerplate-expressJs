@@ -1,4 +1,3 @@
-import bcrypt from "bcrypt";
 import crypto from "node:crypto";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -29,7 +28,7 @@ export function formatDateTime(date: Date = new Date()): string {
 }
 
 const saltHast = process.env.SALT_HASH || "default";
-const saltRounds = process.env.SALT_ROUNDS || 5;
+const saltRounds = Number(process.env.SALT_ROUNDS) || 5;
 
 export function randomString(): string {
 	const datePart = formatDate();
@@ -37,12 +36,22 @@ export function randomString(): string {
 }
 
 export async function encryptPassword(password: string): Promise<string> {
-	const salt = await bcrypt.genSalt(Number(saltRounds));
-	return await bcrypt.hash(`${password}-${saltHast}`, salt);
+	const data = `${password}-${saltHast}`;
+	if (typeof Bun !== "undefined") {
+		return Bun.password.hash(data, { algorithm: "bcrypt", cost: saltRounds });
+	}
+	const bcrypt = await import("bcrypt");
+	const salt = await bcrypt.genSalt(saltRounds);
+	return bcrypt.hash(data, salt);
 }
 
 export async function comparePassword(password: string, hash: string): Promise<boolean> {
-	return await bcrypt.compare(`${password}-${saltHast}`, hash);
+	const data = `${password}-${saltHast}`;
+	if (typeof Bun !== "undefined") {
+		return Bun.password.verify(data, hash);
+	}
+	const bcrypt = await import("bcrypt");
+	return bcrypt.compare(data, hash);
 }
 
 export function isEmailValid(email: string): boolean {

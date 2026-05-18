@@ -25,16 +25,15 @@ if (isProd) {
 }
 
 server.listen(PORT, HOST, () => {
-	const baseUrl = isProd ? process.env.BASE_URL || `https://${process.env.DOMAIN || "yourdomain.com"}` : `http://${HOST}:${PORT}`;
+	const baseUrl = isProd ? Bun.env.BASE_URL || `https://${Bun.env.DOMAIN || "yourdomain.com"}` : `http://${HOST}:${PORT}`;
 
 	console.info("========================================");
-	console.info(`Server is running`);
-	console.info(`Version: ${process.env.version}`);
+	console.info(`Server is running on Bun ${Bun.version}`);
+	console.info(`Version: ${Bun.env.VERSION || "1.0.0"}`);
 	console.info(`Environment: ${NODE_ENV}`);
 	console.info(`URL: ${baseUrl}`);
 	console.info("========================================");
 
-	// Run health check
 	checkServicesHealth().catch((err) => {
 		logger.error({ err }, "Unexpected error during health check");
 	});
@@ -44,11 +43,11 @@ process.on("SIGTERM", () => {
 	console.info("SIGTERM signal received: closing HTTP server");
 	server.close(async () => {
 		console.info("HTTP server closed gracefully");
-		
+
 		const { uploadWorker } = await import("@/workers/upload.worker.js");
 		await uploadWorker.close();
 		console.info("Upload worker closed gracefully");
-		
+
 		process.exit(0);
 	});
 });

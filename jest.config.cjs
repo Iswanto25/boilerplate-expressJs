@@ -53,9 +53,7 @@ module.exports = {
 			"ts-jest",
 			{
 				useESM: false,
-				tsconfig: {
-					esModuleInterop: true,
-				},
+				tsconfig: "<rootDir>/tsconfig.json",
 			},
 		],
 	},

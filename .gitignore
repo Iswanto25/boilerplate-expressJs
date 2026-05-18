@@ -47,3 +47,8 @@ temp/
 src/generated/
 *.db
 *.db-journal
+
+# AI / Agent files (local only)
+AGENT.md
+migration-report.md
+.commandcode/
