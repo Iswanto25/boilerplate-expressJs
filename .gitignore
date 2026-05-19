@@ -49,7 +49,7 @@ src/generated/
 *.db-journal
 
 # AI / Agent files (local only)
-AGENT.md
+AGENTS.md
 migration-report.md
 .commandcode/taste/taste.md
 
