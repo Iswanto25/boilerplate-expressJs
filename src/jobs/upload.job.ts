@@ -13,6 +13,6 @@ export const processUploadJob = async (data: UploadJobData) => {
 	await new Promise((resolve) => setTimeout(resolve, 2000));
 
 	logger.info({ fileId: data.fileId }, "Upload processing completed successfully.");
-	
+
 	return { success: true, fileId: data.fileId };
 };

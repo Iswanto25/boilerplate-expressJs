@@ -19,7 +19,7 @@ export const uploadWorker = new Worker(
 	{
 		connection: bullConnection,
 		concurrency: 5,
-	}
+	},
 );
 
 uploadWorker.on("completed", (job) => {
