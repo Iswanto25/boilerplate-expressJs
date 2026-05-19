@@ -1,6 +1,7 @@
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
-import { uploadBase64, deleteFile, getPublicUrl } from "@/utils/s3.js";
+import { deleteFile, getPublicUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
+import { uploadQueue } from "@/features/auth/jobs/upload.queue.js";
 import { jwtUtils } from "@/utils/jwt.js";
 import { storeToken, deleteToken, getStoredToken } from "@/utils/tokenStore.js";
 import { sendEmail } from "@/utils/smtp.js";
@@ -15,17 +16,11 @@ const folder = "profile";
 
 export const authServices = {
 	async register(data: RegisterInput) {
-		return await authRepository.transaction(async (tx: any) => {
+		const result = await authRepository.transaction(async (tx: any) => {
 			if (!isEmailValid(data.email)) throw new apiError(400, "Invalid email");
 
 			const existing = await authRepository.findUserByEmail(data.email, tx);
 			if (existing) throw new apiError(400, "Email already exists");
-
-			let photoFileName: string | null = null;
-			if (data.photo) {
-				const uploadResult = await uploadBase64(folder, data.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
-				photoFileName = uploadResult.fileName;
-			}
 
 			const hashedPassword = await encryptPassword(data.password);
 
@@ -43,7 +38,7 @@ export const authServices = {
 						name: data.name,
 						address: data.address,
 						phone: data.phone,
-						photo: photoFileName,
+						photo: null,
 						NIK: ciphertext,
 					},
 				},
@@ -63,12 +58,24 @@ export const authServices = {
 					id: user.id,
 					name: data.name || null,
 					email: user.email,
-					photo: photoFileName,
+					photo: null,
 				},
 				accessToken,
 				refreshToken,
 			};
 		});
+
+		if (data.photo) {
+			await uploadQueue.add("upload-profile-photo", {
+				base64Data: data.photo,
+				folder,
+				maxSizeMB: 5,
+				allowedFormats: ["image/jpeg", "image/png", "image/jpg", "image/webp"],
+				userId: result.user.id,
+			});
+		}
+
+		return result;
 	},
 
 	async login(email: string, password: string) {
@@ -164,22 +171,12 @@ export const authServices = {
 	},
 
 	async updateProfile(userId: string, data: UpdateProfileInput): Promise<void> {
+		const currentUser = await authRepository.findUserById(userId);
+		if (!currentUser) throw new apiError(400, "User not found");
+
+		const oldPhotoFileName = currentUser.profile?.photo ?? undefined;
+
 		await authRepository.transaction(async (tx: any) => {
-			const currentUser = await authRepository.findUserById(userId, tx);
-			if (!currentUser) throw new apiError(400, "User not found");
-
-			let photoFileName: string | undefined = undefined;
-			const oldPhotoFileName = currentUser.profile?.photo;
-
-			if (data.photo) {
-				const uploadResult = await uploadBase64(folder, data.photo, 5, ["image/jpeg", "image/png", "image/jpg", "image/webp"]);
-				photoFileName = uploadResult.fileName;
-
-				if (oldPhotoFileName) {
-					await deleteFile(folder, oldPhotoFileName, { strict: false });
-				}
-			}
-
 			let encryptNik: string | undefined = undefined;
 			if (data.NIK) {
 				encryptNik = encryptionUtils.encryptSensitive(data.NIK).ciphertext;
@@ -197,12 +194,22 @@ export const authServices = {
 				...(data.name !== undefined && { name: data.name }),
 				...(data.phone !== undefined && { phone: data.phone }),
 				...(data.address !== undefined && { address: data.address }),
-				...(photoFileName !== undefined && { photo: photoFileName }),
 				...(encryptNik !== undefined && { NIK: encryptNik }),
 			};
 
 			await authRepository.updateUserProfile(userId, profileData, newEmail, tx);
 		});
+
+		if (data.photo) {
+			await uploadQueue.add("upload-profile-photo", {
+				base64Data: data.photo,
+				folder,
+				maxSizeMB: 5,
+				allowedFormats: ["image/jpeg", "image/png", "image/jpg", "image/webp"],
+				userId,
+				oldPhotoFileName,
+			});
+		}
 	},
 
 	async deleteProfile(userId: string): Promise<void> {

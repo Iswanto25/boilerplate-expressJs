@@ -1,7 +1,7 @@
 import { Worker, Job } from "bullmq";
 import { bullConnection } from "@/configs/bull.js";
-import { UPLOAD_QUEUE_NAME } from "@/queues/upload.queue.js";
-import { processUploadJob, UploadJobData } from "@/jobs/upload.job.js";
+import { UPLOAD_QUEUE_NAME } from "@/features/auth/jobs/upload.queue.js";
+import { processUploadJob, UploadJobData } from "@/features/auth/jobs/upload.job.js";
 import { logger } from "@/utils/logger.js";
 
 export const uploadWorker = new Worker(

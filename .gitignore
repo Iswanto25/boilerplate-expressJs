@@ -51,4 +51,6 @@ src/generated/
 # AI / Agent files (local only)
 AGENT.md
 migration-report.md
-.commandcode/
+.commandcode/taste/taste.md
+
+# Taste
