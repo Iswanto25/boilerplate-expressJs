@@ -1,4 +1,4 @@
-import { sync as spawnSync } from "bun";
+// Removed invalid import
 
 if (!process.env.NODE_ENV) {
 	process.env.NODE_ENV = "test";
@@ -45,7 +45,7 @@ if (!process.env.RATE_LIMIT_MAX_REQUESTS) {
 	process.env.RATE_LIMIT_MAX_REQUESTS = "100";
 }
 
-const result = spawnSync({
+const result = Bun.spawnSync({
 	cmd: ["bunx", "prisma", "generate"],
 	stdio: ["inherit", "inherit", "inherit"],
 	env: process.env as Record<string, string>,
