@@ -185,12 +185,18 @@ Aplikasi dirancang untuk tetap berjalan meskipun layanan pendukung (Redis, S3, S
 
 4. **Setup database:**
 
+    > [!IMPORTANT]
+    > **Catatan Prisma v7:** Proyek ini menggunakan **Prisma v7** (pastikan `prisma` dan `@prisma/client` minimal versi 7).
+    > Berbeda dengan versi lama, pada versi 7 koneksi URL diletakkan di `prisma.config.ts`, bukan di dalam `schema.prisma`. File `prisma.config.ts` membutuhkan `dotenv` untuk membaca `.env`.
+
+    Karena ini adalah proyek Bun dan menggunakan Prisma v7, gunakan `bunx` agar konfigurasi tereksekusi dengan sempurna:
+
     ```bash
     # Generate Prisma client
-    npx prisma generate
+    bunx prisma generate
 
     # Run migrations
-    npx prisma migrate dev
+    bunx prisma migrate dev
     ```
 
 5. **Cara Menjalankan:**
@@ -267,6 +273,14 @@ Test coverage meliputi:
 - S3 file operations
 - SMTP configuration
 - Token storage
+
+### 📮 API Testing dengan Postman
+
+Project ini juga sudah dilengkapi dengan Postman Collection yang terintegrasi (auto-set token).
+
+1. Buka aplikasi **Postman**.
+2. Klik **Import** dan pilih file `postman_collection.json` di root direktori proyek ini.
+3. Environment variables seperti `{{baseUrl}}`, `{{token}}`, dan `{{refreshToken}}` sudah siap pakai. Endpoint `Login` akan otomatis mengisi variabel token setelah berhasil login.
 
 ## 🔒 Security Features
 
@@ -564,11 +578,6 @@ Created by [Iswanto25](https://github.com/Iswanto25)
 - **Repository**: [github.com/Iswanto25/boilerplate-expressJs](https://github.com/Iswanto25/boilerplate-expressJs)
 - **Issues**: [Report a bug or request a feature](https://github.com/Iswanto25/boilerplate-expressJs/issues)
 - **Pull Requests**: [Contribute to the project](https://github.com/Iswanto25/boilerplate-expressJs/pulls)
-
----
-
-**Happy Coding! 🚀**
-ressJs/pulls)
 
 ---
 

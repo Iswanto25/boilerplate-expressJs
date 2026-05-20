@@ -1,9 +1,7 @@
 import express from "express";
 import cors, { CorsOptions } from "cors";
 import compression from "compression";
-import { pinoHttp } from "pino-http";
 import helmet from "helmet";
-import { logger } from "@/utils/logger.js";
 import { respons, HttpStatus } from "@/utils/respons.js";
 import apiRoutes from "@/routes/index.js";
 import { errorHandler, notFoundHandler } from "@/middlewares/errorHandler.js";
@@ -93,20 +91,7 @@ app.use((req, res, next) => {
 	next();
 });
 
-app.use(
-	pinoHttp({
-		logger,
 
-		autoLogging: process.env.NODE_ENV !== "production",
-		customSuccessMessage: (req, res, responseTime) => {
-			return `${req.method} ${req.url} ${res.statusCode} - ${responseTime}ms`;
-		},
-		customErrorMessage: (req, res, err) => {
-			return `${req.method} ${req.url} ${res.statusCode} - ERROR: ${err.message}`;
-		},
-		quietReqLogger: true,
-	}),
-);
 
 app.get("/", (req, res) => res.redirect("/health"));
 app.get("/health", (req, res) => {
