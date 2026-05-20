@@ -75,7 +75,7 @@ export const respons = {
 		// Simplified console log with response time
 		const path = req.path || req.originalUrl;
 		const userName = (user as any)?.profile?.name || "Guest";
-		logger.info(`✅ ${req.method} ${path} ${code} | ${userName} | ${responseTime}ms`);
+		logger.info(`${req.method} ${path} ${code} | ${userName} | ${responseTime}ms`);
 
 		try {
 			await prisma.logs.create({
@@ -123,7 +123,7 @@ export const respons = {
 		const path = req?.path || req?.originalUrl || "unknown";
 		const userName = (user as any)?.profile?.name || "Guest";
 		const errorHint = (error as any)?.hint || (error as any)?.code || "";
-		logger.error(`❌ ${req?.method} ${path} ${code} | ${message} ${errorHint ? `(${errorHint}) ` : ""}| ${userName} | ${responseTime}ms`);
+		logger.error(`${req?.method} ${path} ${code} | ${message} ${errorHint ? `(${errorHint}) ` : ""}| ${userName} | ${responseTime}ms`);
 
 		try {
 			await prisma.logs.create({

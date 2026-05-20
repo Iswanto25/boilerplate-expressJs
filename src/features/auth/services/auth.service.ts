@@ -26,7 +26,7 @@ export const authServices = {
 
 			const ciphertext = data.NIK ? encryptionUtils.encryptSensitive(data.NIK).ciphertext : null;
 
-			const defaultRole = await tx.role.findUnique({ where: { name: "USER" } });
+			const defaultRole = await tx.role.findUnique({ where: { name: "User" } });
 			if (!defaultRole) throw new apiError(500, "Default role 'USER' not found");
 
 			const user = await authRepository.createUser(
