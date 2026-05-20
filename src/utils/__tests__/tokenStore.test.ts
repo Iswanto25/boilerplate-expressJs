@@ -1,4 +1,3 @@
-
 import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
@@ -32,7 +31,7 @@ const setupModule = async (overrides?: Partial<Record<string, any>>) => {
 		...(overrides || {}),
 	};
 
-	const restoreRedis = stubModule(redisPath, { redisClient });
+	const restoreRedis = stubModule(redisPath, { redisState: { client: redisClient, isAvailable: true } });
 	delete requireModule.cache[requireModule.resolve(modulePath)];
 
 	const module = await import(modulePath);
@@ -63,7 +62,7 @@ test("storeToken throws when Redis does not acknowledge write", async () => {
 		set: mock(async () => "ERR"),
 	});
 	try {
-		await expect(() => module.storeToken("user-2").rejects.toThrow("token", "refresh", 60), /Failed to store token/);
+		await expect(module.storeToken("user-2", "token", "refresh", 60)).rejects.toThrow(/Failed to store token/);
 	} finally {
 		restore();
 	}

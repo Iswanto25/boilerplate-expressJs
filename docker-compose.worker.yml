@@ -1,0 +1,13 @@
+services:
+    boilerplate-express-worker:
+        image: boilerplate-express-backend:latest
+        container_name: boilerplate-express-worker
+        env_file:
+            - .env
+        environment:
+            DOCKER_ENV: "true"
+            NODE_ENV: ${NODE_ENV:-production}
+        command: ["bun", "run", "worker:start"]
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        restart: unless-stopped

@@ -1,4 +1,3 @@
-
 import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
@@ -56,11 +55,7 @@ const createReqRes = (token: string = "token-123") => {
 	return { req, res };
 };
 
-const setup = async (overrides?: {
-	auth?: ReturnType<typeof mock>;
-	findUser?: ReturnType<typeof mock>;
-	createLog?: ReturnType<typeof mock>;
-}) => {
+const setup = async (overrides?: { auth?: ReturnType<typeof mock>; findUser?: ReturnType<typeof mock>; createLog?: ReturnType<typeof mock> }) => {
 	const findUser = overrides?.findUser ?? mock(async () => ({ id: "user-1", name: "Tester", role: "admin" }));
 	const createLog = overrides?.createLog ?? mock(async () => ({}));
 	const auth = overrides?.auth ?? mock(async () => ({ valid: true, userId: "user-1" }));
@@ -105,7 +100,7 @@ test("respons.success logs and responds with payload", async () => {
 		await module.respons.success("Success message", { hello: "world" }, module.HttpStatus.OK, res, req);
 
 		expect(res.statusCode).toBe(200);
-		expect(res.payload, {
+		expect(res.payload).toEqual({
 			success: true,
 			message: "Success message",
 			data: { hello: "world" },
@@ -130,7 +125,7 @@ test("respons.success with pagination", async () => {
 		await module.respons.success("Success with pagination", [{ id: 1 }], module.HttpStatus.OK, res, req, pagination);
 
 		expect(res.statusCode).toBe(200);
-		expect(res.payload, {
+		expect(res.payload).toEqual({
 			success: true,
 			message: "Success with pagination",
 			data: [{ id: 1 }],
@@ -153,7 +148,7 @@ test("respons.error logs warning when database write fails", async () => {
 		await module.respons.error("Error message", { reason: "failure" }, module.HttpStatus.BAD_REQUEST, res, req);
 
 		expect(res.statusCode).toBe(400);
-		expect(res.payload, {
+		expect(res.payload).toEqual({
 			success: false,
 			message: "Error message",
 			error: { reason: "failure" },

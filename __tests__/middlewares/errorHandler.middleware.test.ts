@@ -1,22 +1,30 @@
 /**
  * Unit Test untuk Error Handler Middleware
  */
+import { describe, it, expect, beforeAll, beforeEach, mock } from "bun:test";
 import { errorHandler, notFoundHandler } from "@/middlewares/errorHandler.js";
 import { createMockRequest, createMockResponse } from "__tests__/helpers/mock.helper.js";
 import { setFakerSeed } from "__tests__/helpers/faker.helper.js";
 
-jest.mock("@/utils/logger.js", () => ({
+mock.module("@/utils/logger.js", () => ({
 	logger: {
-		error: jest.fn(),
+		error: mock(),
+		warn: mock(),
+		info: mock(),
+		debug: mock(),
 	},
 }));
-jest.mock("@/utils/respons.js", () => ({
-	...jest.requireActual("@/utils/respons.js"),
-	respons: {
-		...jest.requireActual("@/utils/respons.js").respons,
-		error: jest.fn(),
-	},
-}));
+
+mock.module("@/utils/respons.js", () => {
+	const actual = require("@/utils/respons.js");
+	return {
+		...actual,
+		respons: {
+			...actual.respons,
+			error: mock(),
+		},
+	};
+});
 
 import { logger } from "@/utils/logger.js";
 import { respons } from "@/utils/respons.js";
@@ -27,7 +35,8 @@ describe("Error Handler Middleware", () => {
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		(logger.error as any).mockClear();
+		(respons.error as any).mockClear();
 	});
 
 	describe("errorHandler", () => {
@@ -36,7 +45,7 @@ describe("Error Handler Middleware", () => {
 			error.statusCode = 422;
 			const req = createMockRequest();
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			errorHandler(error, req as any, res as any, next);
 
@@ -54,7 +63,7 @@ describe("Error Handler Middleware", () => {
 			error.status = 404;
 			const req = createMockRequest();
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			errorHandler(error, req as any, res as any, next);
 
@@ -70,7 +79,7 @@ describe("Error Handler Middleware", () => {
 			const error = new Error("Something broke");
 			const req = createMockRequest();
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			errorHandler(error, req as any, res as any, next);
 
@@ -89,7 +98,7 @@ describe("Error Handler Middleware", () => {
 			const error = new Error("Dev error");
 			const req = createMockRequest();
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			errorHandler(error, req as any, res as any, next);
 
@@ -111,7 +120,7 @@ describe("Error Handler Middleware", () => {
 			error.statusCode = 500;
 			const req = createMockRequest();
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			errorHandler(error, req as any, res as any, next);
 
@@ -133,7 +142,7 @@ describe("Error Handler Middleware", () => {
 			error.statusCode = 500;
 			const req = createMockRequest();
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			errorHandler(error, req as any, res as any, next);
 
@@ -146,7 +155,7 @@ describe("Error Handler Middleware", () => {
 			const error = new Error("Route error");
 			const req = createMockRequest({ path: "/api/users", method: "POST" });
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			errorHandler(error, req as any, res as any, next);
 
@@ -164,7 +173,7 @@ describe("Error Handler Middleware", () => {
 			error.status = 400;
 			const req = createMockRequest();
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			errorHandler(error, req as any, res as any, next);
 
@@ -176,12 +185,12 @@ describe("Error Handler Middleware", () => {
 		it("should return 404 with route information", () => {
 			const req = createMockRequest({ method: "GET", path: "/api/nonexistent" });
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			notFoundHandler(req as any, res as any, next);
 
 			expect(respons.error).toHaveBeenCalled();
-			const callArgs = (respons.error as jest.Mock).mock.calls[0];
+			const callArgs = (respons.error as any).mock.calls[0];
 			expect(callArgs[0]).toContain("GET /api/nonexistent not found");
 			expect(callArgs[2]).toBe(404);
 		});
@@ -189,12 +198,12 @@ describe("Error Handler Middleware", () => {
 		it("should include HTTP method in not found message", () => {
 			const req = createMockRequest({ method: "DELETE", path: "/api/old-endpoint" });
 			const res = createMockResponse();
-			const next = jest.fn();
+			const next = mock(() => {});
 
 			notFoundHandler(req as any, res as any, next);
 
 			expect(respons.error).toHaveBeenCalled();
-			const callArgs = (respons.error as jest.Mock).mock.calls[0];
+			const callArgs = (respons.error as any).mock.calls[0];
 			expect(callArgs[0]).toContain("DELETE");
 		});
 	});

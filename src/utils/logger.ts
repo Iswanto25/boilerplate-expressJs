@@ -1,19 +1,11 @@
 import pino from "pino";
 import path from "path";
-import fs from "fs";
-import dotenv from "dotenv";
-
-dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 const isProd = process.env.NODE_ENV === "production";
 
-// Create logger directory if it doesn't exist
-const logDir = path.join(process.cwd(), "logger");
-if (!fs.existsSync(logDir)) {
-	fs.mkdirSync(logDir, { recursive: true });
-}
+export const getLogLevel = (env?: string): string => ((env ?? process.env.NODE_ENV) === "production" ? "info" : "debug");
 
-// Generate filename using native Date: YYYY-MM-DD.log
+const logDir = path.join(process.cwd(), "logger");
 const now = new Date();
 const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 const filePath = path.join(logDir, `${dateStr}.log`);
@@ -23,7 +15,7 @@ const transport = pino.transport({
 		{
 			target: "pino/file",
 			options: { destination: filePath as any, mkdir: true, append: true },
-			level: isProd ? "info" : "debug",
+			level: getLogLevel(),
 		},
 		{
 			target: isProd ? "pino/file" : "pino-pretty",

@@ -23,3 +23,9 @@
 
 # Security
 - Jangan gunakan regex untuk parsing string (email, S3 endpoint, base64, dll). Gunakan loop for + indexOf untuk menghindari ReDoS. Confidence: 0.85
+
+# Testing
+- Di bun:test, jangan mock module utility (seperti @/utils/utils.js) di file integration test karena mock.module bisa leak ke file test lain. Biarkan utility module pakai implementasi asli, cukup mock di level controller/service. Confidence: 0.70
+
+# Dev Workflow
+- Jalankan API server dan worker bersamaan dalam satu perintah `bun run dev`, bukan di terminal terpisah. Confidence: 0.70

@@ -6,9 +6,9 @@
 		"paths": {
 			"@/*": ["src/*"]
 		},
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"target": "ESNext",
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
 		"strict": true,

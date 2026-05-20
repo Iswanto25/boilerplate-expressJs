@@ -1,4 +1,3 @@
-
 import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
@@ -44,7 +43,7 @@ const setup = async (overrides?: Partial<Record<"incr" | "expire" | "ttl" | "set
 		error: mock(() => {}),
 	};
 
-	const restoreRedis = stubModule(redisPath, { redisClient });
+	const restoreRedis = stubModule(redisPath, { redisState: { client: redisClient, isAvailable: true } });
 	const restoreRespons = stubModule(responsPath, {
 		HttpStatus: { TOO_MANY_REQUESTS: 429 },
 		respons: { error: responsError },

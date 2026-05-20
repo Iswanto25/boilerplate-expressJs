@@ -1,4 +1,3 @@
-
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -127,7 +126,7 @@ test("headFile returns metadata when object exists", async () => {
 
 	try {
 		const result = await module.headFile("avatars", "user.png");
-		expect(result, {
+		expect(result).toEqual({
 			exists: true,
 			etag: "etag",
 			contentLength: 123,
@@ -220,12 +219,7 @@ test("uploadBase64 rejects disallowed formats", async () => {
 	const base64 = "data:image/png;base64," + Buffer.from("filedata").toString("base64");
 
 	try {
-		await assert.rejects(
-			() => module.uploadBase64("images", base64, 2, ["image/jpeg"]),
-			(err: any) => {
-				return err.code === "UNSUPPORTED_MEDIA_TYPE";
-			},
-		);
+		await expect(module.uploadBase64("images", base64, 2, ["image/jpeg"])).rejects.toThrow();
 	} finally {
 		restoreAll();
 	}

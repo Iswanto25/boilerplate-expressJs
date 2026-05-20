@@ -7,23 +7,30 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 Boilerplate ini dikembangkan dengan prinsip **"Scalability through Simplicity & Separation"**. Berikut adalah pilar utama arsitektur kami:
 
 ### 1. Modular Feature-based Architecture
-Berbeda dengan pola MVC tradisional yang mengelompokkan file berdasarkan *tipe* (semua controller di satu folder), kami mengelompokkan berdasarkan **Fitur**.
+
+Berbeda dengan pola MVC tradisional yang mengelompokkan file berdasarkan _tipe_ (semua controller di satu folder), kami mengelompokkan berdasarkan **Fitur**.
+
 - Setiap fitur (misal: `auth`) memiliki ekosistem sendiri: controller, service, repository, validation, dan jobs.
 - **Manfaat**: Memudahkan navigasi saat proyek membesar dan memungkinkan penghapusan atau penambahan fitur secara terisolasi tanpa merusak bagian lain.
 
 ### 2. Separation of Concerns (SoC) dengan Repository Pattern
+
 Kami membagi tanggung jawab ke dalam lapisan yang jelas:
+
 - **Controllers**: Hanya menangani request/response dan validasi skema (Zod).
-- **Services**: Berisi *Business Logic*. Di sini tempat aturan bisnis dijalankan.
+- **Services**: Berisi _Business Logic_. Di sini tempat aturan bisnis dijalankan.
 - **Repositories**: Satu-satunya lapisan yang berinteraksi dengan Database (Prisma). Lapisan ini mengabstraksi kompleksitas query.
 - **Jobs**: Menangani tugas berat secara asinkron (Event-driven) agar API tetap responsif.
 
 ### 3. Graceful Degradation & Resilience
+
 Aplikasi dirancang untuk tetap berjalan meskipun layanan pendukung (Redis, S3, SMTP) tidak tersedia atau salah konfigurasi.
-- **Optional Services**: Jika Redis mati, sistem akan otomatis melakukan *fallback* ke in-memory atau melewati fungsi tersebut dengan log peringatan, bukan menghentikan seluruh aplikasi.
-- **Background Jobs**: Menggunakan BullMQ untuk memastikan tugas yang gagal dapat dicoba kembali secara otomatis (*auto-retry*).
+
+- **Optional Services**: Jika Redis mati, sistem akan otomatis melakukan _fallback_ ke in-memory atau melewati fungsi tersebut dengan log peringatan, bukan menghentikan seluruh aplikasi.
+- **Background Jobs**: Menggunakan BullMQ untuk memastikan tugas yang gagal dapat dicoba kembali secara otomatis (_auto-retry_).
 
 ### 4. Developer Experience (DX) & Performance
+
 - **Bun Native**: Menggunakan Bun untuk kecepatan eksekusi dan tooling yang terintegrasi (test runner, package manager).
 - **Type-Safety**: Penggunaan TypeScript dan Zod memastikan error terdeteksi saat development, bukan saat runtime.
 - **Path Alias**: Menghindari "relative import hell" dengan alias `@/`.
@@ -186,13 +193,41 @@ Aplikasi dirancang untuk tetap berjalan meskipun layanan pendukung (Redis, S3, S
     npx prisma migrate dev
     ```
 
-5. **Start development server:**
+5. **Cara Menjalankan:**
+
+    Proyek ini memiliki **dua proses** yang berjalan terpisah:
+
+    ### 📡 Development (`dev.ts`)
+
+    **Satu command menjalankan API Server + Worker sekaligus.**
 
     ```bash
     bun run dev
     ```
 
-    Server akan berjalan di `http://localhost:3000`
+    Server akan berjalan di `http://localhost:3000` dan worker siap memproses background job (upload file, kirim email, dll).
+
+    ### 🚀 Production
+
+    Di production, API server dan worker dijalankan terpisah agar bisa di-scale independently.
+
+    **API Server:**
+    ```bash
+    bun run build
+    bun run start
+    ```
+
+    **Worker:**
+    ```bash
+    bun run worker:start
+    ```
+
+    ### 🏃 Urutan Menjalankan (Development)
+
+    1. Pastikan PostgreSQL dan Redis sudah berjalan
+    2. Setup database: `npx prisma generate && npx prisma migrate dev`
+    3. Jalankan: `bun run dev`
+    4. Server + Worker siap di `http://localhost:3000`
 
 ## 📜 Available Scripts
 

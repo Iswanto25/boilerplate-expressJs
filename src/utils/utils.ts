@@ -37,21 +37,12 @@ export function randomString(): string {
 
 export async function encryptPassword(password: string): Promise<string> {
 	const data = `${password}-${saltHast}`;
-	if (typeof Bun !== "undefined") {
-		return Bun.password.hash(data, { algorithm: "bcrypt", cost: saltRounds });
-	}
-	const bcrypt = await import("bcrypt");
-	const salt = await bcrypt.genSalt(saltRounds);
-	return bcrypt.hash(data, salt);
+	return Bun.password.hash(data, { algorithm: "bcrypt", cost: saltRounds });
 }
 
 export async function comparePassword(password: string, hash: string): Promise<boolean> {
 	const data = `${password}-${saltHast}`;
-	if (typeof Bun !== "undefined") {
-		return Bun.password.verify(data, hash);
-	}
-	const bcrypt = await import("bcrypt");
-	return bcrypt.compare(data, hash);
+	return Bun.password.verify(data, hash);
 }
 
 export function isEmailValid(email: string): boolean {

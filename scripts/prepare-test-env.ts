@@ -1,4 +1,4 @@
-const { spawnSync } = require("node:child_process");
+import { sync as spawnSync } from "bun";
 
 if (!process.env.NODE_ENV) {
 	process.env.NODE_ENV = "test";
@@ -45,12 +45,12 @@ if (!process.env.RATE_LIMIT_MAX_REQUESTS) {
 	process.env.RATE_LIMIT_MAX_REQUESTS = "100";
 }
 
-const command = process.platform === "win32" ? "npx.cmd" : "npx";
-const result = spawnSync(command, ["prisma", "generate"], {
-	stdio: "inherit",
-	env: process.env,
+const result = spawnSync({
+	cmd: ["bunx", "prisma", "generate"],
+	stdio: ["inherit", "inherit", "inherit"],
+	env: process.env as Record<string, string>,
 });
 
-if (result.status !== 0) {
-	process.exit(result.status ?? 1);
+if (result.exitCode !== 0) {
+	process.exit(result.exitCode ?? 1);
 }

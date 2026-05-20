@@ -23,7 +23,7 @@ export const generateFakeUser = (overrides?: Partial<any>) => {
 		id: faker.string.uuid(),
 		name: faker.person.fullName(),
 		email: faker.internet.email().toLowerCase(),
-		password: faker.internet.password({ length: 12 }),
+		password: generateValidPassword(12),
 		phone: faker.string.numeric(10),
 		address: faker.location.streetAddress({ useFullAddress: true }),
 		photo: faker.image.avatar(),
@@ -47,7 +47,7 @@ export const generateFakeRegisterData = (overrides?: Partial<any>) => {
 	return {
 		name: faker.person.fullName(),
 		email: faker.internet.email().toLowerCase(),
-		password: faker.internet.password({ length: 12 }),
+		password: generateValidPassword(12),
 		phone: faker.string.numeric(10),
 		address: faker.location.streetAddress({ useFullAddress: true }),
 		photo: faker.image.avatar(),
@@ -61,7 +61,7 @@ export const generateFakeRegisterData = (overrides?: Partial<any>) => {
 export const generateFakeLoginData = (overrides?: Partial<any>) => {
 	return {
 		email: faker.internet.email().toLowerCase(),
-		password: faker.internet.password({ length: 12 }),
+		password: generateValidPassword(12),
 		...overrides,
 	};
 };
@@ -107,10 +107,10 @@ export const generateFakePhoneNumber = () => {
 };
 
 /**
- * Generate fake password
+ * Generate password yang pasti lolos validasi Zod
  */
-export const generateFakePassword = (length: number = 12) => {
-	return faker.internet.password({ length });
+const generateValidPassword = (length: number = 12) => {
+	return "Abc@" + faker.string.alphanumeric(length - 5) + "1";
 };
 
 /**

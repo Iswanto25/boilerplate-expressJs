@@ -1,4 +1,3 @@
-
 import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
@@ -75,7 +74,7 @@ test("sendEmail surfaces transport errors", async () => {
 	});
 
 	try {
-		await expect(() => module.sendEmail({ to: "x@y.com").rejects.toThrow(subject: "Hi" }), /Failed to send email/);
+		await expect(module.sendEmail({ to: "x@y.com", subject: "Hi" })).rejects.toThrow(/Failed to send email/);
 	} finally {
 		restore();
 	}

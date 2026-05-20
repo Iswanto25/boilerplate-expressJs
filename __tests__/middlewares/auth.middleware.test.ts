@@ -7,6 +7,7 @@ import { createMockRequest, createMockResponse } from "__tests__/helpers/mock.he
 import { setFakerSeed } from "__tests__/helpers/faker.helper.js";
 
 mock.module("@/configs/database.js", () => ({
+	__esModule: true,
 	default: {
 		user: {
 			findUnique: mock(),
@@ -24,15 +25,16 @@ mock.module("@/utils/tokenStore.js", () => ({
 	getStoredToken: mock(),
 }));
 
-mock.module("@/utils/respons.js", () => ({
-	respons: {
-		error: mock(),
-		success: mock(),
-	},
-	HttpStatus: {
-		UNAUTHORIZED: 401,
-	},
-}));
+mock.module("@/utils/respons.js", () => {
+	const actual = require("@/utils/respons.js");
+	return {
+		...actual,
+		respons: {
+			...actual.respons,
+			error: mock(),
+		},
+	};
+});
 
 import { jwtUtils } from "@/utils/jwt.js";
 import { getStoredToken } from "@/utils/tokenStore.js";

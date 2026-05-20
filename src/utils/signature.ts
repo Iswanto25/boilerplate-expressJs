@@ -2,23 +2,15 @@ import { Request, Response, NextFunction } from "express";
 import crypto from "node:crypto";
 
 /**
- * Hash request body consistently
- */
-const hashPayload = (body: unknown): string => {
-	const str = typeof body === "string" ? body : JSON.stringify(body || {});
-	return crypto.createHash("sha256").update(str).digest("hex");
-};
-
-/**
  * Generate a secure API Key with HMAC signature
- * Includes method, url, and body hash to prevent replay and tampering
  */
-export function generateApiKey(userKey: string, secretKey: string, syncedTimestamp: number, method: string, url: string, body: unknown): string {
-	const timestampStr = syncedTimestamp.toString();
-	const bodyHash = hashPayload(body);
-	const dataToSign = `${userKey}:${timestampStr}:${bodyHash}:${method.toUpperCase()}:${url}`;
-	const signature = crypto.createHmac("sha256", secretKey).update(dataToSign).digest("hex");
-	const payload = `${userKey}:${timestampStr}:${signature}`;
+export async function generateApiKey(userKey: string, secretKey: string): Promise<string> {
+	const timestamp = Date.now().toString();
+	const dataToSign = `${userKey}:${timestamp}`;
+	const hmac = crypto.createHmac("sha256", secretKey);
+	hmac.update(dataToSign);
+	const signature = hmac.digest("hex");
+	const payload = `${userKey}:${timestamp}:${signature}`;
 	return Buffer.from(payload).toString("base64");
 }
 
@@ -40,13 +32,10 @@ export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
 			return res.status(401).json({ success: false, message: "Format tidak valid" });
 		}
 
-		// In production, USER_KEY and SECRET_KEY should be retrieved based on the userKey (e.g. from DB)
-		// For this boilerplate, we use environment variables
 		if (userKey !== process.env.USER_KEY) {
 			return res.status(401).json({ success: false, message: "Identitas tidak valid" });
 		}
 
-		// 1. Check timestamp (prevent replay attacks)
 		const requestTime = parseInt(timestamp);
 		const currentTime = Date.now();
 		const timeDiff = Math.abs(currentTime - requestTime);
@@ -56,20 +45,17 @@ export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
 			return res.status(401).json({ success: false, message: "Request expired" });
 		}
 
-		// 2. Verify signature
-		const bodyHash = hashPayload(req.body);
-		const dataToVerify = `${userKey}:${timestamp}:${bodyHash}:${req.method.toUpperCase()}:${req.originalUrl}`;
-
 		const secretKey = process.env.SECRET_KEY;
 		if (!secretKey) {
 			return res.status(500).json({ success: false, message: "Server configuration error" });
 		}
 
-		const expectedSignature = crypto.createHmac("sha256", secretKey).update(dataToVerify).digest("hex");
+		const dataToVerify = `${userKey}:${timestamp}`;
+		const hmac = crypto.createHmac("sha256", secretKey);
+		hmac.update(dataToVerify);
+		const expectedSignature = hmac.digest("hex");
 
-		const isSignatureValid = crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"));
-
-		if (!isSignatureValid) {
+		if (signature !== expectedSignature) {
 			return res.status(401).json({ success: false, message: "Signature tidak valid" });
 		}
 

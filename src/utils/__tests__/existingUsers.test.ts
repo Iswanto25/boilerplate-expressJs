@@ -1,4 +1,3 @@
-
 import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
@@ -60,7 +59,7 @@ test("existingEmail returns user when prisma finds a match", async () => {
 
 		expect(result).toEqual(sampleUser);
 		expect(findUnique.mock.calls.length).toBe(1);
-		expect(prisma.user.findUnique.mock.calls[0][0], {
+		expect(prisma.user.findUnique.mock.calls[0][0]).toEqual({
 			where: { email: "test@example.com" },
 		});
 	} finally {
@@ -77,7 +76,7 @@ test("existingEmail returns null when no user found", async () => {
 
 		expect(result).toBe(null);
 		expect(findUnique.mock.calls.length).toBe(1);
-		expect(prisma.user.findUnique.mock.calls[0][0], {
+		expect(prisma.user.findUnique.mock.calls[0][0]).toEqual({
 			where: { email: "missing@example.com" },
 		});
 	} finally {

@@ -1,13 +1,7 @@
 import { mock, describe, it, expect, beforeAll, beforeEach } from "bun:test";
 import { authServices } from "@/features/auth/services/auth.service.js";
 import prisma from "@/configs/database.js";
-import {
-	generateFakeUser,
-	generateFakeRegisterData,
-	generateFakeLoginData,
-	setFakerSeed,
-	generateFakeUUID,
-} from "__tests__/helpers/faker.helper.js";
+import { generateFakeUser, generateFakeRegisterData, generateFakeLoginData, setFakerSeed, generateFakeUUID } from "__tests__/helpers/faker.helper.js";
 import { encryptPassword } from "@/utils/utils.js";
 
 // Mock dependencies
@@ -43,12 +37,13 @@ mock.module("@/utils/jwt.js", () => ({
 	jwtUtils: {
 		generateAccessToken: mock().mockReturnValue("mock-access-token"),
 		generateRefreshToken: mock().mockReturnValue("mock-refresh-token"),
+		verifyAccessToken: mock().mockReturnValue({ id: "test-user-id", email: "test@example.com" }),
 		verifyRefreshToken: mock().mockReturnValue({ id: "test-user-id", email: "test@example.com" }),
 	},
 }));
 
 mock.module("@/utils/tokenStore.js", () => ({
-	storeToken: mock().mockResolvedValue(undefined),
+	storeToken: mock().mockResolvedValue("token-key"),
 	getStoredToken: mock().mockResolvedValue("mock-refresh-token"),
 	deleteToken: mock().mockResolvedValue(undefined),
 }));
@@ -59,6 +54,7 @@ mock.module("@/utils/encryption.js", () => ({
 			version: "v1",
 			ciphertext: "encrypted-data",
 		}),
+		decryptSensitive: mock().mockReturnValue("decrypted-data"),
 	},
 	decryptSensitive: mock().mockReturnValue("decrypted-data"),
 }));
