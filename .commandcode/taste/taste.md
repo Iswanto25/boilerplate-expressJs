@@ -18,5 +18,8 @@
 # Validation
 - Gunakan Zod .safeParse() untuk validasi, jangan pernah gunakan .parse() yang throw. Confidence: 0.85
 
+# Runtime
+- Gunakan Bun sebagai runtime dan pilih alternatif Bun-native (seperti bun test, Bun.sql, Bun.file) dibanding library Node.js ketika tersedia. Confidence: 0.70
+
 # Security
 - Jangan gunakan regex untuk parsing string (email, S3 endpoint, base64, dll). Gunakan loop for + indexOf untuk menghindari ReDoS. Confidence: 0.85
