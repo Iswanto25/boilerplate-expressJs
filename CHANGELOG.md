@@ -8,6 +8,25 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-05-20
+
+### ✨ Added
+
+- **RBAC (Role-Based Access Control)**: Implementasi sistem otorisasi berbasis role, module, resource, dan permission yang mendalam.
+- **Background Jobs**: Integrasi **BullMQ** untuk pemrosesan tugas asinkron di latar belakang (e.g. file processing, emails).
+- **Dedicated Worker**: Penambahan proses worker terpisah (`src/worker.ts`) untuk menangani antrian job.
+- **Zod Validation**: Migrasi sistem validasi input menggunakan **Zod** untuk type-safety yang lebih baik dan skema yang lebih deklaratif.
+- **Database Logging**: Skema database sekarang mencakup tabel `logs` untuk audit trail dan monitoring aktivitas aplikasi.
+- **Bun-Native Runtime**: Optimalisasi penuh untuk **Bun**, menggunakan script `bun` untuk development, testing, dan execution.
+
+### 🔄 Changed
+
+- **Schema Update**: Penambahan relasi kompleks antara User, Role, Module, dan Permissions pada `schema.prisma`.
+- **Validation Refactor**: Refaktorisasi `auth.validation.ts` menggunakan Zod schemas.
+- **Logger Enhancement**: Peningkatan integrasi pino-http untuk logging request yang lebih detail.
+
+---
+
 ## [2.1.0] - 2026-03-24
 
 ### ✨ Added

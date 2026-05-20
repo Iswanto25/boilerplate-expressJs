@@ -1,7 +1,7 @@
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
 import { deleteFile, getPublicUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
-import { uploadQueue } from "@/features/auth/jobs/upload.queue.js";
+import { authQueue } from "@/features/auth/jobs/auth.jobs.js";
 import { jwtUtils } from "@/utils/jwt.js";
 import { storeToken, deleteToken, getStoredToken } from "@/utils/tokenStore.js";
 import { sendEmail } from "@/utils/smtp.js";
@@ -66,7 +66,7 @@ export const authServices = {
 		});
 
 		if (data.photo) {
-			await uploadQueue.add("upload-profile-photo", {
+			await authQueue.add("upload-profile-photo", {
 				base64Data: data.photo,
 				folder,
 				maxSizeMB: 5,
@@ -201,7 +201,7 @@ export const authServices = {
 		});
 
 		if (data.photo) {
-			await uploadQueue.add("upload-profile-photo", {
+			await authQueue.add("upload-profile-photo", {
 				base64Data: data.photo,
 				folder,
 				maxSizeMB: 5,

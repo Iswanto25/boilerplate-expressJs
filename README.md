@@ -1,110 +1,99 @@
-# Express.js & TypeScript Boilerplate
+# Express.js & TypeScript Boilerplate (Bun Native)
 
-Boilerplate production-ready untuk membangun REST API menggunakan Express.js, TypeScript, dan Prisma. Arsitektur proyek ini dirancang agar modular, scalable, dan mudah dikelola.
+Boilerplate production-ready untuk membangun REST API menggunakan Express.js, TypeScript, dan Prisma, dioptimalkan sepenuhnya untuk **Bun**. Arsitektur proyek ini dirancang agar modular, scalable, dan mendukung sistem otorisasi yang kompleks.
+
+## 🧠 Filosofi Arsitektur
+
+Boilerplate ini dikembangkan dengan prinsip **"Scalability through Simplicity & Separation"**. Berikut adalah pilar utama arsitektur kami:
+
+### 1. Modular Feature-based Architecture
+Berbeda dengan pola MVC tradisional yang mengelompokkan file berdasarkan *tipe* (semua controller di satu folder), kami mengelompokkan berdasarkan **Fitur**.
+- Setiap fitur (misal: `auth`) memiliki ekosistem sendiri: controller, service, repository, validation, dan jobs.
+- **Manfaat**: Memudahkan navigasi saat proyek membesar dan memungkinkan penghapusan atau penambahan fitur secara terisolasi tanpa merusak bagian lain.
+
+### 2. Separation of Concerns (SoC) dengan Repository Pattern
+Kami membagi tanggung jawab ke dalam lapisan yang jelas:
+- **Controllers**: Hanya menangani request/response dan validasi skema (Zod).
+- **Services**: Berisi *Business Logic*. Di sini tempat aturan bisnis dijalankan.
+- **Repositories**: Satu-satunya lapisan yang berinteraksi dengan Database (Prisma). Lapisan ini mengabstraksi kompleksitas query.
+- **Jobs**: Menangani tugas berat secara asinkron (Event-driven) agar API tetap responsif.
+
+### 3. Graceful Degradation & Resilience
+Aplikasi dirancang untuk tetap berjalan meskipun layanan pendukung (Redis, S3, SMTP) tidak tersedia atau salah konfigurasi.
+- **Optional Services**: Jika Redis mati, sistem akan otomatis melakukan *fallback* ke in-memory atau melewati fungsi tersebut dengan log peringatan, bukan menghentikan seluruh aplikasi.
+- **Background Jobs**: Menggunakan BullMQ untuk memastikan tugas yang gagal dapat dicoba kembali secara otomatis (*auto-retry*).
+
+### 4. Developer Experience (DX) & Performance
+- **Bun Native**: Menggunakan Bun untuk kecepatan eksekusi dan tooling yang terintegrasi (test runner, package manager).
+- **Type-Safety**: Penggunaan TypeScript dan Zod memastikan error terdeteksi saat development, bukan saat runtime.
+- **Path Alias**: Menghindari "relative import hell" dengan alias `@/`.
+
+---
 
 ## ✨ Fitur Utama
 
+- **Runtime**: **Bun**-native untuk performa eksekusi dan development yang sangat cepat
 - **Framework**: Express.js v5 dengan TypeScript
 - **Architecture**: Modular Feature-based Architecture dengan Repository Pattern
 - **ORM**: Prisma v7 untuk database management yang modern dan type-safe
+- **Authorization (RBAC)**:
+    - Role-Based Access Control yang granular
+    - Pengelolaan Module, Resource, dan Action-based permissions
+    - Middleware `requirePermission` untuk proteksi endpoint berbasis role
+- **Background Jobs**:
+    - **BullMQ** integration untuk antrian tugas asinkron
+    - **Single File per Feature**: Semua Queue, Worker, dan Processor dikonsolidasikan dalam satu file per fitur (misal: `auth.jobs.ts`) untuk kemudahan maintenance.
+    - Dedicated **Worker** process untuk memproses jobs (upload, email, dll)
+    - Redis-backed job management
 - **Authentication**:
-    - JWT-based authentication system
-    - User registration with profile creation
-    - Access & refresh token management (Multi-device support)
+    - JWT-based authentication system (Access & Refresh tokens)
+    - Multi-device login support
     - Token caching with Redis (optional)
-    - Profile management with photo upload (Public URL access)
-    - **NIK (National ID) encryption with AES-256-GCM**
+    - Password hashing with double-layer bcrypt
 - **Security**:
+    - **Zod** untuk validasi skema input yang type-safe
     - Helmet untuk HTTP headers security
     - CORS dengan konfigurasi environment-based
     - Rate limiting dengan Redis (optional)
-    - Data encryption utilities untuk sensitive data
-    - AES-256-GCM encryption untuk NIK field
-    - Input validation
-    - API Signature verification untuk endpoint protection (HMAC-SHA256)
-    - Password hashing with bcrypt
+    - API Signature verification (HMAC-SHA256)
+    - **NIK (National ID) encryption with AES-256-GCM**
 - **File Management**:
-    - Upload file dengan Multer
+    - Upload file via **BullMQ jobs** untuk performa tinggi
     - Integrasi S3 Storage (optional)
     - Support base64 upload untuk images
-    - Automatic file cleanup saat update
-    - Public URL access for secure and fast file delivery
-    - Photo size & format validation
-- **Email System**:
-    - SMTP integration (optional)
-    - Dynamic email templates
-    - OTP email untuk password reset
-    - Verification email untuk account activation
-    - Welcome email untuk new users
-    - Password change confirmation email
-    - Customizable email templates
-- **Performance Monitoring**:
-    - Performance profiling untuk get users operations
-    - Auto-generated markdown performance reports
-    - NIK encryption/decryption speed tracking
-    - Console logging dengan detailed metrics
-    - Bottleneck detection dengan recommendations
-    - CPU & memory usage monitoring
-    - Throughput analysis (users/second)
-- **Error Handling**: Global error handler dan 404 handler
-- **Logging**: Pino logger untuk structured logging dengan pretty print
-- **Code Quality**:
-    - ESLint untuk linting
-    - Prettier untuk code formatting
-    - Comprehensive test suite dengan Jest
-- **Caching**: Redis integration untuk rate limiting dan token storage (optional)
-- **Graceful Degradation**: Aplikasi tetap berjalan meskipun layanan optional tidak dikonfigurasi
-- **Path Alias**: Import menggunakan alias `@/` untuk menggantikan relative path yang panjang
+    - Public URL access for secure file delivery
+- **Logging & Monitoring**:
+    - Structured logging dengan **Pino** dan **pino-http**
+    - Database logging (audit trail) via `logs` model
+    - Performance profiling & auto-generated reports
+- **Error Handling**: Global error handler dan custom HTTP exceptions
+- **Code Quality**: ESLint, Prettier, dan Comprehensive test suite dengan Jest & Bun Test
+- **Path Alias**: Import menggunakan alias `@/` (misal: `@/utils/jwt`)
 
 ## 📂 Struktur Proyek
 
 ```
 /
 ├── prisma/
-│   ├── schema.prisma        # Database schema dengan relasi User-Profile 1-to-1
-│   ├── prisma.config.ts     # Prisma v7 config (database URL, schema path)
+│   ├── schema.prisma        # Database schema (User, Role, Permission, Logs)
+│   ├── prisma.config.ts     # Prisma v7 config
 │   └── migrations/          # Database migrations
-├── scripts/
-│   ├── prepare-test-env.cjs # Test environment setup
-│   └── generateApiKey.ts    # API signature key generator
 ├── src/
-│   ├── app.ts               # Application entry point
-│   ├── configs/             # Configuration modules
-│   │   ├── database.ts      # Prisma database config
-│   │   ├── express.ts       # Express app config & route mounting
-│   │   └── redis.ts         # Redis client config (optional)
+│   ├── app.ts               # API entry point
+│   ├── worker.ts            # Worker process entry point
+│   ├── configs/             # BullMQ, Redis, Database, Express configs
 │   ├── features/            # Feature-based modules
-│   │   └── auth/            # Authentication feature
-│   │       ├── controllers/ # Auth controllers
-│   │       ├── repository/  # Database access layer
-│   │       ├── services/    # Auth business logic
-│   │       └── validations/ # Input validation schemas
-│   ├── generated/           # Auto-generated files (Prisma Client output)
-│   ├── middlewares/         # Custom middlewares
-│   │   ├── authMiddleware.ts      # JWT authentication
-│   │   ├── errorHandler.ts        # Global error handler
-│   │   └── multerMiddleware.ts    # File upload handler
+│   │   └── auth/            # Auth feature
+│   │       ├── jobs/        # Background jobs (auth.jobs.ts)
+│   │       ├── controllers/
+│   │       ├── repositories/
+│   │       ├── services/
+│   │       └── validations/
+│   ├── middlewares/         # Custom middlewares (Auth, RBAC, Multer)
 │   ├── routes/              # API route definitions
-│   │   ├── authRoutes.ts    # Authentication routes
-│   │   └── fileRoutes.ts    # File upload routes
-│   └── utils/               # Utility functions
-│       ├── encryption.ts    # Data encryption utilities (AES-256-GCM)
-│       ├── getUsersReport.ts# Performance report generator
-│       ├── jwt.ts           # JWT token utilities
-│       ├── mail.ts          # Email template generator
-│       ├── rateLimiter.ts   # Rate limiting middleware
-│       ├── respons.ts       # Response formatting
-│       ├── s3.ts            # S3 Storage file storage
-│       ├── signature.ts     # API signature verification
-│       ├── smtp.ts          # Email sending
-│       ├── tokenStore.ts    # Token caching with Redis
-│       └── utils.ts         # General utilities
+│   └── utils/               # Utility functions (Encryption, JWT, Mail, S3)
 ├── .env.example             # Environment variables template
-├── .env.test                # Test environment variables
 ├── CHANGELOG.md             # Project changelog
-├── package.json
-├── prisma.config.ts         # Prisma v7 configuration file
-├── tsconfig.json            # TypeScript configuration (dengan path alias @/)
 └── README.md
 ```
 
@@ -112,9 +101,9 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18 atau lebih baru
-- [NPM](https://www.npmjs.com/) atau [Yarn](https://yarnpkg.com/)
+- [Bun](https://bun.sh/) v1.1 atau lebih baru
 - Database yang didukung Prisma (PostgreSQL, MySQL, SQLite, dll)
+- Redis server (untuk BullMQ & caching)
 
 ### Installation
 
@@ -128,7 +117,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 2. **Install dependencies:**
 
     ```bash
-    npm install
+    bun install
     ```
 
 3. **Setup environment variables:**
@@ -200,7 +189,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 5. **Start development server:**
 
     ```bash
-    npm run dev
+    bun run dev
     ```
 
     Server akan berjalan di `http://localhost:3000`
@@ -209,16 +198,18 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 
 | Script                     | Description                                |
 | -------------------------- | ------------------------------------------ |
-| `npm run dev`              | Start development server dengan hot-reload |
-| `npm run build`            | Compile TypeScript ke JavaScript           |
-| `npm start`                | Run production server                      |
-| `npm run start:migrate`    | Run migrations dan start server            |
-| `npm test`                 | Run test suite                             |
-| `npm run test:utils`       | Run utility tests                          |
-| `npm run lint`             | Check linting errors                       |
-| `npm run lint:fix`         | Fix linting errors                         |
-| `npm run prettier`         | Format code dengan Prettier                |
-| `npm run generate-api-key` | Generate API key dengan signature          |
+| `bun run dev`              | Start development server dengan hot-reload |
+| `bun run worker:dev`       | Start worker dengan hot-reload             |
+| `bun run build`            | Compile TypeScript ke JavaScript           |
+| `bun run start`            | Run production server                      |
+| `bun run worker:start`     | Run production worker                      |
+| `bun run start:migrate`    | Run migrations dan start server            |
+| `bun test`                 | Run test suite                             |
+| `bun run lint`             | Check linting errors                       |
+| `bun run lint:fix`         | Fix linting errors                         |
+| `bun run prettier`         | Format code dengan Prettier                |
+| `bun run generate-api-key` | Generate API key dengan signature          |
+| `bun run generate-data`    | Generate dummy data (Users, Roles, etc)    |
 
 ## 🧪 Testing
 
@@ -226,10 +217,10 @@ Project ini dilengkapi dengan comprehensive test suite:
 
 ```bash
 # Run all tests
-npm test
+bun test
 
-# Run specific test suite
-npm run test:utils
+# Run specifically with Jest
+bun run test:jest
 ```
 
 Test coverage meliputi:
@@ -280,7 +271,7 @@ SECRET_KEY=your-secret-key-change-this-in-production
 Gunakan script yang sudah disediakan:
 
 ```bash
-npm run generate-api-key
+bun run generate-api-key
 ```
 
 Output:
@@ -307,11 +298,12 @@ API Key ini valid selama 5 menit
 ```typescript
 import { Router } from "express";
 import { verifyApiKey } from "../utils/signature";
+import { requirePermission } from "../middlewares/rbacMiddleware";
 
 const router = Router();
 
-// Protected endpoint dengan signature
-router.get("/protected", verifyApiKey, (req, res) => {
+// Protected endpoint dengan signature & RBAC
+router.get("/protected", verifyApiKey, requirePermission("example", "read"), (req, res) => {
 	res.json({ message: "Access granted!" });
 });
 
@@ -322,7 +314,7 @@ export default router;
 
 ```bash
 # Generate API key
-npm run generate-api-key
+bun run generate-api-key
 
 # Test protected endpoint
 curl -H "x-api-key: YOUR_GENERATED_API_KEY" http://localhost:3004/api/example/protected
@@ -481,9 +473,13 @@ await sendEmail({
 
 ### Core Dependencies
 
+- **bun** (v1.1.x) - Runtime & Package manager
 - **express** (v5.1.0) - Web framework
 - **typescript** (v5.9.3) - Type safety
 - **@prisma/client** (v7.4.2) - Database ORM
+- **zod** (v4.3.6) - Schema validation
+- **bullmq** (v5.76.6) - Background jobs
+- **ioredis** (v5.8.2) - Redis client
 - **jsonwebtoken** (v9.0.2) - JWT authentication
 - **bcrypt** (v6.0.0) - Password hashing
 
@@ -494,23 +490,22 @@ await sendEmail({
 
 ### File Handling
 
-- **multer** (v2.0.2) - File upload
+- **multer** (v2.0.2) - File upload (temporary handling)
 - **@aws-sdk/client-s3** (v3.917.0) - S3 integration
 
 ### Utilities
 
 - **pino** (v10.1.0) - Logging
-- **ioredis** (v5.8.2) - Redis client
 - **nodemailer** (v7.0.10) - Email sending
 - **dotenv** (v17.2.3) - Environment variables
 
-### Development
+### Development & Testing
 
-- **tsx** (v4.21.0) - TypeScript execution dengan hot-reload
 - **jest** (v30.2.0) - Testing framework
+- **bun test** - Native fast testing
 - **eslint** (v9.39.1) - Linting
 - **prettier** - Code formatting
-- **tsc-alias** (v1.8.16) - Path alias resolver saat build
+- **supertest** - API testing
 
 ## 🤝 Contributing
 
