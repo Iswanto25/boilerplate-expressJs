@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
@@ -27,7 +27,7 @@ const stubModule = (specifier: string, exports: any): (() => void) => {
 const setup = async (overrides?: { findUnique?: any }) => {
 	const prisma: any = {
 		user: {
-			findUnique: mock.fn(async () => null),
+			findUnique: mock(async () => null),
 		},
 	};
 
@@ -52,15 +52,15 @@ const setup = async (overrides?: { findUnique?: any }) => {
 
 test("existingEmail returns user when prisma finds a match", async () => {
 	const sampleUser = { id: "user-1", email: "test@example.com" };
-	const findUnique = mock.fn(async () => sampleUser);
+	const findUnique = mock(async () => sampleUser);
 	const { module, prisma, restore } = await setup({ findUnique });
 
 	try {
 		const result = await module.existingEmail("test@example.com");
 
-		assert.deepEqual(result, sampleUser);
-		assert.equal(findUnique.mock.calls.length, 1);
-		assert.deepEqual(prisma.user.findUnique.mock.calls[0].arguments[0], {
+		expect(result).toEqual(sampleUser);
+		expect(findUnique.mock.calls.length).toBe(1);
+		expect(prisma.user.findUnique.mock.calls[0][0], {
 			where: { email: "test@example.com" },
 		});
 	} finally {
@@ -69,15 +69,15 @@ test("existingEmail returns user when prisma finds a match", async () => {
 });
 
 test("existingEmail returns null when no user found", async () => {
-	const findUnique = mock.fn(async () => null);
+	const findUnique = mock(async () => null);
 	const { module, prisma, restore } = await setup({ findUnique });
 
 	try {
 		const result = await module.existingEmail("missing@example.com");
 
-		assert.equal(result, null);
-		assert.equal(findUnique.mock.calls.length, 1);
-		assert.deepEqual(prisma.user.findUnique.mock.calls[0].arguments[0], {
+		expect(result).toBe(null);
+		expect(findUnique.mock.calls.length).toBe(1);
+		expect(prisma.user.findUnique.mock.calls[0][0], {
 			where: { email: "missing@example.com" },
 		});
 	} finally {

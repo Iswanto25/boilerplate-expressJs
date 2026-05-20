@@ -1,8 +1,8 @@
-import assert from "node:assert/strict";
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import test, { mock } from "node:test";
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 import type { Express } from "express";
 
@@ -30,8 +30,8 @@ const stubModule = (specifier: string, exports: any): (() => void) => {
 type SetupResult = {
 	module: typeof import("@/utils/s3.js");
 	handlers: Map<string, (command: { input: any }) => any>;
-	sendMock: ReturnType<typeof mock.fn>;
-	getSignedUrl: ReturnType<typeof mock.fn>;
+	sendMock: ReturnType<typeof mock>;
+	getSignedUrl: ReturnType<typeof mock>;
 	restoreAll: () => void;
 };
 
@@ -45,7 +45,7 @@ const setup = async (): Promise<SetupResult> => {
 
 	const handlers = new Map<string, (command: { input: any }) => any>();
 
-	const sendMock = mock.fn(async (command: any) => {
+	const sendMock = mock(async (command: any) => {
 		const handler = handlers.get(command.constructor.name);
 		if (!handler) {
 			throw new Error(`Unhandled command: ${command.constructor.name}`);
@@ -77,7 +77,7 @@ const setup = async (): Promise<SetupResult> => {
 		}
 	}
 
-	const getSignedUrl = mock.fn(async () => "signed-url");
+	const getSignedUrl = mock(async () => "signed-url");
 
 	const restoreClient = stubModule("@aws-sdk/client-s3", {
 		S3Client,
@@ -127,7 +127,7 @@ test("headFile returns metadata when object exists", async () => {
 
 	try {
 		const result = await module.headFile("avatars", "user.png");
-		assert.deepEqual(result, {
+		expect(result, {
 			exists: true,
 			etag: "etag",
 			contentLength: 123,
@@ -149,7 +149,7 @@ test("headFile returns exists=false on 404", async () => {
 
 	try {
 		const result = await module.headFile("avatars", "missing.png");
-		assert.deepEqual(result, { exists: false });
+		expect(result).toEqual({ exists: false });
 	} finally {
 		restoreAll();
 	}
@@ -181,11 +181,11 @@ test("uploadFile uploads stream and removes temp file", async () => {
 
 	try {
 		const result = await module.uploadFile(file, "avatars");
-		assert.equal(sendMock.mock.calls.length, 1);
-		assert.ok(capturedKey.startsWith("avatars/"));
-		assert.equal(result.folder, "avatars");
-		assert.ok(result.fileName.endsWith(".jpg"));
-		assert.equal(fs.existsSync(tempFile), false);
+		expect(sendMock.mock.calls.length).toBe(1);
+		expect(capturedKey.startsWith("avatars/").toBeTruthy());
+		expect(result.folder).toBe("avatars");
+		expect(result.fileName.endsWith(".jpg").toBeTruthy());
+		expect(fs.existsSync(tempFile)).toBe(false);
 	} finally {
 		restoreAll();
 		if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
@@ -207,9 +207,9 @@ test("uploadBase64 stores buffer and validates size", async () => {
 
 	try {
 		const result = await module.uploadBase64("images", base64, 2, ["image/png"]);
-		assert.ok(result.url.includes("/images/"));
-		assert.equal(savedContentType, "image/png");
-		assert.equal(savedBodyLength, Buffer.from("filedata").length);
+		expect(result.url.includes("/images/").toBeTruthy());
+		expect(savedContentType).toBe("image/png");
+		expect(savedBodyLength).toBe(Buffer.from("filedata").length);
 	} finally {
 		restoreAll();
 	}
@@ -237,8 +237,8 @@ test("getFile returns presigned url when object exists", async () => {
 
 	try {
 		const url = await module.getFile("avatars", "user.png");
-		assert.equal(url, "signed-url");
-		assert.equal(getSignedUrl.mock.calls.length, 1);
+		expect(url).toBe("signed-url");
+		expect(getSignedUrl.mock.calls.length).toBe(1);
 	} finally {
 		restoreAll();
 	}
@@ -258,14 +258,14 @@ test("deleteFile respects strict and verifyAfter options", async () => {
 			throw error;
 		}
 	});
-	const deleteSpy = mock.fn(async () => ({}));
+	const deleteSpy = mock(async () => ({}));
 	handlers.set("DeleteObjectCommand", deleteSpy);
 
 	try {
 		const result = await module.deleteFile("avatars", "user.png", { strict: true, verifyAfter: true });
-		assert.deepEqual(result, { deleted: true, key: "avatars/user.png" });
-		assert.equal(headCalls, 2);
-		assert.equal(deleteSpy.mock.calls.length, 1);
+		expect(result).toEqual({ deleted: true, key: "avatars/user.png" });
+		expect(headCalls).toBe(2);
+		expect(deleteSpy.mock.calls.length).toBe(1);
 	} finally {
 		restoreAll();
 	}
@@ -289,8 +289,8 @@ test("deleteMany aggregates successes and errors", async () => {
 			{ folder: "avatars", file: "two.png" },
 		]);
 
-		assert.deepEqual(result.deleted, ["avatars/one.png"]);
-		assert.equal(result.errors.length, 1);
+		expect(result.deleted).toEqual(["avatars/one.png"]);
+		expect(result.errors.length).toBe(1);
 	} finally {
 		restoreAll();
 	}
@@ -318,7 +318,7 @@ test("deleteByPrefix deletes listed objects", async () => {
 
 	try {
 		const result = await module.deleteByPrefix("prefix");
-		assert.deepEqual(result, { deleted: 2, errors: 0 });
+		expect(result).toEqual({ deleted: 2, errors: 0 });
 	} finally {
 		restoreAll();
 	}

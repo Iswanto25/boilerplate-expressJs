@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(import.meta.url);
@@ -57,13 +57,13 @@ const createReqRes = (token: string = "token-123") => {
 };
 
 const setup = async (overrides?: {
-	auth?: ReturnType<typeof mock.fn>;
-	findUser?: ReturnType<typeof mock.fn>;
-	createLog?: ReturnType<typeof mock.fn>;
+	auth?: ReturnType<typeof mock>;
+	findUser?: ReturnType<typeof mock>;
+	createLog?: ReturnType<typeof mock>;
 }) => {
-	const findUser = overrides?.findUser ?? mock.fn(async () => ({ id: "user-1", name: "Tester", role: "admin" }));
-	const createLog = overrides?.createLog ?? mock.fn(async () => ({}));
-	const auth = overrides?.auth ?? mock.fn(async () => ({ valid: true, userId: "user-1" }));
+	const findUser = overrides?.findUser ?? mock(async () => ({ id: "user-1", name: "Tester", role: "admin" }));
+	const createLog = overrides?.createLog ?? mock(async () => ({}));
+	const auth = overrides?.auth ?? mock(async () => ({ valid: true, userId: "user-1" }));
 
 	const restorePrisma = stubModule(prismaPath, {
 		__esModule: true,
@@ -78,9 +78,9 @@ const setup = async (overrides?: {
 	});
 
 	const logger: any = {
-		info: mock.fn(() => {}),
-		warn: mock.fn(() => {}),
-		error: mock.fn(() => {}),
+		info: mock(() => {}),
+		warn: mock(() => {}),
+		error: mock(() => {}),
 	};
 	const restoreLogger = stubModule(loggerPath, { logger });
 
@@ -104,18 +104,18 @@ test("respons.success logs and responds with payload", async () => {
 	try {
 		await module.respons.success("Success message", { hello: "world" }, module.HttpStatus.OK, res, req);
 
-		assert.equal(res.statusCode, 200);
-		assert.deepEqual(res.payload, {
+		expect(res.statusCode).toBe(200);
+		expect(res.payload, {
 			success: true,
 			message: "Success message",
 			data: { hello: "world" },
 		});
 
-		assert.equal(findUser.mock.calls.length, 1);
-		assert.equal(createLog.mock.calls.length, 1);
-		assert.equal(logger.info.mock.calls.length, 1);
-		assert.equal(logger.warn.mock.calls.length, 0);
-		assert.equal(logger.error.mock.calls.length, 0);
+		expect(findUser.mock.calls.length).toBe(1);
+		expect(createLog.mock.calls.length).toBe(1);
+		expect(logger.info.mock.calls.length).toBe(1);
+		expect(logger.warn.mock.calls.length).toBe(0);
+		expect(logger.error.mock.calls.length).toBe(0);
 	} finally {
 		restoreAll();
 	}
@@ -129,8 +129,8 @@ test("respons.success with pagination", async () => {
 	try {
 		await module.respons.success("Success with pagination", [{ id: 1 }], module.HttpStatus.OK, res, req, pagination);
 
-		assert.equal(res.statusCode, 200);
-		assert.deepEqual(res.payload, {
+		expect(res.statusCode).toBe(200);
+		expect(res.payload, {
 			success: true,
 			message: "Success with pagination",
 			data: [{ id: 1 }],
@@ -142,7 +142,7 @@ test("respons.success with pagination", async () => {
 });
 
 test("respons.error logs warning when database write fails", async () => {
-	const failingLog = mock.fn(async () => {
+	const failingLog = mock(async () => {
 		throw new Error("db failure");
 	});
 
@@ -152,15 +152,15 @@ test("respons.error logs warning when database write fails", async () => {
 	try {
 		await module.respons.error("Error message", { reason: "failure" }, module.HttpStatus.BAD_REQUEST, res, req);
 
-		assert.equal(res.statusCode, 400);
-		assert.deepEqual(res.payload, {
+		expect(res.statusCode).toBe(400);
+		expect(res.payload, {
 			success: false,
 			message: "Error message",
 			error: { reason: "failure" },
 		});
 
-		assert.equal(logger.error.mock.calls.length, 1);
-		assert.equal(logger.warn.mock.calls.length, 1);
+		expect(logger.error.mock.calls.length).toBe(1);
+		expect(logger.warn.mock.calls.length).toBe(1);
 	} finally {
 		restoreAll();
 	}

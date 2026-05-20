@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
@@ -15,11 +15,11 @@ test("encrypt/decrypt roundtrip with hex key", async () => {
 
 	const { encryptSensitive, decryptSensitive } = await reloadEncryptionModule();
 	const payload = encryptSensitive("secret-data");
-	assert.equal(payload.version, 1);
-	assert.ok(payload.ciphertext.length > 0);
+	expect(payload.version).toBe(1);
+	expect(payload.ciphertext.length > 0).toBeTruthy();
 
 	const decrypted = decryptSensitive(payload);
-	assert.equal(decrypted, "secret-data");
+	expect(decrypted).toBe("secret-data");
 });
 
 test("load key accepts base64 input", async () => {
@@ -28,12 +28,12 @@ test("load key accepts base64 input", async () => {
 	const { encryptSensitive, decryptSensitive } = await reloadEncryptionModule();
 	const payload = encryptSensitive("another secret");
 	const decrypted = decryptSensitive(payload);
-	assert.equal(decrypted, "another secret");
+	expect(decrypted).toBe("another secret");
 });
 
 test("throws when DATA_ENCRYPTION_KEY missing", async () => {
 	delete process.env.DATA_ENCRYPTION_KEY;
 	const { encryptSensitive } = await reloadEncryptionModule();
 
-	assert.throws(() => encryptSensitive("boom"), /DATA_ENCRYPTION_KEY is required/);
+	expect(() => encryptSensitive("boom")).toThrow(/DATA_ENCRYPTION_KEY is required/);
 });

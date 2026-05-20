@@ -1,8 +1,8 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 
 test("pagination utility module exports paginate function", async () => {
 	const module = await import("@/utils/pagination.js");
-	assert.equal(Object.keys(module).length, 1);
-	assert.ok(typeof module.paginate === "function");
+	expect(Object.keys(module).length).toBe(1);
+	expect(typeof module.paginate === "function").toBeTruthy();
 });

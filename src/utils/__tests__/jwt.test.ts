@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
@@ -33,26 +33,26 @@ test("jwtUtils signs and verifies tokens with configured secrets", async () => {
 	const accessToken = jwtUtils.generateAccessToken(payload);
 	const refreshToken = jwtUtils.generateRefreshToken(payload);
 
-	assert.ok(typeof accessToken === "string" && accessToken.length > 0);
-	assert.ok(typeof refreshToken === "string" && refreshToken.length > 0);
+	expect(typeof accessToken === "string" && accessToken.length > 0).toBeTruthy();
+	expect(typeof refreshToken === "string" && refreshToken.length > 0).toBeTruthy();
 
 	const verifiedAccess = jwtUtils.verifyAccessToken(accessToken);
 	const verifiedRefresh = jwtUtils.verifyRefreshToken(refreshToken);
 
-	assert.equal(verifiedAccess.id, payload.id);
-	assert.equal(verifiedRefresh.role, payload.role);
+	expect(verifiedAccess.id).toBe(payload.id);
+	expect(verifiedRefresh.role).toBe(payload.role);
 });
 
 test("generateAccessToken throws when secret is missing", async () => {
 	setSecrets(undefined, "unit-test-refresh");
 	const { jwtUtils } = await reloadJwtModule();
 
-	assert.throws(() => jwtUtils.generateAccessToken({}), /secretOrPrivateKey must have a value/);
+	expect(() => jwtUtils.generateAccessToken({})).toThrow(/secretOrPrivateKey must have a value/);
 });
 
 test("verifyAccessToken rejects malformed tokens", async () => {
 	setSecrets("unit-test-secret", "unit-test-refresh");
 	const { jwtUtils } = await reloadJwtModule();
 
-	assert.throws(() => jwtUtils.verifyAccessToken("invalid"), /jwt malformed/);
+	expect(() => jwtUtils.verifyAccessToken("invalid")).toThrow(/jwt malformed/);
 });

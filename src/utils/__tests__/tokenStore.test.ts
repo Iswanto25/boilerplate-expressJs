@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
@@ -26,9 +26,9 @@ const stubModule = (specifier: string, exports: any): (() => void) => {
 
 const setupModule = async (overrides?: Partial<Record<string, any>>) => {
 	const redisClient: any = {
-		set: mock.fn(async () => "OK"),
-		get: mock.fn(async () => null),
-		del: mock.fn(async () => 1),
+		set: mock(async () => "OK"),
+		get: mock(async () => null),
+		del: mock(async () => 1),
 		...(overrides || {}),
 	};
 
@@ -51,8 +51,8 @@ test("storeToken persists token with the correct prefix", async () => {
 	try {
 		const key = await module.storeToken("user-1", "token-value", "access", 120);
 
-		assert.equal(key, "access_token:user-1");
-		assert.deepEqual(redisClient.set.mock.calls[0].arguments, ["access_token:user-1", "token-value", "EX", 120]);
+		expect(key).toBe("access_token:user-1");
+		expect(redisClient.set.mock.calls[0]).toEqual(["access_token:user-1", "token-value", "EX", 120]);
 	} finally {
 		restore();
 	}
@@ -60,10 +60,10 @@ test("storeToken persists token with the correct prefix", async () => {
 
 test("storeToken throws when Redis does not acknowledge write", async () => {
 	const { module, restore } = await setupModule({
-		set: mock.fn(async () => "ERR"),
+		set: mock(async () => "ERR"),
 	});
 	try {
-		await assert.rejects(() => module.storeToken("user-2", "token", "refresh", 60), /Failed to store token/);
+		await expect(() => module.storeToken("user-2").rejects.toThrow("token", "refresh", 60), /Failed to store token/);
 	} finally {
 		restore();
 	}
@@ -71,13 +71,13 @@ test("storeToken throws when Redis does not acknowledge write", async () => {
 
 test("getStoredToken reads token from Redis", async () => {
 	const { module, redisClient, restore } = await setupModule({
-		get: mock.fn(async () => "stored-token"),
+		get: mock(async () => "stored-token"),
 	});
 
 	try {
 		const result = await module.getStoredToken("user-3", "access");
-		assert.equal(result, "stored-token");
-		assert.deepEqual(redisClient.get.mock.calls[0].arguments, ["access_token:user-3"]);
+		expect(result).toBe("stored-token");
+		expect(redisClient.get.mock.calls[0]).toEqual(["access_token:user-3"]);
 	} finally {
 		restore();
 	}
@@ -87,7 +87,7 @@ test("deleteToken removes token key", async () => {
 	const { module, redisClient, restore } = await setupModule();
 	try {
 		await module.deleteToken("user-4", "refresh");
-		assert.deepEqual(redisClient.del.mock.calls[0].arguments, ["refresh_token:user-4"]);
+		expect(redisClient.del.mock.calls[0]).toEqual(["refresh_token:user-4"]);
 	} finally {
 		restore();
 	}

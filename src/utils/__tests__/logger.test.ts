@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
@@ -14,14 +14,14 @@ test("logger uses debug level by default", async () => {
 	delete process.env.NODE_ENV;
 
 	const { logger } = await reloadLogger();
-	assert.equal(logger.level, "debug");
+	expect(logger.level).toBe("debug");
 });
 
 test("logger switches to info level in production", async () => {
 	process.env.NODE_ENV = "production";
 
 	const { logger } = await reloadLogger();
-	assert.equal(logger.level, "info");
+	expect(logger.level).toBe("info");
 
 	delete process.env.NODE_ENV;
 });

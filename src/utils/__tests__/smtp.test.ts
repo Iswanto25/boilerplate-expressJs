@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
@@ -25,8 +25,8 @@ const stubModule = (specifier: string, exports: any): (() => void) => {
 };
 
 const setup = async (sendBehavior?: () => Promise<void>) => {
-	const sendMail = mock.fn(sendBehavior || (async () => {}));
-	const createTransport = mock.fn(() => ({ sendMail }));
+	const sendMail = mock(sendBehavior || (async () => {}));
+	const createTransport = mock(() => ({ sendMail }));
 
 	const restore = stubModule(nodemailerPath, { createTransport });
 	delete requireModule.cache[requireModule.resolve(modulePath)];
@@ -56,14 +56,14 @@ test("sendEmail constructs transporter and sends mail", async () => {
 	try {
 		await module.sendEmail(payload);
 
-		assert.equal(createTransport.mock.calls.length, 1);
-		assert.equal(sendMail.mock.calls.length, 1);
+		expect(createTransport.mock.calls.length).toBe(1);
+		expect(sendMail.mock.calls.length).toBe(1);
 		const calls = sendMail.mock.calls as any[];
 		if (calls.length === 0) throw new Error("sendMail was not called");
 		const args = calls[0].arguments[0] as any;
-		assert.equal(args.to, payload.to);
-		assert.equal(args.subject, payload.subject);
-		assert.equal(args.from, `"Boilerplate App" <no-reply@example.com>`);
+		expect(args.to).toBe(payload.to);
+		expect(args.subject).toBe(payload.subject);
+		expect(args.from).toBe(`"Boilerplate App" <no-reply@example.com>`);
 	} finally {
 		restore();
 	}
@@ -75,7 +75,7 @@ test("sendEmail surfaces transport errors", async () => {
 	});
 
 	try {
-		await assert.rejects(() => module.sendEmail({ to: "x@y.com", subject: "Hi" }), /Failed to send email/);
+		await expect(() => module.sendEmail({ to: "x@y.com").rejects.toThrow(subject: "Hi" }), /Failed to send email/);
 	} finally {
 		restore();
 	}

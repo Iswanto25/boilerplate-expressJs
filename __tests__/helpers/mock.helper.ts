@@ -1,9 +1,10 @@
 /**
- * Mock helpers untuk testing
+ * Mock helpers untuk testing menggunakan Bun:test
  * Menyediakan mock objects untuk dependencies seperti Prisma, Request, Response, dll
  */
 
 import { Request, Response } from "express";
+import { mock } from "bun:test";
 
 /**
  * Create mock Express Request
@@ -16,7 +17,7 @@ export const createMockRequest = (overrides?: Partial<Request>): Partial<Request
 		headers: {},
 		user: undefined,
 		...overrides,
-	};
+	} as any;
 };
 
 /**
@@ -24,12 +25,12 @@ export const createMockRequest = (overrides?: Partial<Request>): Partial<Request
  */
 export const createMockResponse = (): Partial<Response> => {
 	const res: Partial<Response> = {
-		status: jest.fn().mockReturnThis(),
-		json: jest.fn().mockReturnThis(),
-		send: jest.fn().mockReturnThis(),
-		setHeader: jest.fn().mockReturnThis(),
+		status: mock().mockReturnThis(),
+		json: mock().mockReturnThis(),
+		send: mock().mockReturnThis(),
+		setHeader: mock().mockReturnThis(),
 	};
-	return res;
+	return res as any;
 };
 
 /**
@@ -38,17 +39,17 @@ export const createMockResponse = (): Partial<Response> => {
 export const createMockPrismaClient = (): any => {
 	return {
 		user: {
-			create: jest.fn(),
-			findFirst: jest.fn(),
-			findUnique: jest.fn(),
-			findMany: jest.fn(),
-			update: jest.fn(),
-			delete: jest.fn(),
-			count: jest.fn(),
-			createMany: jest.fn(),
+			create: mock(),
+			findFirst: mock(),
+			findUnique: mock(),
+			findMany: mock(),
+			update: mock(),
+			delete: mock(),
+			count: mock(),
+			createMany: mock(),
 		},
-		$transaction: jest.fn((callback) => callback(createMockPrismaClient())),
-		$disconnect: jest.fn(),
+		$transaction: mock((callback: any) => callback(createMockPrismaClient())),
+		$disconnect: mock(),
 	};
 };
 
@@ -57,14 +58,14 @@ export const createMockPrismaClient = (): any => {
  */
 export const createMockRedisClient = () => {
 	return {
-		get: jest.fn(),
-		set: jest.fn(),
-		del: jest.fn(),
-		setex: jest.fn(),
-		ttl: jest.fn(),
-		exists: jest.fn(),
-		flushall: jest.fn(),
-		disconnect: jest.fn(),
+		get: mock(),
+		set: mock(),
+		del: mock(),
+		setex: mock(),
+		ttl: mock(),
+		exists: mock(),
+		flushall: mock(),
+		disconnect: mock(),
 	};
 };
 
@@ -73,9 +74,9 @@ export const createMockRedisClient = () => {
  */
 export const createMockS3Client = () => {
 	return {
-		uploadBase64: jest.fn(),
-		getFile: jest.fn(),
-		deleteFile: jest.fn(),
+		uploadBase64: mock(),
+		getPublicUrl: mock(),
+		deleteFile: mock(),
 	};
 };
 
@@ -84,10 +85,10 @@ export const createMockS3Client = () => {
  */
 export const createMockJWT = () => {
 	return {
-		generateAccessToken: jest.fn(),
-		generateRefreshToken: jest.fn(),
-		verifyAccessToken: jest.fn(),
-		verifyRefreshToken: jest.fn(),
+		generateAccessToken: mock(),
+		generateRefreshToken: mock(),
+		verifyAccessToken: mock(),
+		verifyRefreshToken: mock(),
 	};
 };
 
@@ -96,8 +97,8 @@ export const createMockJWT = () => {
  */
 export const createMockSMTP = () => {
 	return {
-		sendMail: jest.fn(),
-		generateOTPEmail: jest.fn(),
+		sendMail: mock(),
+		generateOTPEmail: mock(),
 	};
 };
 
@@ -106,17 +107,17 @@ export const createMockSMTP = () => {
  */
 export const createMockEncryption = () => {
 	return {
-		encrypt: jest.fn(),
-		decrypt: jest.fn(),
-		encryptSensitive: jest.fn(),
-		decryptSensitive: jest.fn(),
+		encrypt: mock(),
+		decrypt: mock(),
+		encryptSensitive: mock(),
+		decryptSensitive: mock(),
 	};
 };
 
 /**
  * Helper to wait for promises to resolve
  */
-export const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+export const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /**
  * Helper to create mock authenticated user
@@ -126,7 +127,7 @@ export const createMockAuthenticatedUser = (overrides?: any) => {
 		id: "test-user-id-123",
 		email: "test@example.com",
 		name: "Test User",
-		role: "user",
+		roleId: "role-123",
 		...overrides,
 	};
 };

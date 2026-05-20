@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+
+import { test, describe, expect, mock } from "bun:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(__filename);
@@ -28,20 +28,20 @@ const stubModule = (specifier: string, exports: any): (() => void) => {
 
 const setup = async (overrides?: Partial<Record<"incr" | "expire" | "ttl" | "set", (...args: any[]) => any>>) => {
 	const redisClient: any = {
-		incr: mock.fn(async () => 1),
-		expire: mock.fn(async () => true),
-		ttl: mock.fn(async () => 30),
-		set: mock.fn(async () => "OK"),
+		incr: mock(async () => 1),
+		expire: mock(async () => true),
+		ttl: mock(async () => 30),
+		set: mock(async () => "OK"),
 		...(overrides || {}),
 	};
 
-	const responsError = mock.fn((_message, _detail, code: number, res: any) => {
+	const responsError = mock((_message, _detail, code: number, res: any) => {
 		res.status(code).json({ message: _message, detail: _detail, code });
 	});
 
 	const logger: any = {
-		warn: mock.fn(() => {}),
-		error: mock.fn(() => {}),
+		warn: mock(() => {}),
+		error: mock(() => {}),
 	};
 
 	const restoreRedis = stubModule(redisPath, { redisClient });
@@ -108,9 +108,9 @@ test("rateLimiter allows requests under the threshold", async () => {
 	try {
 		await middleware(req, res, next);
 
-		assert.equal(nextCalled, true);
-		assert.equal(redisClient.incr.mock.calls.length, 1);
-		assert.equal(responsError.mock.calls.length, 0);
+		expect(nextCalled).toBe(true);
+		expect(redisClient.incr.mock.calls.length).toBe(1);
+		expect(responsError.mock.calls.length).toBe(0);
 	} finally {
 		restore();
 	}
@@ -118,8 +118,8 @@ test("rateLimiter allows requests under the threshold", async () => {
 
 test("rateLimiter blocks when exceeding the limit", async () => {
 	const { rateLimiterModule, redisClient, responsError, restore } = await setup({
-		incr: mock.fn(async () => 6),
-		ttl: mock.fn(async () => 25),
+		incr: mock(async () => 6),
+		ttl: mock(async () => 25),
 	});
 
 	const middleware = rateLimiterModule.rateLimiter({ maxRequests: 5, windowInSeconds: 60 });
@@ -133,11 +133,11 @@ test("rateLimiter blocks when exceeding the limit", async () => {
 	try {
 		await middleware(req, res, next);
 
-		assert.equal(nextCalled, false);
-		assert.equal(res.statusCode, 429);
-		assert.equal(redisClient.set.mock.calls.length, 1);
-		assert.equal(responsError.mock.calls.length, 1);
-		assert.equal(res.payload.message, "Terlalu banyak permintaan");
+		expect(nextCalled).toBe(false);
+		expect(res.statusCode).toBe(429);
+		expect(redisClient.set.mock.calls.length).toBe(1);
+		expect(responsError.mock.calls.length).toBe(1);
+		expect(res.payload.message).toBe("Terlalu banyak permintaan");
 	} finally {
 		restore();
 	}
@@ -146,7 +146,7 @@ test("rateLimiter blocks when exceeding the limit", async () => {
 test("rateLimiter logs errors and calls next when Redis throws", async () => {
 	const error = new Error("redis down");
 	const { rateLimiterModule, logger, restore } = await setup({
-		incr: mock.fn(async () => {
+		incr: mock(async () => {
 			throw error;
 		}),
 	});
@@ -161,8 +161,8 @@ test("rateLimiter logs errors and calls next when Redis throws", async () => {
 	try {
 		await middleware(req, res, next);
 
-		assert.equal(nextCalled, true);
-		assert.equal(logger.error.mock.calls.length, 1);
+		expect(nextCalled).toBe(true);
+		expect(logger.error.mock.calls.length).toBe(1);
 	} finally {
 		restore();
 	}
