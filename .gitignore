@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+bun.lock
 
 # Build output
 dist/
@@ -47,3 +48,5 @@ temp/
 src/generated/
 *.db
 *.db-journal
+.opencode
+graphify-out

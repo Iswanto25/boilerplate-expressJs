@@ -1,12 +1,11 @@
 import express from "express";
 import cors, { CorsOptions } from "cors";
 import compression from "compression";
-import { pinoHttp } from "pino-http";
 import helmet from "helmet";
-import { logger } from "@/utils/logger.js";
 import { respons, HttpStatus } from "@/utils/respons.js";
 import apiRoutes from "@/routes/index.js";
 import { errorHandler, notFoundHandler } from "@/middlewares/errorHandler.js";
+import { requestContext } from "@/middlewares/requestContext.js";
 
 export const app = express();
 
@@ -23,6 +22,8 @@ declare module "express-serve-static-core" {
 	interface Request {
 		user?: DecodedToken;
 		startTime?: number;
+		reqId: string;
+		rawBody?: unknown;
 	}
 }
 
@@ -62,7 +63,7 @@ app.use(
 	}),
 );
 
-app.use((req, res, next) => {
+app.use((_req, res, next) => {
 	res.setHeader("X-XSS-Protection", "0");
 	res.setHeader(
 		"Permissions-Policy",
@@ -88,31 +89,14 @@ app.use(compression());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
-app.use((req, res, next) => {
-	req.startTime = Date.now();
-	next();
-});
+app.use(requestContext);
 
-app.use(
-	pinoHttp({
-		logger,
-
-		autoLogging: process.env.NODE_ENV !== "production",
-		customSuccessMessage: (req, res, responseTime) => {
-			return `${req.method} ${req.url} ${res.statusCode} - ${responseTime}ms`;
-		},
-		customErrorMessage: (req, res, err) => {
-			return `${req.method} ${req.url} ${res.statusCode} - ERROR: ${err.message}`;
-		},
-		quietReqLogger: true,
-	}),
-);
-
-app.get("/", (req, res) => res.redirect("/health"));
+app.get("/", (_req, res) => res.redirect("/health"));
 app.get("/health", (req, res) => {
 	const data = {
 		status: "ok",
-		timestamp: new Date().toISOString(),
+		timestamp: new Date().toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" }),
+		version: process.env.VERSION || "1.0.0",
 		environment: process.env.NODE_ENV || "development",
 	};
 	return respons.success("Service is healthy", data, HttpStatus.OK, res, req);
