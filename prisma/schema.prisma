@@ -62,11 +62,13 @@ model logs {
   userId    String?
   ip        String?
   method    String?
+  reqId     String?
   dayCount  Int?
   createdAt DateTime @default(now())
 
   @@index([date])
   @@index([userId])
+  @@index([reqId])
 }
 
 model user {

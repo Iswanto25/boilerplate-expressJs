@@ -6,17 +6,19 @@
 		"paths": {
 			"@/*": ["src/*"]
 		},
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"target": "ESNext",
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
 		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
 		"allowJs": false,
 		"typeRoots": ["./node_modules/@types", "./types"]
 	},
-	"include": ["src/**/*.ts", "__tests__/**/*.ts", "prisma.config.ts"],
-	"exclude": ["node_modules", "dist"]
+	"include": ["src/**/*.ts", "prisma.config.ts"],
+	"exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
 }

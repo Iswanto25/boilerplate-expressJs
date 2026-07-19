@@ -20,21 +20,12 @@ const pool = new Pool({
 });
 const adapter = new PrismaPg(pool);
 
-const isDevelopment = process.env.NODE_ENV === "development";
-
 const prisma = new PrismaClient({
 	adapter,
-	log:
-		isDevelopment ?
-			[
-				{ emit: "event", level: "query" },
-				{ emit: "event", level: "error" },
-				{ emit: "event", level: "warn" },
-			]
-		:	[
-				{ emit: "event", level: "error" },
-				{ emit: "event", level: "warn" },
-			],
+	log: [
+		{ emit: "event", level: "error" },
+		{ emit: "event", level: "warn" },
+	],
 });
 
 prisma.$on("error", (e) => {
@@ -44,11 +35,5 @@ prisma.$on("error", (e) => {
 prisma.$on("warn", (e) => {
 	logger.warn(`Database Warning: ${e.message}`);
 });
-
-if (isDevelopment) {
-	prisma.$on("query", (e) => {
-		logger.debug(`Query: ${e.query} | Duration: ${e.duration}ms`);
-	});
-}
 
 export default prisma;
