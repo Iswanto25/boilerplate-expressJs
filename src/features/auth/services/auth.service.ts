@@ -1,5 +1,5 @@
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
-import { deleteFile, getPublicUrl } from "@/utils/s3.js";
+import { uploadFile, deleteFile, getPublicUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
 import { authQueue } from "@/features/auth/jobs/auth.jobs.js";
 import { jwtUtils } from "@/utils/jwt.js";
@@ -173,8 +173,6 @@ export const authServices = {
 		const currentUser = await authRepository.findUserById(userId);
 		if (!currentUser) throw new apiError(400, "User not found");
 
-		const oldPhotoFileName = currentUser.profile?.photo ?? undefined;
-
 		await authRepository.transaction(async (tx: any) => {
 			let encryptNik: string | undefined = undefined;
 			if (data.NIK) {
@@ -198,16 +196,20 @@ export const authServices = {
 
 			await authRepository.updateUserProfile(userId, profileData, newEmail, tx);
 		});
+	},
 
-		if (data.photo) {
-			await authQueue.add("upload-profile-photo", {
-				base64Data: data.photo,
-				folder,
-				maxSizeMB: 5,
-				allowedFormats: ["image/jpeg", "image/png", "image/jpg", "image/webp"],
-				userId,
-				oldPhotoFileName,
-			});
+	async updatePhoto(userId: string, file: Express.Multer.File): Promise<void> {
+		const currentUser = await authRepository.findUserById(userId);
+		if (!currentUser) throw new apiError(400, "User not found");
+
+		const oldPhotoFileName = currentUser.profile?.photo;
+
+		const { fileName } = await uploadFile(file, folder);
+
+		await authRepository.updateUserProfile(userId, { photo: fileName });
+
+		if (oldPhotoFileName) {
+			await deleteFile(folder, oldPhotoFileName, { strict: false });
 		}
 	},
 

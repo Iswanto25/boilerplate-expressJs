@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authController } from "@/features/auth/controllers/auth.controller.js";
 import { authenticate } from "@/middlewares/authMiddleware.js";
+import { uploadSinglePhoto } from "@/middlewares/multerMiddleware.js";
 import { rateLimiter } from "@/utils/rateLimiter.js";
 
 const router = Router();
@@ -13,6 +14,7 @@ router.get("/profile", authenticate.verifyToken, rateLimiter({ windowInSeconds: 
 router.post("/forgot-password", authController.forgotPassword);
 router.get("/users", authenticate.verifyToken, authController.getUsers);
 router.patch("/profile", authenticate.verifyToken, authController.updateProfile);
+router.patch("/profile/photo", authenticate.verifyToken, uploadSinglePhoto, authController.updatePhoto);
 router.delete("/profile/:id", authenticate.verifyToken, authController.deleteProfile);
 
 export default router;

@@ -160,8 +160,8 @@ export const authController = {
 				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
 			}
 
-			await authServices.updateProfile(req.user.id, validation.data);
-			return respons.success("Berhasil update profile", {}, HttpStatus.OK, res, req);
+			const result = await authServices.updateProfile(req.user.id, validation.data);
+			return respons.success("Berhasil update profile", result, HttpStatus.OK, res, req);
 		} catch (error) {
 			const err = error as { statusCode?: number; message?: string };
 			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
@@ -178,6 +178,25 @@ export const authController = {
 			}
 			await authServices.deleteProfile(id as string);
 			return respons.success("Berhasil menghapus profile", {}, HttpStatus.OK, res, req);
+		} catch (error) {
+			const err = error as { statusCode?: number; message?: string };
+			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			const message = err.message || "Terjadi kesalahan pada server";
+			return respons.error(message, message, statusCode, res, req);
+		}
+	},
+
+	updatePhoto: async (req: Request, res: Response) => {
+		try {
+			if (!req.user) {
+				return respons.error("User tidak ditemukan", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
+			}
+			if (!req.file) {
+				return respons.error("File foto wajib diunggah", "File foto wajib diunggah", HttpStatus.BAD_REQUEST, res, req);
+			}
+
+			const result = await authServices.updatePhoto(req.user.id, req.file);
+			return respons.success("Berhasil update foto profil", result, HttpStatus.OK, res, req);
 		} catch (error) {
 			const err = error as { statusCode?: number; message?: string };
 			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
