@@ -13,8 +13,8 @@ model role {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users            user[]
-  rolePermissions  rolePermission[]
+  users           user[]
+  rolePermissions rolePermission[]
 }
 
 model module {
@@ -29,13 +29,13 @@ model module {
 model resource {
   id               String   @id @default(uuid())
   name             String
-  moduleId         String 
+  moduleId         String
   module           module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  availableActions String[] 
+  availableActions String[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  rolePermissions  rolePermission[]
+  rolePermissions rolePermission[]
 }
 
 model rolePermission {
@@ -44,7 +44,7 @@ model rolePermission {
   role           role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   resourceId     String
   resource       resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  grantedActions String[] 
+  grantedActions String[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -52,18 +52,18 @@ model rolePermission {
 }
 
 model logs {
-  id        Int      @id @default(autoincrement())
-  date      DateTime?
-  name      String?
-  role      String?
-  host      String?
-  status    String?
-  data      Json?
-  userId    String?
-  ip        String? @db.Inet
-  method    String?
-  reqId     String?
-  dayCount  Int?
+  id       Int       @id @default(autoincrement())
+  date     DateTime?
+  name     String?
+  role     String?
+  host     String?
+  status   String?
+  data     Json?
+  userId   String?
+  ip       String?   @db.Inet
+  method   String?
+  reqId    String?
+  dayCount Int?
 
   @@index([date])
   @@index([userId])
@@ -80,7 +80,8 @@ model user {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  profile       profile?
+  profile profile?
+  otps    otp[]
 }
 
 model profile {
@@ -96,4 +97,15 @@ model profile {
   updatedAt DateTime @updatedAt
 }
 
+model otp {
+  id        Int      @id @default(autoincrement())
+  email     String
+  code      String
+  userId    String
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@unique([email, status, code])
+}
