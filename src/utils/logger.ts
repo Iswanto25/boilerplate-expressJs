@@ -1,5 +1,7 @@
 import pino from "pino";
 import path from "path";
+import fs from "node:fs";
+import pretty from "pino-pretty";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -10,29 +12,22 @@ const now = new Date();
 const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 const filePath = path.join(logDir, `${dateStr}.log`);
 
-const transport = pino.transport({
-  targets: [
-    {
-      target: "pino/file",
-      options: { destination: filePath as any, mkdir: true, append: true },
-      level: getLogLevel(),
-    },
-    {
-      target: isProd ? "pino/file" : "pino-pretty",
-      options:
-        isProd ?
-          ({ destination: 1 } as any)
-        : {
-            colorize: true,
-            translateTime: "HH:MM:ss",
-            ignore: "pid,hostname",
-            singleLine: true,
-            messageFormat: "{msg}",
-          },
-      level: isProd ? "info" : "debug",
-    },
-  ],
+fs.mkdirSync(logDir, { recursive: true });
+
+const consoleStream = pretty({
+  colorize: true,
+  translateTime: "HH:MM:ss",
+  ignore: "pid,hostname",
+  singleLine: true,
+  messageFormat: "{msg}",
 });
+
+const fileStream = fs.createWriteStream(filePath, { flags: "a" });
+
+const multiStream = pino.multistream([
+  { stream: consoleStream, level: isProd ? "info" : "debug" },
+  { stream: fileStream, level: getLogLevel() },
+]);
 
 export function formatIsoWithTz(date: Date = new Date()): string {
   const y = date.getFullYear();
@@ -64,5 +59,5 @@ export const logger = pino(
       },
     },
   },
-  transport,
+  multiStream,
 );

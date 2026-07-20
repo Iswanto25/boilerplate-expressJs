@@ -1,16 +1,20 @@
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import dotenv from "dotenv";
 import { logger } from "@/utils/logger.js";
+
+dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 let connectionString = process.env.DATABASE_URL || "";
 let sslConfig: { rejectUnauthorized: boolean } | undefined = undefined;
 
-if (connectionString.includes("sslmode=")) {
-	sslConfig = { rejectUnauthorized: false };
-	// Remove sslmode query param so it does not override Node Pool ssl config
+const sslMode = connectionString.match(/[&?]sslmode=([^&]*)/)?.[1];
+if (sslMode) {
+	if (sslMode !== "disable") {
+		sslConfig = { rejectUnauthorized: sslMode === "verify-full" };
+	}
 	connectionString = connectionString.replace(/([&?])sslmode=[^&]*/, "");
-	// Cleanup dangling ? or &
 	connectionString = connectionString.replace(/\?&/, "?").replace(/[?&]$/, "");
 }
 
