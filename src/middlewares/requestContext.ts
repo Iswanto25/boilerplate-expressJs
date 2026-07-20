@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import crypto from "node:crypto";
 
 const SENSITIVE_FIELDS = /password|token|secret|credential|authorization|api.?key|access.?token|refresh.?token/i;
+const BASE64_PREFIX = /^data:image\/[a-z]+;base64,/;
+const MAX_BASE64_SHOWN = 60;
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -43,4 +45,27 @@ export function maskSensitive(data: unknown): unknown {
     }
   }
   return masked;
+}
+
+export function truncateLongStrings(data: unknown): unknown {
+  if (typeof data === "string") {
+    if (BASE64_PREFIX.test(data) && data.length > MAX_BASE64_SHOWN) {
+      return data.slice(0, MAX_BASE64_SHOWN) + "...";
+    }
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(truncateLongStrings);
+  }
+
+  if (data && typeof data === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      result[key] = truncateLongStrings(value);
+    }
+    return result;
+  }
+
+  return data;
 }

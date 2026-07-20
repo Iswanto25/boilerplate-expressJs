@@ -1,12 +1,11 @@
 import { Response, Request } from "express";
-import type { Prisma } from "@prisma/client";
 import prisma from "@/configs/database.js";
 import { jwtUtils } from "@/utils/jwt.js";
 import { getStoredToken } from "@/utils/tokenStore.js";
 import { logger, formatIsoWithTz } from "@/utils/logger.js";
 import { formatDateTime } from "@/utils/utils.js";
 import { saveAuditLog } from "@/utils/auditLogger.js";
-import { maskSensitive } from "@/middlewares/requestContext.js";
+import { maskSensitive, truncateLongStrings } from "@/middlewares/requestContext.js";
 
 export enum HttpStatus {
   OK = 200,
@@ -84,6 +83,15 @@ function getClientIp(req: Request): string {
   return forwarded?.toString().split(",")[0].trim() || req.socket?.remoteAddress || "unknown";
 }
 
+function buildLogRequest(req?: Request): Record<string, unknown> {
+  if (!req) return {};
+  const hasQuery = Object.keys(req.query).length > 0;
+  return {
+    ...(req.rawBody as Record<string, unknown> | undefined),
+    ...(hasQuery ? { query: req.query } : {}),
+  };
+}
+
 export const respons = {
   async success(message: string, data: unknown, code: number, res: Response, req: Request, pagination?: any) {
     const logUser = await getLogUser(req);
@@ -94,20 +102,17 @@ export const respons = {
     const path = req.path || req.originalUrl;
     const isoNow = formatIsoWithTz(new Date(now));
 
+    const reqBody = truncateLongStrings(maskSensitive(buildLogRequest(req))) as Record<string, unknown>;
+    const respBody = truncateLongStrings(maskSensitive(data)) as Record<string, unknown>;
+
     logger.info({
       path,
       method: req.method,
       status: code,
       reqId: req.reqId,
       userId: logUser.id || null,
-      request: {
-        ...(req.rawBody as Record<string, unknown> | undefined),
-        reqTime: formatIsoWithTz(new Date(startTime)),
-      },
-      response: {
-        ...(maskSensitive(data) as Record<string, unknown>),
-        resTime: isoNow,
-      },
+      request: { ...reqBody, reqTime: formatIsoWithTz(new Date(startTime)) },
+      response: { ...respBody, resTime: isoNow },
       userAgent: req.headers["user-agent"] || "Unknown",
       durationMs: responseTime,
     }, "HTTP Transaction completed");
@@ -122,13 +127,8 @@ export const respons = {
       method: req.method,
       reqId: req.reqId,
       data: {
-        userAgent: req.headers["user-agent"] || "Unknown",
-        reqTime: formatDateTime(new Date(startTime)),
-        resTime: formatDateTime(new Date(now)),
-        source: "Success",
-        message,
-        response: data as Prisma.InputJsonValue,
-        data: req.rawBody as Prisma.InputJsonValue,
+        request: { ...reqBody, reqTime: formatDateTime(new Date(startTime)) },
+        response: { ...respBody, resTime: formatDateTime(new Date(now)) },
       },
       date: formatDateTime(new Date(now)),
     });
@@ -151,20 +151,17 @@ export const respons = {
     const isoNow = formatIsoWithTz(new Date(now));
     const hint = (error as any)?.hint || (error as any)?.code || undefined;
 
+    const reqBody = truncateLongStrings(maskSensitive(buildLogRequest(req))) as Record<string, unknown>;
+    const respBody = truncateLongStrings(maskSensitive(error)) as Record<string, unknown>;
+
     logger.error({
       path,
       method: req?.method || "UNKNOWN",
       status: code,
       reqId: req?.reqId,
       userId: logUser.id || null,
-      request: {
-        ...(req?.rawBody as Record<string, unknown> | undefined),
-        reqTime: formatIsoWithTz(new Date(startTime)),
-      },
-      response: {
-        ...(maskSensitive(error) as Record<string, unknown>),
-        resTime: isoNow,
-      },
+      request: { ...reqBody, reqTime: formatIsoWithTz(new Date(startTime)) },
+      response: { ...respBody, resTime: isoNow },
       userAgent: req?.headers["user-agent"] || "Unknown",
       durationMs: responseTime,
       hint,
@@ -180,14 +177,8 @@ export const respons = {
       method: req?.method || "UNKNOWN",
       reqId: req?.reqId,
       data: {
-        userAgent: req?.headers["user-agent"] || "Unknown",
-        reqTime: formatDateTime(new Date(startTime)),
-        resTime: formatDateTime(new Date(now)),
-        source: "Error",
-        message,
-        hint,
-        error: error as Prisma.InputJsonValue,
-        data: req?.rawBody as Prisma.InputJsonValue | undefined,
+        request: { ...reqBody, reqTime: formatDateTime(new Date(startTime)) },
+        response: { ...respBody, resTime: formatDateTime(new Date(now)) },
       },
       date: formatDateTime(new Date(now)),
     });

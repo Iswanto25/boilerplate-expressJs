@@ -1,5 +1,8 @@
 import { Redis } from "ioredis";
+import dotenv from "dotenv";
 import { logger } from "@/utils/logger.js";
+
+dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
 const redisState: { client: Redis | null; isAvailable: boolean } = {
 	client: null,
