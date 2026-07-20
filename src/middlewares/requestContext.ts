@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import crypto from "node:crypto";
 
-const SENSITIVE_FIELDS = /password|token|secret|credential|authorization|api.?key|access.?token|refresh.?token/i;
+const SENSITIVE_FIELDS = /password|token|secret|credential|authorization|api.?key|access.?token|refresh.?token|\bnik\b|\bktp\b|^nik[A-Z_]|^no_?nik|^user_?nik|^no_?ktp|^user_?ktp/i;
 const BASE64_PREFIX = /^data:image\/[a-z]+;base64,/;
 const MAX_BASE64_SHOWN = 60;
 

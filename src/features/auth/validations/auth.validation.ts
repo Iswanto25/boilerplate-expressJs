@@ -38,7 +38,6 @@ export const authValidation = {
 		name: z.string().optional(),
 		phone: z.string().optional(),
 		address: z.string().optional(),
-		photo: z.string().optional(),
 		NIK: z.string().optional(),
 		email: z.string().optional(),
 	}),
