@@ -118,4 +118,28 @@ export const authRepository = {
 		]);
 		return { total, users };
 	},
+
+	deactivateOtpsByEmail: async (email: string, tx: TxClient = prisma) => {
+		await tx.otp.updateMany({
+			where: { email, status: "active" },
+			data: { status: "expired" },
+		});
+	},
+
+	createOtp: async (data: { email: string; code: string; userId: string; expiredAt: Date }, tx: TxClient = prisma) => {
+		return tx.otp.create({ data });
+	},
+
+	findActiveOtp: async (email: string, code: string, tx: TxClient = prisma) => {
+		return tx.otp.findFirst({
+			where: { email, code, status: "active", expiredAt: { gte: new Date() } },
+		});
+	},
+
+	useOtp: async (id: number, tx: TxClient = prisma) => {
+		return tx.otp.update({
+			where: { id },
+			data: { status: "used" },
+		});
+	},
 };

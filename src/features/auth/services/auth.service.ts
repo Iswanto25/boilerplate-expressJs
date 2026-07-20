@@ -4,9 +4,7 @@ import { apiError } from "@/utils/respons.js";
 import { authQueue } from "@/features/auth/jobs/auth.jobs.js";
 import { jwtUtils } from "@/utils/jwt.js";
 import { storeToken, deleteToken, getStoredToken } from "@/utils/tokenStore.js";
-import { sendEmail } from "@/utils/smtp.js";
-import { generateOTP, encryptPassword, comparePassword, isEmailValid } from "@/utils/utils.js";
-import { generateOTPEmail } from "@/utils/mail.js";
+import { encryptPassword, comparePassword, isEmailValid } from "@/utils/utils.js";
 import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
 import { paginate } from "@/utils/pagination.js";
 import { logger } from "@/utils/logger.js";
@@ -156,16 +154,12 @@ export const authServices = {
 		const user = await authRepository.findUserByEmail(email);
 		if (!user) throw new apiError(400, "User not found");
 
-		const otp = generateOTP();
 		const userName = user.profile?.name || "User";
-		const html = generateOTPEmail(userName, otp);
 
-		await sendEmail({
-			to: email,
-			subject: "Reset Password",
-			html,
-			fromName: process.env.APP_NAME,
-			fromEmail: process.env.SMTP_USER,
+		await authQueue.add("send-forgot-password-email", {
+			email,
+			userId: user.id,
+			userName,
 		});
 	},
 

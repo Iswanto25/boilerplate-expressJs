@@ -3,6 +3,9 @@ import { bullConnection } from "@/configs/bull.js";
 import { logger } from "@/utils/logger.js";
 import { uploadBase64, deleteFile } from "@/utils/s3.js";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
+import { generateOTP } from "@/utils/utils.js";
+import { sendEmail } from "@/utils/smtp.js";
+import { generateOTPEmail } from "@/utils/mail.js";
 
 export const AUTH_QUEUE_NAME = "auth-queue";
 
@@ -27,6 +30,38 @@ export interface UploadJobData {
 	userId: string;
 	oldPhotoFileName?: string;
 }
+
+export interface ForgotPasswordJobData {
+	email: string;
+	userId: string;
+	userName: string;
+}
+
+export const processForgotPasswordJob = async (data: ForgotPasswordJobData) => {
+	logger.info({ email: data.email, userId: data.userId }, "Processing forgot-password job...");
+
+	const otp = generateOTP();
+	const expiredAt = new Date(Date.now() + 10 * 60 * 1000);
+
+	await authRepository.transaction(async (tx: any) => {
+		await authRepository.deactivateOtpsByEmail(data.email, tx);
+		await authRepository.createOtp({ email: data.email, code: otp, userId: data.userId, expiredAt }, tx);
+	});
+
+	const html = generateOTPEmail(data.userName, otp);
+
+	await sendEmail({
+		to: data.email,
+		subject: "Reset Password",
+		html,
+		fromName: process.env.APP_NAME,
+		fromEmail: process.env.SMTP_USER,
+	});
+
+	logger.info({ email: data.email }, "Forgot-password email sent");
+
+	return { success: true };
+};
 
 export const processUploadJob = async (data: UploadJobData) => {
 	logger.info({ userId: data.userId, folder: data.folder }, "Starting upload processing job...");
@@ -55,6 +90,8 @@ export const authWorker = new Worker(
 			switch (job.name) {
 				case "upload-profile-photo":
 					return await processUploadJob(job.data as UploadJobData);
+				case "send-forgot-password-email":
+					return await processForgotPasswordJob(job.data as ForgotPasswordJobData);
 				default:
 					logger.warn({ jobName: job.name }, "Unknown job name");
 					return null;

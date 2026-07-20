@@ -97,15 +97,22 @@ model profile {
   updatedAt DateTime @updatedAt
 }
 
-model otp {
-  id        Int      @id @default(autoincrement())
-  email     String
-  code      String
-  userId    String
-  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum statusOTP {
+	active
+	used
+	expired
+}
 
-  @@unique([email, status, code])
+model otp {
+	id        Int       @id @default(autoincrement())
+	email     String
+	code      String
+	userId    String
+	user      user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+	status    statusOTP @default(active)
+	expiredAt DateTime
+	createdAt DateTime  @default(now())
+	updatedAt DateTime  @updatedAt
+
+	@@unique([email, status, code])
 }
