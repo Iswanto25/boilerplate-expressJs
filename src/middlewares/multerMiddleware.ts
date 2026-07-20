@@ -39,7 +39,13 @@ export const uploadSinglePhoto = (req: Request, res: Response, next: NextFunctio
 		if (err) {
 			if (err instanceof multer.MulterError) {
 				if (err.code === "LIMIT_FILE_SIZE") {
-					return respons.error("Ukuran file terlalu besar. Maksimum 5MB.", "Ukuran file terlalu besar. Maksimum 5MB.", HttpStatus.PAYLOAD_TOO_LARGE, res, req);
+					return respons.error(
+						"Ukuran file terlalu besar. Maksimum 5MB.",
+						"Ukuran file terlalu besar. Maksimum 5MB.",
+						HttpStatus.PAYLOAD_TOO_LARGE,
+						res,
+						req,
+					);
 				}
 				return respons.error(err.message, err.message, HttpStatus.BAD_REQUEST, res, req);
 			}

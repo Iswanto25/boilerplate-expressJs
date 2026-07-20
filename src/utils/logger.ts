@@ -69,7 +69,5 @@ export const logger = pino(
 			level: (label) => ({ level: label.toUpperCase() }),
 		},
 	},
-	multiStream
+	multiStream,
 );
-
-
