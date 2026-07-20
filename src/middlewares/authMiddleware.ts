@@ -15,6 +15,7 @@ export const authenticate = {
 		try {
 			const decoded = jwtUtils.verifyAccessToken(token);
 			const storedToken = await getStoredToken(decoded.id, "access");
+			console.log(storedToken);
 			if (storedToken !== token) return { valid: false };
 			return { valid: true, userId: decoded.id };
 		} catch {

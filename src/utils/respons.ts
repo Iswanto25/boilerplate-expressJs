@@ -3,7 +3,6 @@ import prisma from "@/configs/database.js";
 import { jwtUtils } from "@/utils/jwt.js";
 import { getStoredToken } from "@/utils/tokenStore.js";
 import { logger, formatIsoWithTz } from "@/utils/logger.js";
-import { formatDateTime } from "@/utils/utils.js";
 import { saveAuditLog } from "@/utils/auditLogger.js";
 import { maskSensitive, truncateLongStrings } from "@/middlewares/requestContext.js";
 
@@ -92,6 +91,17 @@ function buildLogRequest(req?: Request): Record<string, unknown> {
   };
 }
 
+function buildLogResponse(payload: unknown, resTime: string, fallbackKey: "data" | "error" = "data"): Record<string, any> {
+  const processed = truncateLongStrings(maskSensitive(payload));
+  if (processed === null || processed === undefined) {
+    return { resTime };
+  }
+  if (typeof processed === "object" && !Array.isArray(processed)) {
+    return { ...(processed as Record<string, any>), resTime };
+  }
+  return { [fallbackKey]: processed, resTime };
+}
+
 export const respons = {
   async success(message: string, data: unknown, code: number, res: Response, req: Request, pagination?: any) {
     const logUser = await getLogUser(req);
@@ -103,19 +113,24 @@ export const respons = {
     const isoNow = formatIsoWithTz(new Date(now));
 
     const reqBody = truncateLongStrings(maskSensitive(buildLogRequest(req))) as Record<string, unknown>;
-    const respBody = truncateLongStrings(maskSensitive(data)) as Record<string, unknown>;
 
-    logger.info({
+    const logPayload = {
+      level: "INFO",
+      time: isoNow,
       path,
       method: req.method,
       status: code,
       reqId: req.reqId,
       userId: logUser.id || null,
+      userRole: logUser.role || "GUEST",
       request: { ...reqBody, reqTime: formatIsoWithTz(new Date(startTime)) },
-      response: { ...respBody, resTime: isoNow },
+      response: buildLogResponse(data, isoNow, "data"),
       userAgent: req.headers["user-agent"] || "Unknown",
       durationMs: responseTime,
-    }, "HTTP Transaction completed");
+      msg: "HTTP Transaction completed",
+    };
+
+    logger.info(logPayload);
 
     saveAuditLog({
       userId: logUser.id || null,
@@ -126,11 +141,8 @@ export const respons = {
       status: code.toString(),
       method: req.method,
       reqId: req.reqId,
-      data: {
-        request: { ...reqBody, reqTime: formatDateTime(new Date(startTime)) },
-        response: { ...respBody, resTime: formatDateTime(new Date(now)) },
-      },
-      date: formatDateTime(new Date(now)),
+      data: logPayload,
+      date: new Date(now),
     });
 
     res.status(code).json({
@@ -152,20 +164,25 @@ export const respons = {
     const hint = (error as any)?.hint || (error as any)?.code || undefined;
 
     const reqBody = truncateLongStrings(maskSensitive(buildLogRequest(req))) as Record<string, unknown>;
-    const respBody = truncateLongStrings(maskSensitive(error)) as Record<string, unknown>;
 
-    logger.error({
+    const logPayload = {
+      level: "ERROR",
+      time: isoNow,
       path,
       method: req?.method || "UNKNOWN",
       status: code,
       reqId: req?.reqId,
       userId: logUser.id || null,
+      userRole: logUser.role || "GUEST",
       request: { ...reqBody, reqTime: formatIsoWithTz(new Date(startTime)) },
-      response: { ...respBody, resTime: isoNow },
+      response: buildLogResponse(error, isoNow, "error"),
       userAgent: req?.headers["user-agent"] || "Unknown",
       durationMs: responseTime,
-      hint,
-    }, "HTTP Transaction completed");
+      ...(hint ? { hint } : {}),
+      msg: "HTTP Transaction completed",
+    };
+
+    logger.error(logPayload);
 
     saveAuditLog({
       userId: logUser.id || null,
@@ -176,11 +193,8 @@ export const respons = {
       status: code.toString(),
       method: req?.method || "UNKNOWN",
       reqId: req?.reqId,
-      data: {
-        request: { ...reqBody, reqTime: formatDateTime(new Date(startTime)) },
-        response: { ...respBody, resTime: formatDateTime(new Date(now)) },
-      },
-      date: formatDateTime(new Date(now)),
+      data: logPayload,
+      date: new Date(now),
     });
 
     res.status(code).json({

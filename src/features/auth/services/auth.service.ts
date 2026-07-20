@@ -26,7 +26,7 @@ export const authServices = {
 
 			const ciphertext = data.NIK ? encryptionUtils.encryptSensitive(data.NIK).ciphertext : null;
 
-			const defaultRole = await tx.role.findUnique({ where: { name: "User" } });
+			const defaultRole = await tx.role.findUnique({ where: { name: "USER" } });
 			if (!defaultRole) throw new apiError(500, "Default role 'USER' not found");
 
 			const user = await authRepository.createUser(
@@ -58,7 +58,6 @@ export const authServices = {
 					id: user.id,
 					name: data.name || null,
 					email: user.email,
-					photo: null,
 				},
 				accessToken,
 				refreshToken,
@@ -115,7 +114,7 @@ export const authServices = {
 		if (!user) throw new apiError(400, "User not found");
 
 		const tokenRecord = await getStoredToken(user.id, "refresh");
-		if (!tokenRecord) throw new apiError(400, "Invalid token");
+		if (!tokenRecord || tokenRecord !== oldToken) throw new apiError(400, "Invalid token");
 
 		await Promise.all([deleteToken(user.id, "access"), deleteToken(user.id, "refresh")]);
 

@@ -22,6 +22,7 @@
 		"test:infra": "node --test '__tests__/infrastructure/*.test.ts'",
 		"generate-api-key": "tsx scripts/generateApiKey.ts",
 		"generate-data": "tsx src/utils/generateData.ts",
+		"seed": "npx prisma db seed",
 		"cleanup": "bash scripts/cleanup-boilerplate.sh"
 	},
 	"author": "",

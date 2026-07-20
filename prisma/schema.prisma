@@ -53,18 +53,17 @@ model rolePermission {
 
 model logs {
   id        Int      @id @default(autoincrement())
-  date      String?
+  date      DateTime?
   name      String?
   role      String?
   host      String?
   status    String?
   data      Json?
   userId    String?
-  ip        String?
+  ip        String? @db.Inet
   method    String?
   reqId     String?
   dayCount  Int?
-  createdAt DateTime @default(now())
 
   @@index([date])
   @@index([userId])

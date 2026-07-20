@@ -1,5 +1,4 @@
 import prisma from "@/configs/database.js";
-import type { Prisma } from "@prisma/client";
 import { logger } from "@/utils/logger.js";
 
 interface AuditEntry {
@@ -11,8 +10,8 @@ interface AuditEntry {
   status: string;
   method: string;
   reqId?: string;
-  data: Prisma.InputJsonValue;
-  date: string;
+  data: any;
+  date: Date | string;
 }
 
 const WORKER_COUNT = 10;

@@ -29,5 +29,8 @@ export const errorHandler = (err: AppError, req: Request, res: Response, _next: 
 };
 
 export const notFoundHandler = (req: Request, res: Response, _next: NextFunction) => {
-	return respons.error(`Route ${req.method} ${req.path} not found`, null, HttpStatus.NOT_FOUND, res, req);
+	const isProduction = process.env.NODE_ENV === "production";
+	const message = isProduction ? "Not found" : `Route ${req.method} ${req.path} not found`;
+
+	return respons.error(message, "Not Found", HttpStatus.NOT_FOUND, res, req);
 };
