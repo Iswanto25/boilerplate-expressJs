@@ -45,6 +45,15 @@ export const authValidation = {
 		search: z.string().optional(),
 	}),
 
+	sendOtp: z.object({
+		email: z.string().email({ message: "Invalid email format" }),
+	}),
+
+	verifyOtp: z.object({
+		email: z.string().email({ message: "Invalid email format" }),
+		otp: z.string().length(6, { message: "OTP must be 6 digits" })
+	}),
+
 	updateProfile: z.object({
 		name: z.string().optional(),
 		phone: z.string().optional(),

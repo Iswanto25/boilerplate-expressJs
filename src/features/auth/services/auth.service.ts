@@ -10,7 +10,7 @@ import { encryptPassword, comparePassword, isEmailValid } from "@/utils/utils.js
 import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
 import { paginate } from "@/utils/pagination.js";
 import { logger } from "@/utils/logger.js";
-import { RegisterInput, UpdateProfileInput, ResetPasswordInput } from "@/features/auth/types/auth.types.js";
+import { RegisterInput, UpdateProfileInput, ResetPasswordInput, SendOtpInput, VerifyOtpInput } from "@/features/auth/types/auth.types.js";
 
 const folder = "profile";
 
@@ -152,6 +152,34 @@ export const authServices = {
 		};
 	},
 
+	async sendOtp(input: SendOtpInput): Promise<void> {
+		const user = await authRepository.findUserByEmail(input.email);
+		if (!user) throw new apiError(400, "User not found");
+
+		const otp = crypto.randomInt(100000, 999999).toString();
+
+		const OTP_EXPIRE_SECONDS = 300; // 5 minutes
+		await storeToken(user.id, otp, "otp", OTP_EXPIRE_SECONDS);
+
+		await authQueue.add("send-otp-email", {
+			email: input.email,
+			userName: user.profile?.name || "User",
+			otp,
+		});
+	},
+
+	async verifyOtp(input: VerifyOtpInput): Promise<void> {
+		const user = await authRepository.findUserByEmail(input.email);
+		if (!user) throw new apiError(400, "User not found");
+
+		const storedOtp = await getStoredToken(user.id, "otp");
+		if (!storedOtp) throw new apiError(400, "OTP tidak valid atau sudah kedaluwarsa");
+
+		if (storedOtp !== input.otp) throw new apiError(400, "OTP tidak valid");
+
+		await deleteToken(user.id, "otp");
+	},
+
 	async forgotPassword(email: string): Promise<void> {
 		const user = await authRepository.findUserByEmail(email);
 		if (!user) throw new apiError(400, "User not found");
@@ -284,5 +312,4 @@ export const authServices = {
 
 		return { users: result, pagination };
 	},
-
 };

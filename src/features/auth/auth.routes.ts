@@ -13,6 +13,8 @@ router.post("/refresh-token", authenticate.verifyToken, authController.refreshTo
 router.get("/profile", authenticate.verifyToken, rateLimiter({ windowInSeconds: 30, maxRequests: 3, useUserId: true }), authController.profile);
 router.post("/forgot-password", rateLimiter({ windowInSeconds: 30, maxRequests: 5 }), authController.forgotPassword);
 router.post("/reset-password", rateLimiter({ windowInSeconds: 30, maxRequests: 5 }), authController.resetPassword);
+router.post("/send-otp", rateLimiter({ windowInSeconds: 60, maxRequests: 3 }), authController.sendOtp);
+router.post("/verify-otp", rateLimiter({ windowInSeconds: 60, maxRequests: 5 }), authController.verifyOtp);
 router.get("/users", authenticate.verifyToken, authController.getUsers);
 router.patch("/profile", authenticate.verifyToken, authController.updateProfile);
 router.patch("/profile/photo", authenticate.verifyToken, uploadSinglePhoto, authController.updatePhoto);

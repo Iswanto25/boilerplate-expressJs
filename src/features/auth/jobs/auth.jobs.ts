@@ -4,7 +4,7 @@ import { logger } from "@/utils/logger.js";
 import { uploadBase64, deleteFile } from "@/utils/s3.js";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
 import { sendEmail } from "@/utils/smtp.js";
-import { generateResetPasswordEmail } from "@/utils/mail.js";
+import { generateResetPasswordEmail, generateGenericOTPEmail } from "@/utils/mail.js";
 
 export const AUTH_QUEUE_NAME = "auth-queue";
 
@@ -36,6 +36,13 @@ export interface ForgotPasswordJobData {
 	resetLink: string;
 }
 
+export interface SendOtpJobData {
+	email: string;
+	userName: string;
+	otp: string;
+	purpose: string;
+}
+
 export const processForgotPasswordJob = async (data: ForgotPasswordJobData) => {
 	logger.info({ email: data.email }, "Processing forgot-password job...");
 
@@ -50,6 +57,29 @@ export const processForgotPasswordJob = async (data: ForgotPasswordJobData) => {
 	});
 
 	logger.info({ email: data.email }, "Forgot-password email sent");
+
+	return { success: true };
+};
+
+export const processSendOtpJob = async (data: SendOtpJobData) => {
+	logger.info({ email: data.email, purpose: data.purpose }, "Processing send-otp job...");
+
+	const html = generateGenericOTPEmail({
+		userName: data.userName,
+		otp: data.otp,
+		purpose: data.purpose,
+		expiryMinutes: 5,
+	});
+
+	await sendEmail({
+		to: data.email,
+		subject: `Kode OTP - ${data.purpose}`,
+		html,
+		fromName: process.env.APP_NAME,
+		fromEmail: process.env.SMTP_USER,
+	});
+
+	logger.info({ email: data.email, purpose: data.purpose }, "OTP email sent");
 
 	return { success: true };
 };
@@ -83,6 +113,8 @@ export const authWorker = new Worker(
 					return await processUploadJob(job.data as UploadJobData);
 				case "send-forgot-password-email":
 					return await processForgotPasswordJob(job.data as ForgotPasswordJobData);
+				case "send-otp-email":
+					return await processSendOtpJob(job.data as SendOtpJobData);
 				default:
 					logger.warn({ jobName: job.name }, "Unknown job name");
 					return null;
