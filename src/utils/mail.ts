@@ -172,6 +172,20 @@ export function generateWelcomeEmail(userName: string): string {
 }
 
 /**
+ * Generate reset password magic link email
+ */
+export function generateResetPasswordEmail(userName: string, resetLink: string): string {
+	return generateEmailTemplate({
+		userName,
+		title: "Reset Password",
+		mainMessage: "Kami menerima permintaan untuk mengatur ulang kata sandi akun Anda.",
+		additionalInfo: "Klik tombol di bawah untuk melanjutkan proses reset password:",
+		actionContent: `<a href="${resetLink}" class="button">Reset Password</a>`,
+		warningMessage: "Link ini akan kedaluwarsa dalam waktu <strong>15 menit</strong>. Jika Anda tidak meminta reset password, abaikan email ini.",
+	});
+}
+
+/**
  * Generate password change confirmation email
  */
 export function generatePasswordChangedEmail(userName: string): string {

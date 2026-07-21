@@ -12,6 +12,7 @@ router.post("/logout", authenticate.verifyToken, authController.logout);
 router.post("/refresh-token", authenticate.verifyToken, authController.refreshToken);
 router.get("/profile", authenticate.verifyToken, rateLimiter({ windowInSeconds: 30, maxRequests: 3, useUserId: true }), authController.profile);
 router.post("/forgot-password", rateLimiter({ windowInSeconds: 30, maxRequests: 5 }), authController.forgotPassword);
+router.post("/reset-password", rateLimiter({ windowInSeconds: 30, maxRequests: 5 }), authController.resetPassword);
 router.get("/users", authenticate.verifyToken, authController.getUsers);
 router.patch("/profile", authenticate.verifyToken, authController.updateProfile);
 router.patch("/profile/photo", authenticate.verifyToken, uploadSinglePhoto, authController.updatePhoto);

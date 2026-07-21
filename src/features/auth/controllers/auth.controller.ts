@@ -128,6 +128,25 @@ export const authController = {
 		}
 	},
 
+	resetPassword: async (req: Request, res: Response) => {
+		try {
+			const validation = authValidation.resetPassword.safeParse(req.body);
+
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
+			}
+
+			const result = await authServices.resetPassword(validation.data);
+			return respons.success("Password berhasil diubah", result, HttpStatus.OK, res, req);
+		} catch (error) {
+			const err = error as { statusCode?: number; message?: string };
+			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			const message = err.message || "Terjadi kesalahan pada server";
+			return respons.error(message, message, statusCode, res, req);
+		}
+	},
+
 	getUsers: async (req: Request, res: Response) => {
 		try {
 			const validation = authValidation.getUsers.safeParse(req.query);

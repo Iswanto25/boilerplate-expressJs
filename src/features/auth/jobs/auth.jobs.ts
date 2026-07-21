@@ -3,9 +3,8 @@ import { bullConnection } from "@/configs/bull.js";
 import { logger } from "@/utils/logger.js";
 import { uploadBase64, deleteFile } from "@/utils/s3.js";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
-import { generateOTP } from "@/utils/utils.js";
 import { sendEmail } from "@/utils/smtp.js";
-import { generateOTPEmail } from "@/utils/mail.js";
+import { generateResetPasswordEmail } from "@/utils/mail.js";
 
 export const AUTH_QUEUE_NAME = "auth-queue";
 
@@ -33,22 +32,14 @@ export interface UploadJobData {
 
 export interface ForgotPasswordJobData {
 	email: string;
-	userId: string;
 	userName: string;
+	resetLink: string;
 }
 
 export const processForgotPasswordJob = async (data: ForgotPasswordJobData) => {
-	logger.info({ email: data.email, userId: data.userId }, "Processing forgot-password job...");
+	logger.info({ email: data.email }, "Processing forgot-password job...");
 
-	const otp = generateOTP();
-	const expiredAt = new Date(Date.now() + 10 * 60 * 1000);
-
-	await authRepository.transaction(async (tx: any) => {
-		await authRepository.deactivateOtpsByEmail(data.email, tx);
-		await authRepository.createOtp({ email: data.email, code: otp, userId: data.userId, expiredAt }, tx);
-	});
-
-	const html = generateOTPEmail(data.userName, otp);
+	const html = generateResetPasswordEmail(data.userName, data.resetLink);
 
 	await sendEmail({
 		to: data.email,

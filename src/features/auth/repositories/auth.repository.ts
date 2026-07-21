@@ -119,6 +119,13 @@ export const authRepository = {
 		return { total, users };
 	},
 
+	updateUserPassword: async (userId: string, password: string, tx: TxClient = prisma) => {
+		return tx.user.update({
+			where: { id: userId },
+			data: { password },
+		});
+	},
+
 	deactivateOtpsByEmail: async (email: string, tx: TxClient = prisma) => {
 		await tx.otp.updateMany({
 			where: { email, status: "active" },
