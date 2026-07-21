@@ -1,14 +1,16 @@
+import crypto from "node:crypto";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
 import { uploadFile, deleteFile, getPublicUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
 import { authQueue } from "@/features/auth/jobs/auth.jobs.js";
 import { jwtUtils } from "@/utils/jwt.js";
 import { storeToken, deleteToken, getStoredToken } from "@/utils/tokenStore.js";
+import { redisState } from "@/configs/redis.js";
 import { encryptPassword, comparePassword, isEmailValid } from "@/utils/utils.js";
 import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
 import { paginate } from "@/utils/pagination.js";
 import { logger } from "@/utils/logger.js";
-import { RegisterInput, UpdateProfileInput } from "@/features/auth/types/auth.types.js";
+import { RegisterInput, UpdateProfileInput, ResetPasswordInput } from "@/features/auth/types/auth.types.js";
 
 const folder = "profile";
 
@@ -154,13 +156,40 @@ export const authServices = {
 		const user = await authRepository.findUserByEmail(email);
 		if (!user) throw new apiError(400, "User not found");
 
+		const token = crypto.randomBytes(32).toString("hex");
 		const userName = user.profile?.name || "User";
+
+		if (redisState.isAvailable && redisState.client) {
+			await redisState.client.set(`reset_token:${token}`, user.id, "EX", 900);
+		} else {
+			logger.warn("Redis not available - cannot store reset token");
+			return;
+		}
+
+		const frontendUrl = process.env.FRONTEND_URL || process.env.BASE_URL || "http://localhost:3000";
+		const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
 		await authQueue.add("send-forgot-password-email", {
 			email,
-			userId: user.id,
 			userName,
+			resetLink,
 		});
+	},
+
+	async resetPassword(input: ResetPasswordInput): Promise<void> {
+		if (!redisState.isAvailable || !redisState.client) {
+			logger.warn("Redis not available - cannot verify reset token");
+			throw new apiError(500, "Terjadi kesalahan pada server");
+		}
+
+		const userId = await redisState.client.get(`reset_token:${input.token}`);
+		if (!userId) throw new apiError(400, "Token tidak valid atau sudah kedaluwarsa");
+
+		const hashedPassword = await encryptPassword(input.password);
+
+		await authRepository.updateUserPassword(userId, hashedPassword);
+
+		await redisState.client.del(`reset_token:${input.token}`);
 	},
 
 	async updateProfile(userId: string, data: UpdateProfileInput): Promise<void> {
@@ -255,4 +284,5 @@ export const authServices = {
 
 		return { users: result, pagination };
 	},
+
 };

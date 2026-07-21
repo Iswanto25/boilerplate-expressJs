@@ -28,6 +28,17 @@ export const authValidation = {
 		email: z.string().email({ message: "Invalid email format" }),
 	}),
 
+	resetPassword: z.object({
+		token: z.string().min(1, { message: "Token is required" }),
+		password: z
+			.string()
+			.min(6, { message: "Password must be at least 6 characters" })
+			.regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" })
+			.regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
+			.regex(/[0-9]/, { message: "Password must contain at least one number" })
+			.regex(/[^a-zA-Z0-9]/, { message: "Password must contain at least one special character" }),
+	}),
+
 	getUsers: z.object({
 		page: z.coerce.number().int().positive().default(1),
 		limit: z.coerce.number().int().positive().default(10),
