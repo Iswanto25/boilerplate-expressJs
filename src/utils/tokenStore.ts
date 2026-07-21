@@ -23,7 +23,11 @@ export async function storeToken(userId: string, token: string, type: "access" |
 }
 
 function getPrefix(type: "access" | "refresh" | "otp") {
-	return type === "access" ? ACCESS_TOKEN_PREFIX : type === "otp" ? OTP_PREFIX : REFRESH_TOKEN_PREFIX;
+	return (
+		type === "access" ? ACCESS_TOKEN_PREFIX
+		: type === "otp" ? OTP_PREFIX
+		: REFRESH_TOKEN_PREFIX
+	);
 }
 
 export async function getStoredToken(userId: string, type: "access" | "refresh" | "otp") {

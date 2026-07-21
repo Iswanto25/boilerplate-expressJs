@@ -128,9 +128,50 @@ export const authController = {
 		}
 	},
 
+	sendOtp: async (req: Request, res: Response) => {
+		try {
+			const validation = authValidation.sendOtp.safeParse(req.body);
+
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
+			}
+
+			const result = await authServices.sendOtp(validation.data);
+			return respons.success("OTP berhasil dikirim ke email", result, HttpStatus.OK, res, req);
+		} catch (error) {
+			const err = error as { statusCode?: number; message?: string };
+			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			let message = err.message || "Terjadi kesalahan pada server";
+
+			if (message === "User not found") message = "User tidak ditemukan";
+			return respons.error(message, message, statusCode, res, req);
+		}
+	},
+
+	verifyOtp: async (req: Request, res: Response) => {
+		try {
+			const validation = authValidation.verifyOtp.safeParse(req.body);
+
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
+			}
+
+			const result = await authServices.verifyOtp(validation.data);
+			return respons.success("OTP berhasil diverifikasi", result, HttpStatus.OK, res, req);
+		} catch (error) {
+			const err = error as { statusCode?: number; message?: string };
+			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			const message = err.message || "Terjadi kesalahan pada server";
+			return respons.error(message, message, statusCode, res, req);
+		}
+	},
+
 	resetPassword: async (req: Request, res: Response) => {
 		try {
-			const validation = authValidation.resetPassword.safeParse(req.body);
+			const input = { token: req.query.token, ...req.body };
+			const validation = authValidation.resetPassword.safeParse(input);
 
 			if (!validation.success) {
 				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
