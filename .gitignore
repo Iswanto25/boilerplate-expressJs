@@ -50,4 +50,8 @@ src/generated/
 *.db-journal
 .opencode
 graphify-out
-*.pdf
+*.pdf-e 
+# AI / Agent files (local only)
+AGENTS.md
+.commandcode/*
+.opencode/
