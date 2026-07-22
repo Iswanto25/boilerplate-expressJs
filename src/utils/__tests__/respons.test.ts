@@ -7,15 +7,16 @@ const modulePath = "@/utils/respons";
 const loggerPath = "@/utils/logger";
 
 const createReqRes = (withUser = true) => {
-	const user = withUser
-		? {
+	const user =
+		withUser ?
+			{
 				id: "user-1",
 				email: "test@test.com",
 				roleId: "role-1",
 				roleName: "admin",
 				profile: { name: "Tester", phone: null, address: null, photo: null, NIK: null },
 			}
-		: undefined;
+		:	undefined;
 
 	const req: any = {
 		user,
@@ -49,9 +50,7 @@ const createReqRes = (withUser = true) => {
 	return { req, res };
 };
 
-const setup = async (overrides?: {
-	createLog?: ReturnType<typeof mock.fn>;
-}) => {
+const setup = async (overrides?: { createLog?: ReturnType<typeof mock.fn> }) => {
 	const createLog = overrides?.createLog ?? mock.fn(async () => ({}));
 
 	const logger: any = {

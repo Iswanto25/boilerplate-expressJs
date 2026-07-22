@@ -18,10 +18,7 @@ export async function resolve(specifier, context, nextResolve) {
 			if (!existsSync(resolvedPath)) {
 				const tsPath = resolvedPath.replace(/\.js$/, ".ts");
 				if (existsSync(tsPath)) {
-					return nextResolve(
-						new URL(pathResolve(tsPath), "file://").href,
-						context,
-					);
+					return nextResolve(new URL(pathResolve(tsPath), "file://").href, context);
 				}
 			}
 		}

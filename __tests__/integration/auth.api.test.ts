@@ -2,7 +2,6 @@ import { describe, it, before, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
 
-
 const mockUserFindUnique = mock.fn();
 const mockUserFindMany = mock.fn();
 const mockUserCreate = mock.fn();

@@ -1,31 +1,41 @@
 import { Request, Response, NextFunction } from "express";
-import { respons, HttpStatus } from "@/utils/respons.js";
-import { logger } from "@/utils/logger.js";
+import { respons, HttpStatus, apiError } from "@/utils/respons.js";
 
-interface AppError extends Error {
-	statusCode?: number;
-	status?: number;
+const errorTranslations: Record<string, string> = {
+	"User not found": "User tidak ditemukan",
+	"Invalid email": "Email tidak valid",
+	"Invalid password": "Password salah",
+	"Email already exists": "Email sudah terdaftar",
+	"File not found in storage": "File tidak ditemukan di storage",
+	Forbidden: "Anda tidak memiliki akses",
+	Unauthorized: "Tidak terautentikasi",
+	"Not found": "Tidak ditemukan",
+	"Too many requests": "Terlalu banyak permintaan",
+};
+
+function translateMessage(message: string): string {
+	return errorTranslations[message] || message;
 }
 
-export const errorHandler = (err: AppError, req: Request, res: Response, _next: NextFunction) => {
-	const statusCode = err.statusCode || err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+export const errorHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
 	const isProduction = process.env.NODE_ENV === "production";
 
-	// Log error lengkap untuk keperluan debugging internal
-	logger.error({
-		error: err.message,
-		stack: isProduction ? undefined : err.stack,
-		path: req.path,
-		method: req.method,
-		statusCode,
-	});
+	let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+	let hint: string | undefined;
 
-	// Jika di produksi dan ini adalah error 500 (internal server error),
-	// sembunyikan detail error agar tidak membocorkan struktur sistem/database.
-	const message =
-		isProduction && statusCode === HttpStatus.INTERNAL_SERVER_ERROR ? "Internal server error" : err.message || "Internal server error";
+	if (err instanceof apiError) {
+		statusCode = err.statusCode;
+		hint = err.hint;
+	} else if ("statusCode" in err) {
+		statusCode = (err as any).statusCode;
+	} else if ("status" in err) {
+		statusCode = (err as any).status;
+	}
 
-	return respons.error(message, null, statusCode, res, req);
+	const rawMessage = err.message || "Terjadi kesalahan pada server";
+	const message = isProduction && statusCode === HttpStatus.INTERNAL_SERVER_ERROR ? "Internal server error" : translateMessage(rawMessage);
+
+	return respons.error(message, hint || message, statusCode, res, req);
 };
 
 export const notFoundHandler = (req: Request, res: Response, _next: NextFunction) => {
