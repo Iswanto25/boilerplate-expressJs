@@ -28,7 +28,10 @@ export const authenticate = {
 			return respons.error("Unauthorized", "Token tidak valid", HttpStatus.UNAUTHORIZED, res, req);
 		}
 
-		const existingUser = await prisma.user.findUnique({ where: { id: result.userId } });
+		const existingUser = await prisma.user.findUnique({
+			where: { id: result.userId },
+			include: { profile: true, role: true },
+		});
 
 		if (!existingUser) {
 			return respons.error("User not found", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
@@ -38,6 +41,8 @@ export const authenticate = {
 			id: existingUser.id,
 			email: existingUser.email,
 			roleId: existingUser.roleId,
+			roleName: existingUser.role.name,
+			profile: existingUser.profile,
 		};
 		next();
 	},

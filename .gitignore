@@ -50,3 +50,4 @@ src/generated/
 *.db-journal
 .opencode
 graphify-out
+*.pdf

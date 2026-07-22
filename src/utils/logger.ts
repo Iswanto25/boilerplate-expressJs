@@ -71,3 +71,7 @@ export const logger = pino(
 	},
 	multiStream,
 );
+
+export function closeLogger(): void {
+	fileStream.close();
+}

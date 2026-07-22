@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 
-const requireModule = createRequire(__filename);
+const requireModule = createRequire(fileURLToPath(import.meta.url));
 const modulePath = "@/utils/jwt";
 
 const reloadJwtModule = async () => {
@@ -43,11 +44,14 @@ test("jwtUtils signs and verifies tokens with configured secrets", async () => {
 	assert.equal(verifiedRefresh.role, payload.role);
 });
 
-test("generateAccessToken throws when secret is missing", async () => {
+test("importing jwt throws when JWT_SECRET is missing", async () => {
 	setSecrets(undefined, "unit-test-refresh");
-	const { jwtUtils } = await reloadJwtModule();
+	await assert.rejects(reloadJwtModule(), /JWT_SECRET environment variable is missing or empty/);
+});
 
-	assert.throws(() => jwtUtils.generateAccessToken({}), /secretOrPrivateKey must have a value/);
+test("importing jwt throws when JWT_REFRESH_SECRET is missing", async () => {
+	setSecrets("unit-test-secret", undefined);
+	await assert.rejects(reloadJwtModule(), /JWT_REFRESH_SECRET environment variable is missing or empty/);
 });
 
 test("verifyAccessToken rejects malformed tokens", async () => {

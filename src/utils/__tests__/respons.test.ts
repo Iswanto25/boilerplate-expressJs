@@ -4,40 +4,33 @@ import { createRequire } from "node:module";
 
 const requireModule = createRequire(import.meta.url);
 const modulePath = "@/utils/respons";
-const prismaPath = "@/configs/database";
-const authPath = "@/middlewares/authMiddleware";
 const loggerPath = "@/utils/logger";
 
-const stubModule = (specifier: string, exports: any): (() => void) => {
-	const resolved = requireModule.resolve(specifier);
-	const original = requireModule.cache[resolved];
-	(requireModule.cache as any)[resolved] = {
-		id: resolved,
-		filename: resolved,
-		loaded: true,
-		exports,
-	};
-	return () => {
-		if (original) {
-			(requireModule.cache as any)[resolved] = original;
-		} else {
-			delete requireModule.cache[resolved];
-		}
-	};
-};
+const createReqRes = (withUser = true) => {
+	const user = withUser
+		? {
+				id: "user-1",
+				email: "test@test.com",
+				roleId: "role-1",
+				roleName: "admin",
+				profile: { name: "Tester", phone: null, address: null, photo: null, NIK: null },
+			}
+		: undefined;
 
-const createReqRes = (token: string = "token-123") => {
 	const req: any = {
+		user,
 		headers: {
-			authorization: `Bearer ${token}`,
 			"x-forwarded-for": "203.0.113.1",
 			"user-agent": "UnitTestAgent/1.0",
 		},
 		socket: { remoteAddress: "10.0.0.1" },
+		startTime: Date.now(),
 		get: () => "localhost",
 		protocol: "http",
 		originalUrl: "/api/test",
 		method: "POST",
+		path: "/api/test",
+		reqId: "test-req-1",
 	};
 
 	const res: any = {
@@ -57,52 +50,68 @@ const createReqRes = (token: string = "token-123") => {
 };
 
 const setup = async (overrides?: {
-	auth?: ReturnType<typeof mock.fn>;
-	findUser?: ReturnType<typeof mock.fn>;
 	createLog?: ReturnType<typeof mock.fn>;
 }) => {
-	const findUser = overrides?.findUser ?? mock.fn(async () => ({ id: "user-1", name: "Tester", role: "admin" }));
 	const createLog = overrides?.createLog ?? mock.fn(async () => ({}));
-	const auth = overrides?.auth ?? mock.fn(async () => ({ valid: true, userId: "user-1" }));
-
-	const restorePrisma = stubModule(prismaPath, {
-		__esModule: true,
-		default: {
-			user: { findUnique: findUser },
-			logs: { create: createLog },
-		},
-	});
-
-	const restoreAuth = stubModule(authPath, {
-		authenticate: { checkToken: auth },
-	});
 
 	const logger: any = {
 		info: mock.fn(() => {}),
 		warn: mock.fn(() => {}),
 		error: mock.fn(() => {}),
 	};
-	const restoreLogger = stubModule(loggerPath, { logger });
+	const restoreLogger = (() => {
+		const resolved = requireModule.resolve(loggerPath);
+		const original = requireModule.cache[resolved];
+		(requireModule.cache as any)[resolved] = {
+			id: resolved,
+			filename: resolved,
+			loaded: true,
+			exports: { logger, formatIsoWithTz: (d: Date) => d.toISOString() },
+		};
+		return () => {
+			if (original) {
+				(requireModule.cache as any)[resolved] = original;
+			} else {
+				delete requireModule.cache[resolved];
+			}
+		};
+	})();
 
 	delete requireModule.cache[requireModule.resolve(modulePath)];
 	const module = await import(modulePath);
 
+	// Stub auditLogger.saveAuditLog to use our createLog mock
+	const auditLoggerPath = requireModule.resolve("@/utils/auditLogger");
+	const originalAudit = requireModule.cache[auditLoggerPath];
+	(requireModule.cache as any)[auditLoggerPath] = {
+		id: auditLoggerPath,
+		filename: auditLoggerPath,
+		loaded: true,
+		exports: { saveAuditLog: createLog },
+	};
+	const restoreAudit = () => {
+		if (originalAudit) {
+			(requireModule.cache as any)[auditLoggerPath] = originalAudit;
+		} else {
+			delete requireModule.cache[auditLoggerPath];
+		}
+	};
+
 	const restoreAll = () => {
-		restorePrisma();
-		restoreAuth();
 		restoreLogger();
+		restoreAudit();
 		delete requireModule.cache[requireModule.resolve(modulePath)];
 	};
 
-	return { module, findUser, createLog, auth, logger, restoreAll };
+	return { module, createLog, logger, restoreAll };
 };
 
 test("respons.success logs and responds with payload", async () => {
-	const { module, findUser, createLog, logger, restoreAll } = await setup();
-	const { req, res } = createReqRes();
+	const { module, createLog, logger, restoreAll } = await setup();
+	const { req, res } = createReqRes(true);
 
 	try {
-		await module.respons.success("Success message", { hello: "world" }, module.HttpStatus.OK, res, req);
+		module.respons.success("Success message", { hello: "world" }, 200, res, req);
 
 		assert.equal(res.statusCode, 200);
 		assert.deepEqual(res.payload, {
@@ -111,7 +120,6 @@ test("respons.success logs and responds with payload", async () => {
 			data: { hello: "world" },
 		});
 
-		assert.equal(findUser.mock.calls.length, 1);
 		assert.equal(createLog.mock.calls.length, 1);
 		assert.equal(logger.info.mock.calls.length, 1);
 		assert.equal(logger.warn.mock.calls.length, 0);
@@ -123,11 +131,11 @@ test("respons.success logs and responds with payload", async () => {
 
 test("respons.success with pagination", async () => {
 	const { module, restoreAll } = await setup();
-	const { req, res } = createReqRes();
+	const { req, res } = createReqRes(true);
 	const pagination = { currentPage: 1, totalPages: 1, totalData: 1, limit: 10 };
 
 	try {
-		await module.respons.success("Success with pagination", [{ id: 1 }], module.HttpStatus.OK, res, req, pagination);
+		module.respons.success("Success with pagination", [{ id: 1 }], 200, res, req, pagination);
 
 		assert.equal(res.statusCode, 200);
 		assert.deepEqual(res.payload, {
@@ -141,16 +149,16 @@ test("respons.success with pagination", async () => {
 	}
 });
 
-test("respons.error logs warning when database write fails", async () => {
+test("respons.error logs when database write fails", async () => {
 	const failingLog = mock.fn(async () => {
 		throw new Error("db failure");
 	});
 
 	const { module, logger, restoreAll } = await setup({ createLog: failingLog });
-	const { req, res } = createReqRes();
+	const { req, res } = createReqRes(true);
 
 	try {
-		await module.respons.error("Error message", { reason: "failure" }, module.HttpStatus.BAD_REQUEST, res, req);
+		module.respons.error("Error message", { reason: "failure" }, 400, res, req);
 
 		assert.equal(res.statusCode, 400);
 		assert.deepEqual(res.payload, {
@@ -160,7 +168,20 @@ test("respons.error logs warning when database write fails", async () => {
 		});
 
 		assert.equal(logger.error.mock.calls.length, 1);
-		assert.equal(logger.warn.mock.calls.length, 1);
+	} finally {
+		restoreAll();
+	}
+});
+
+test("respons.success without user returns Guest", async () => {
+	const { module, restoreAll } = await setup();
+	const { req, res } = createReqRes(false);
+
+	try {
+		module.respons.success("Guest success", { ok: true }, 200, res, req);
+
+		assert.equal(res.statusCode, 200);
+		assert.equal(res.payload.success, true);
 	} finally {
 		restoreAll();
 	}

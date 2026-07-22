@@ -1,8 +1,9 @@
 import { app } from "@/configs/express.js";
 import http from "http";
 import dotenv from "dotenv";
-import { logger } from "@/utils/logger.js";
+import { logger, closeLogger } from "@/utils/logger.js";
 import { checkServicesHealth } from "@/utils/healthCheck.js";
+import { redisState } from "@/configs/redis.js";
 
 dotenv.config({ quiet: process.env.NODE_ENV === "production" });
 
@@ -16,31 +17,28 @@ const server = http.createServer(app);
 server.keepAliveTimeout = 65000;
 server.headersTimeout = 66000;
 
-if (isProd) {
-	console.info("Running in PRODUCTION mode");
-} else {
-	console.info("Running in DEVELOPMENT mode");
-}
-
 server.listen(PORT, HOST, () => {
 	const baseUrl = isProd ? process.env.BASE_URL || `https://${process.env.DOMAIN || "yourdomain.com"}` : `http://${HOST}:${PORT}`;
 
-	console.info("========================================");
-	console.info(`Server is running`);
-	console.info(`Version: ${process.env.VERSION || "1.0.0"}`);
-	console.info(`Environment: ${NODE_ENV}`);
-	console.info(`URL: ${baseUrl}`);
-	console.info("========================================");
+	logger.info({ env: NODE_ENV, version: process.env.VERSION || "1.0.0", url: baseUrl }, "Server started");
 
 	checkServicesHealth().catch((err) => {
 		logger.error({ err }, "Unexpected error during health check");
 	});
 });
 
-process.on("SIGTERM", () => {
-	console.info("SIGTERM signal received: closing HTTP server");
+function gracefulShutdown(): void {
+	logger.info("SIGTERM signal received: shutting down gracefully");
+
 	server.close(() => {
-		console.info("HTTP server closed gracefully");
+		logger.info("HTTP server closed");
+
+		redisState.client?.quit();
+		closeLogger();
+
 		process.exit(0);
 	});
-});
+}
+
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);

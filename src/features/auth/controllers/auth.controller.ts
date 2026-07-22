@@ -236,6 +236,12 @@ export const authController = {
 			if (!req.params.id) {
 				return respons.error("Id cannot empty", "Id tidak boleh kosong", HttpStatus.BAD_REQUEST, res, req);
 			}
+			if (!req.user) {
+				return respons.error("User tidak ditemukan", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
+			}
+			if (req.user.id !== id && req.user.roleName !== "Superadmin") {
+				return respons.error("Forbidden", "Anda tidak memiliki akses untuk menghapus profil ini", HttpStatus.FORBIDDEN, res, req);
+			}
 			await authServices.deleteProfile(id as string);
 			return respons.success("Berhasil menghapus profile", {}, HttpStatus.OK, res, req);
 		} catch (error) {

@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 
-const requireModule = createRequire(__filename);
+const requireModule = createRequire(fileURLToPath(import.meta.url));
 const modulePath = "@/utils/encryption";
 
 const reloadEncryptionModule = async () => {

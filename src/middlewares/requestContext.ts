@@ -18,14 +18,10 @@ export function requestContext(req: Request, _res: Response, next: NextFunction)
 	req.startTime = Date.now();
 
 	if (req.body && typeof req.body === "object" && Object.keys(req.body as object).length > 0) {
-		req.rawBody = maskSensitive(cloneDeep(req.body));
+		req.rawBody = maskSensitive(req.body);
 	}
 
 	next();
-}
-
-function cloneDeep<T>(obj: T): T {
-	return JSON.parse(JSON.stringify(obj));
 }
 
 export function maskSensitive(data: unknown): unknown {

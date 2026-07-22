@@ -12,10 +12,9 @@ export const app = express();
 interface DecodedToken {
 	id: string;
 	email: string;
-	roleId?: string;
-	permissions?: any;
-	profile?: any;
-	roles?: any;
+	roleId: string;
+	roleName: string;
+	profile: { name: string | null; phone: string | null; address: string | null; photo: string | null; NIK: string | null } | null;
 }
 
 declare module "express-serve-static-core" {
