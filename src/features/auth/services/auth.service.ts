@@ -193,7 +193,7 @@ export const authServices = {
 			await redisState.client.set(`reset_token:${token}`, user.id, "EX", 900);
 		} else {
 			logger.warn("Redis not available - cannot store reset token");
-			return;
+			throw new apiError(503, "Service temporarily unavailable");
 		}
 
 		const frontendUrl = process.env.FRONTEND_URL || process.env.BASE_URL || "http://localhost:3000";

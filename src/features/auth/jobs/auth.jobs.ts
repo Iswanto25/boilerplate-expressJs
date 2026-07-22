@@ -106,7 +106,15 @@ export const authWorker = new Worker(
 	AUTH_QUEUE_NAME,
 	async (job: Job) => {
 		try {
-			logger.info({ jobId: job.id, jobName: job.name }, "Processing job...");
+			logger.info(
+				{
+					jobId: job.id,
+					jobName: job.name,
+					attempt: job.attemptsMade + 1,
+					maxAttempts: job.opts.attempts,
+				},
+				"Processing job...",
+			);
 
 			switch (job.name) {
 				case "upload-profile-photo":
@@ -120,7 +128,19 @@ export const authWorker = new Worker(
 					return null;
 			}
 		} catch (error) {
-			logger.error({ error, jobId: job.id }, "Error processing job");
+			const attemptsLeft = (job.opts.attempts || 3) - job.attemptsMade - 1;
+			logger.error(
+				{
+					err: error,
+					jobId: job.id,
+					jobName: job.name,
+					attempt: job.attemptsMade + 1,
+					maxAttempts: job.opts.attempts,
+					attemptsLeft,
+					willRetry: attemptsLeft > 0,
+				},
+				"Error processing job",
+			);
 			throw error;
 		}
 	},
@@ -130,12 +150,49 @@ export const authWorker = new Worker(
 	},
 );
 
+authWorker.on("active", (job) => {
+	logger.info(
+		{
+			jobId: job.id,
+			jobName: job.name,
+			timestamp: new Date().toISOString(),
+		},
+		"Job started processing",
+	);
+});
+
 authWorker.on("completed", (job) => {
-	logger.info({ jobId: job.id, jobName: job.name }, "Job completed");
+	const duration = job.finishedOn ? job.finishedOn - (job.processedOn || job.finishedOn) : undefined;
+	logger.info(
+		{
+			jobId: job.id,
+			jobName: job.name,
+			duration,
+			attempts: job.attemptsMade + 1,
+		},
+		"Job completed",
+	);
 });
 
 authWorker.on("failed", (job, err) => {
-	logger.error({ jobId: job?.id, jobName: job?.name, err }, "Job failed");
+	const attemptsMade = job?.attemptsMade ?? 0;
+	const maxAttempts = job?.opts.attempts ?? 3;
+	const willRetry = attemptsMade < maxAttempts - 1;
+	logger.error(
+		{
+			jobId: job?.id,
+			jobName: job?.name,
+			err,
+			attemptsMade,
+			maxAttempts,
+			willRetry,
+		},
+		"Job failed",
+	);
+});
+
+authWorker.on("error", (err) => {
+	logger.error({ err }, "Worker connection error");
 });
 
 logger.info(`Worker for ${AUTH_QUEUE_NAME} started`);
