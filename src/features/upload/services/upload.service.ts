@@ -2,13 +2,7 @@ import { getPresignedUploadUrl, headFile, getPublicUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
 
 export const uploadServices = {
-	async getPresignedUrl(input: {
-		folder: string;
-		contentType?: string;
-		fileExtension?: string;
-		expiresIn?: number;
-		maxSize?: number;
-	}) {
+	async getPresignedUrl(input: { folder: string; contentType?: string; fileExtension?: string; expiresIn?: number; maxSize?: number }) {
 		const result = await getPresignedUploadUrl(input.folder, {
 			contentType: input.contentType,
 			fileExtension: input.fileExtension,

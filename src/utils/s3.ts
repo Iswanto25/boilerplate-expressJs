@@ -85,7 +85,12 @@ export async function getPresignedUploadUrl(
 	if (!s3Holder.client) throwS3NotConfigured();
 	const s3 = s3Holder.client;
 
-	const ext = opts.fileExtension ? (opts.fileExtension.startsWith(".") ? opts.fileExtension : `.${opts.fileExtension}`) : "";
+	const ext =
+		opts.fileExtension ?
+			opts.fileExtension.startsWith(".") ?
+				opts.fileExtension
+			:	`.${opts.fileExtension}`
+		:	"";
 	const fileName = `${randomString()}${ext}`;
 	const key = `${folder}/${fileName}`;
 	const expiresIn = opts.expiresIn ?? 3600;

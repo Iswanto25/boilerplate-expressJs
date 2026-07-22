@@ -340,7 +340,7 @@ describe("Auth Controllers", () => {
 			const profileId = "profile-to-delete";
 			const req = createMockRequest({
 				params: { id: profileId },
-				user: { id: profileId, email: "test@example.com", roleId: "role-id", roleName: "USER", profile: null }
+				user: { id: profileId, email: "test@example.com", roleId: "role-id", roleName: "USER", profile: null },
 			});
 			const res = createMockResponse();
 
@@ -365,7 +365,7 @@ describe("Auth Controllers", () => {
 			const profileId = "profile-to-delete";
 			const req = createMockRequest({
 				params: { id: profileId },
-				user: { id: "different-user-id", email: "admin@example.com", roleId: "role-id-admin", roleName: "Superadmin", profile: null }
+				user: { id: "different-user-id", email: "admin@example.com", roleId: "role-id-admin", roleName: "Superadmin", profile: null },
 			});
 			const res = createMockResponse();
 
@@ -384,7 +384,7 @@ describe("Auth Controllers", () => {
 			const profileId = "profile-to-delete";
 			const req = createMockRequest({
 				params: { id: profileId },
-				user: { id: "different-user-id", email: "test@example.com", roleId: "role-id", roleName: "USER", profile: null }
+				user: { id: "different-user-id", email: "test@example.com", roleId: "role-id", roleName: "USER", profile: null },
 			});
 			const res = createMockResponse();
 

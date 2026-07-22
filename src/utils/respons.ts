@@ -171,9 +171,20 @@ export class apiError extends Error {
 
 	constructor(statusCode: number, message: string, hint?: string) {
 		super(message);
+		this.name = "apiError";
 		this.statusCode = statusCode;
 		this.hint = hint;
-		logger.error({ statusCode, hint }, `${message}${hint ? ` (Hint: ${hint})` : ""}`);
-		Error.captureStackTrace(this, this.constructor);
 	}
 }
+
+export const validateOrThrow = <T>(
+	schema: { safeParse(data: unknown): { success: boolean; data?: T; error?: { issues: { message: string }[] } } },
+	data: unknown,
+): T => {
+	const result = schema.safeParse(data);
+	if (!result.success) {
+		const errorMsg = result.error?.issues?.[0]?.message || "Data tidak valid";
+		throw new apiError(HttpStatus.BAD_REQUEST, errorMsg);
+	}
+	return result.data as T;
+};

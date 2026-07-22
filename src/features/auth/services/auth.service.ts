@@ -166,7 +166,7 @@ export const authServices = {
 			email: input.email,
 			userName: user.profile?.name || "User",
 			otp,
-			purpose: input.type
+			purpose: input.type,
 		});
 	},
 
@@ -338,6 +338,6 @@ export const authServices = {
 			};
 		});
 
-		return { users: result, pagination };
+		return { items: result, pagination };
 	},
 };

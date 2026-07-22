@@ -52,7 +52,7 @@ export const authValidation = {
 
 	verifyOtp: z.object({
 		email: z.string().email({ message: "Invalid email format" }),
-		otp: z.string().length(6, { message: "OTP must be 6 digits" })
+		otp: z.string().length(6, { message: "OTP must be 6 digits" }),
 	}),
 
 	updateProfile: z.object({
