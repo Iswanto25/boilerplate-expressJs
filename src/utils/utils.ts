@@ -29,7 +29,7 @@ export function formatDateTime(date: Date = new Date()): string {
 }
 
 const saltHast = process.env.SALT_HASH || "default";
-const saltRounds = process.env.SALT_ROUNDS || 5;
+const saltRounds = Number(process.env.SALT_ROUNDS) || 10;
 
 export function randomString(): string {
 	const datePart = formatDate();

@@ -335,10 +335,13 @@ describe("Auth Controllers", () => {
 	});
 
 	describe("deleteProfile", () => {
-		it("should delete profile successfully", async () => {
+		it("should delete profile successfully if user is the owner", async () => {
 			// Arrange
 			const profileId = "profile-to-delete";
-			const req = createMockRequest({ params: { id: profileId } });
+			const req = createMockRequest({
+				params: { id: profileId },
+				user: { id: profileId, email: "test@example.com", roleId: "role-id", roleName: "USER", profile: null }
+			});
 			const res = createMockResponse();
 
 			(authServices.deleteProfile as jest.Mock).mockResolvedValue(undefined);
@@ -355,6 +358,42 @@ describe("Auth Controllers", () => {
 					message: "Berhasil menghapus profile",
 				}),
 			);
+		});
+
+		it("should delete profile successfully if user is Superadmin", async () => {
+			// Arrange
+			const profileId = "profile-to-delete";
+			const req = createMockRequest({
+				params: { id: profileId },
+				user: { id: "different-user-id", email: "admin@example.com", roleId: "role-id-admin", roleName: "Superadmin", profile: null }
+			});
+			const res = createMockResponse();
+
+			(authServices.deleteProfile as jest.Mock).mockResolvedValue(undefined);
+
+			// Act
+			await authController.deleteProfile(req as any, res as any);
+
+			// Assert
+			expect(authServices.deleteProfile).toHaveBeenCalledWith(profileId);
+			expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+		});
+
+		it("should return error if user is not the owner and not Superadmin", async () => {
+			// Arrange
+			const profileId = "profile-to-delete";
+			const req = createMockRequest({
+				params: { id: profileId },
+				user: { id: "different-user-id", email: "test@example.com", roleId: "role-id", roleName: "USER", profile: null }
+			});
+			const res = createMockResponse();
+
+			// Act
+			await authController.deleteProfile(req as any, res as any);
+
+			// Assert
+			expect(authServices.deleteProfile).not.toHaveBeenCalled();
+			expect(res.status).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
 		});
 
 		it("should return error if id is missing", async () => {

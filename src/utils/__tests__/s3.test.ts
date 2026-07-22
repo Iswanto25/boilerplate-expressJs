@@ -4,9 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test, { mock } from "node:test";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import type { Express } from "express";
 
-const requireModule = createRequire(__filename);
+const requireModule = createRequire(fileURLToPath(import.meta.url));
 const modulePath = "@/utils/s3";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {

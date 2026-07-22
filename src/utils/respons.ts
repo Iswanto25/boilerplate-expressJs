@@ -1,7 +1,4 @@
 import { Response, Request } from "express";
-import prisma from "@/configs/database.js";
-import { jwtUtils } from "@/utils/jwt.js";
-import { getStoredToken } from "@/utils/tokenStore.js";
 import { logger, formatIsoWithTz } from "@/utils/logger.js";
 import { saveAuditLog } from "@/utils/auditLogger.js";
 import { maskSensitive, truncateLongStrings } from "@/middlewares/requestContext.js";
@@ -29,52 +26,14 @@ interface LogUser {
 	role: string | null;
 }
 
-async function getLogUser(req?: Request): Promise<LogUser> {
-	if (!req) return { name: "Guest", role: null };
+function getLogUser(req?: Request): LogUser {
+	if (!req?.user) return { name: "Guest", role: null };
 
-	if (req.user) {
-		try {
-			const user = await prisma.user.findUnique({
-				where: { id: req.user.id },
-				include: { profile: true, role: true },
-			});
-			if (user) {
-				return {
-					id: user.id,
-					name: user.profile?.name || "Unknown",
-					role: user.role?.name || null,
-				};
-			}
-		} catch {
-			return { name: "Unknown", role: null };
-		}
-	}
-
-	const auth = req.headers?.authorization;
-	const token = auth?.startsWith("Bearer ") ? auth.split(" ")[1] : null;
-	if (token) {
-		try {
-			const decoded = jwtUtils.verifyAccessToken(token);
-			const storedToken = await getStoredToken(decoded.id, "access");
-			if (storedToken === token) {
-				const user = await prisma.user.findUnique({
-					where: { id: decoded.id },
-					include: { profile: true, role: true },
-				});
-				if (user) {
-					return {
-						id: user.id,
-						name: user.profile?.name || "Unknown",
-						role: user.role?.name || null,
-					};
-				}
-			}
-		} catch {
-			// Silent
-		}
-	}
-
-	return { name: "Guest", role: null };
+	return {
+		id: req.user.id,
+		name: req.user.profile?.name || "Unknown",
+		role: req.user.roleName || null,
+	};
 }
 
 function getClientIp(req: Request): string {
@@ -84,7 +43,7 @@ function getClientIp(req: Request): string {
 
 function buildLogRequest(req?: Request): Record<string, unknown> {
 	if (!req) return {};
-	const hasQuery = Object.keys(req.query).length > 0;
+	const hasQuery = req.query && Object.keys(req.query).length > 0;
 	return {
 		...(req.rawBody as Record<string, unknown> | undefined),
 		...(hasQuery ? { query: req.query } : {}),
@@ -103,8 +62,8 @@ function buildLogResponse(payload: unknown, resTime: string, fallbackKey: "data"
 }
 
 export const respons = {
-	async success(message: string, data: unknown, code: number, res: Response, req: Request, pagination?: any) {
-		const logUser = await getLogUser(req);
+	success(message: string, data: unknown, code: number, res: Response, req: Request, pagination?: any) {
+		const logUser = getLogUser(req);
 		const ip = getClientIp(req);
 		const startTime = req.startTime || Date.now();
 		const now = Date.now();
@@ -153,8 +112,8 @@ export const respons = {
 		});
 	},
 
-	async error(message: string, error: unknown, code: number, res: Response, req?: Request) {
-		const logUser = await getLogUser(req);
+	error(message: string, error: unknown, code: number, res: Response, req?: Request) {
+		const logUser = getLogUser(req);
 		const ip = req ? getClientIp(req) : "";
 		const startTime = req?.startTime || Date.now();
 		const now = Date.now();
