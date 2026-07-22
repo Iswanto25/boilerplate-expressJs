@@ -264,4 +264,27 @@ export const authController = {
 			return respons.error(message, message, statusCode, res, req);
 		}
 	},
+
+	updatePhotoDirect: async (req: Request, res: Response) => {
+		try {
+			if (!req.user) {
+				return respons.error("User tidak ditemukan", "User tidak ditemukan", HttpStatus.UNAUTHORIZED, res, req);
+			}
+
+			const validation = authValidation.updatePhotoDirect.safeParse(req.body);
+
+			if (!validation.success) {
+				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";
+				return respons.error(errorMsg, errorMsg, HttpStatus.BAD_REQUEST, res, req);
+			}
+
+			const result = await authServices.updatePhotoDirect(req.user.id, validation.data.contentType);
+			return respons.success("Berhasil update foto profil", result, HttpStatus.OK, res, req);
+		} catch (error) {
+			const err = error as { statusCode?: number; message?: string };
+			const statusCode = err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+			const message = err.message || "Terjadi kesalahan pada server";
+			return respons.error(message, message, statusCode, res, req);
+		}
+	},
 };

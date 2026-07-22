@@ -62,4 +62,8 @@ export const authValidation = {
 		NIK: z.string().optional(),
 		email: z.string().optional(),
 	}),
+
+	updatePhotoDirect: z.object({
+		contentType: z.string().optional(),
+	}),
 };

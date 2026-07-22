@@ -8,3 +8,4 @@ export type UpdateProfileInput = z.infer<typeof authValidation.updateProfile>;
 export type ResetPasswordInput = z.infer<typeof authValidation.resetPassword>;
 export type SendOtpInput = z.infer<typeof authValidation.sendOtp>;
 export type VerifyOtpInput = z.infer<typeof authValidation.verifyOtp>;
+export type UpdatePhotoDirectInput = z.infer<typeof authValidation.updatePhotoDirect>;

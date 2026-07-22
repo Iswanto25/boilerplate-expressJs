@@ -18,6 +18,7 @@ router.post("/verify-otp", rateLimiter({ windowInSeconds: 60, maxRequests: 5 }),
 router.get("/users", authenticate.verifyToken, authController.getUsers);
 router.patch("/profile", authenticate.verifyToken, authController.updateProfile);
 router.patch("/profile/photo", authenticate.verifyToken, uploadSinglePhoto, authController.updatePhoto);
+router.patch("/profile/photo/direct", authenticate.verifyToken, authController.updatePhotoDirect);
 router.delete("/profile/:id", authenticate.verifyToken, authController.deleteProfile);
 
 export default router;
