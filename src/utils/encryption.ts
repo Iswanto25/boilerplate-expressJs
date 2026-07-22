@@ -9,8 +9,12 @@ let cachedKey: Buffer | null = null;
 const loadKey = (): Buffer => {
 	if (cachedKey) return cachedKey;
 
-	const keySource = process.env.DATA_ENCRYPTION_KEY;
+	let keySource = process.env.DATA_ENCRYPTION_KEY;
 	if (!keySource) throw new Error("DATA_ENCRYPTION_KEY is required for encryption");
+
+	if (keySource.startsWith("encry-")) {
+		keySource = keySource.slice(6);
+	}
 
 	let keyBuffer: Buffer;
 	if (/^[0-9a-fA-F]{64}$/.test(keySource)) {
