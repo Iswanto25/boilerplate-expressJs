@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
-import { uploadFile, deleteFile, getPublicUrl, getPresignedUploadUrl } from "@/utils/s3.js";
+import { deleteFile, getPublicUrl, getPresignedUploadUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
 import { authQueue } from "@/features/auth/jobs/auth.jobs.js";
 import { jwtUtils } from "@/utils/jwt.js";
@@ -254,15 +255,23 @@ export const authServices = {
 		const currentUser = await authRepository.findUserById(userId);
 		if (!currentUser) throw new apiError(400, "User not found");
 
-		const oldPhotoFileName = currentUser.profile?.photo;
+		const oldPhotoFileName = currentUser.profile?.photo || undefined;
 
-		const { fileName } = await uploadFile(file, folder);
+		const fileBuffer = await fs.promises.readFile(file.path);
+		const base64Data = `data:${file.mimetype};base64,${fileBuffer.toString("base64")}`;
 
-		await authRepository.updateUserProfile(userId, { photo: fileName });
+		await authQueue.add("upload-profile-photo", {
+			base64Data,
+			folder,
+			maxSizeMB: 5,
+			allowedFormats: ["image/jpeg", "image/png", "image/jpg", "image/webp"],
+			userId,
+			oldPhotoFileName,
+		});
 
-		if (oldPhotoFileName) {
-			await deleteFile(folder, oldPhotoFileName, { strict: false });
-		}
+		await fs.promises.unlink(file.path).catch((err) => {
+			logger.warn({ err, path: file.path }, "Failed to delete temp file after queuing");
+		});
 	},
 
 	async updatePhotoDirect(userId: string, contentType?: string): Promise<{ presignedUrl: string; fileName: string; publicUrl: string }> {
