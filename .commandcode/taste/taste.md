@@ -15,6 +15,7 @@
 # Workflow
 
 - Ketika user mengajukan pertanyaan eksploratif (seperti "lebih baik X tidak?"), tanya/konfirmasi dulu sebelum implementasi — jangan langsung coding. Confidence: 0.80
+- Untuk CHANGELOG.md: letakkan perubahan langsung di bawah heading versi rilis terbaru, jangan gunakan [Unreleased]. Confidence: 0.75
 
 # Controllers
 

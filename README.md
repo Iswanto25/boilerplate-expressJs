@@ -5,106 +5,118 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 ## ✨ Fitur Utama
 
 - **Framework**: Express.js v5 dengan TypeScript
-- **Architecture**: Modular Feature-based Architecture dengan Repository Pattern
-- **ORM**: Prisma v7 untuk database management yang modern dan type-safe
+- **Architecture**: Modular Feature-based Architecture dengan Repository Pattern + Controller-Service-Repository
+- **ORM**: Prisma v7 + PostgreSQL dengan pg Pool adapter
 - **Authentication**:
-    - JWT-based authentication system
+    - JWT-based authentication (access token 1d, refresh token 7d)
     - User registration with profile creation
-    - Access & refresh token management (Multi-device support)
-    - Token caching with Redis (optional)
+    - Multi-device support (multiple refresh tokens)
+    - Token storage di Redis dengan TTL
     - Profile management with photo upload (Public URL access)
-    - **NIK (National ID) encryption with AES-256-GCM**
+    - **NIK (National ID) encryption dengan AES-256-GCM**
+    - Password reset via OTP email
+    - RBAC (Role-Based Access Control) dengan dynamic role & permission
+- **Background Jobs**:
+    - BullMQ queue untuk task asinkron (email, upload)
+    - 3x retry dengan exponential backoff
+    - Worker terpisah atau berjalan bersama dev server
+    - Observability lengkap (active, completed, failed, error events)
 - **Security**:
     - Helmet untuk HTTP headers security
     - CORS dengan konfigurasi environment-based
     - Rate limiting dengan Redis (optional)
-    - Data encryption utilities untuk sensitive data
-    - AES-256-GCM encryption untuk NIK field
-    - Input validation
-    - API Signature verification untuk endpoint protection (HMAC-SHA256)
-    - Password hashing with bcrypt
+    - Encrypt data sensitif (NIK) dengan AES-256-GCM
+    - Input validation dengan Zod
+    - API Signature verification (HMAC-SHA256)
+    - Password hashing dengan bcrypt + pepper
+    - RBAC permission checking per endpoint
 - **File Management**:
-    - Upload file dengan Multer
-    - Integrasi S3 Storage (optional)
-    - Support base64 upload untuk images
-    - Automatic file cleanup saat update
-    - Public URL access for secure and fast file delivery
-    - Photo size & format validation
+    - Upload via Multer (disk sementara) + base64
+    - Integrasi S3/MinIO (optional)
+    - Presigned URL generation untuk direct upload
+    - Auto cleanup file lama saat update
+    - Validasi format & ukuran foto
 - **Email System**:
     - SMTP integration (optional)
-    - Dynamic email templates
-    - OTP email untuk password reset
-    - Verification email untuk account activation
-    - Welcome email untuk new users
-    - Password change confirmation email
-    - Customizable email templates
-- **Performance Monitoring**:
-    - Performance profiling untuk get users operations
-    - Auto-generated markdown performance reports
-    - NIK encryption/decryption speed tracking
-    - Console logging dengan detailed metrics
-    - Bottleneck detection dengan recommendations
-    - CPU & memory usage monitoring
-    - Throughput analysis (users/second)
-- **Error Handling**: Global error handler dan 404 handler
-- **Logging**: Pino logger untuk structured logging dengan pretty print
-- **Code Quality**:
-    - ESLint untuk linting
-    - Prettier untuk code formatting
-    - Comprehensive test suite dengan Jest
-- **Caching**: Redis integration untuk rate limiting dan token storage (optional)
-- **Graceful Degradation**: Aplikasi tetap berjalan meskipun layanan optional tidak dikonfigurasi
-- **Path Alias**: Import menggunakan alias `@/` untuk menggantikan relative path yang panjang
+    - Dynamic HTML email templates
+    - OTP email untuk password reset, verifikasi
+    - SendGrid/email service-agnostic via Nodemailer
+- **Audit Log**:
+    - Semua HTTP request-response tercatat di tabel `logs` database
+    - Queue-based async write (buffer 1000 entry, batch 10)
+    - Sensitive fields otomatis di-mask sebelum logging
+- **Error Handling**: Global error handler + 404 handler dengan auto-translate error ke Bahasa Indonesia
+- **Logging**: Pino structured logging ke console (pretty-print di dev) + file harian di `logger/`
+- **Testing**: Node.js test runner (`node --test`) untuk unit & integration tests
+- **Caching**: Redis untuk rate limiting, token storage, OTP (optional with graceful degradation)
+- **Path Alias**: Import menggunakan `@/` untuk menggantikan relative path
 
 ## 📂 Struktur Proyek
 
 ```
 /
 ├── prisma/
-│   ├── schema.prisma        # Database schema dengan relasi User-Profile 1-to-1
-│   ├── prisma.config.ts     # Prisma v7 config (database URL, schema path)
-│   └── migrations/          # Database migrations
+│   ├── schema.prisma           # Database schema (User, Profile, Role, Permission, dll)
+│   ├── prisma.config.ts        # Prisma v7 config (database URL)
+│   ├── seed.ts                 # Database seeder
+│   └── migrations/             # Database migrations
 ├── scripts/
-│   ├── prepare-test-env.cjs # Test environment setup
-│   └── generateApiKey.ts    # API signature key generator
+│   ├── loader-hooks.mjs        # ESM loader hooks untuk testing
+│   ├── test-loader.mjs         # Test loader
+│   └── generateApiKey.ts       # API signature key generator
 ├── src/
-│   ├── app.ts               # Application entry point
-│   ├── configs/             # Configuration modules
-│   │   ├── database.ts      # Prisma database config
-│   │   ├── express.ts       # Express app config & route mounting
-│   │   └── redis.ts         # Redis client config (optional)
-│   ├── features/            # Feature-based modules
-│   │   └── auth/            # Authentication feature
-│   │       ├── controllers/ # Auth controllers
-│   │       ├── repository/  # Database access layer
-│   │       ├── services/    # Auth business logic
-│   │       └── validations/ # Input validation schemas
-│   ├── generated/           # Auto-generated files (Prisma Client output)
-│   ├── middlewares/         # Custom middlewares
-│   │   ├── authMiddleware.ts      # JWT authentication
-│   │   ├── errorHandler.ts        # Global error handler
-│   │   └── multerMiddleware.ts    # File upload handler
-│   ├── routes/              # API route definitions
-│   │   ├── authRoutes.ts    # Authentication routes
-│   │   └── fileRoutes.ts    # File upload routes
-│   └── utils/               # Utility functions
-│       ├── encryption.ts    # Data encryption utilities (AES-256-GCM)
-│       ├── getUsersReport.ts# Performance report generator
-│       ├── jwt.ts           # JWT token utilities
-│       ├── mail.ts          # Email template generator
-│       ├── rateLimiter.ts   # Rate limiting middleware
-│       ├── respons.ts       # Response formatting
-│       ├── s3.ts            # S3 Storage file storage
-│       ├── signature.ts     # API signature verification
-│       ├── smtp.ts          # Email sending
-│       ├── tokenStore.ts    # Token caching with Redis
-│       └── utils.ts         # General utilities
-├── .env.example             # Environment variables template
-├── .env.test                # Test environment variables
-├── CHANGELOG.md             # Project changelog
-├── package.json
-├── prisma.config.ts         # Prisma v7 configuration file
-├── tsconfig.json            # TypeScript configuration (dengan path alias @/)
+│   ├── app.ts                  # API server entry point (production)
+│   ├── dev.ts                  # Dev entry point (server + worker bersamaan)
+│   ├── worker.ts               # Standalone worker entry point
+│   ├── configs/
+│   │   ├── express.ts          # Express app setup (middleware stack)
+│   │   ├── database.ts         # Prisma client + pg Pool adapter
+│   │   ├── redis.ts            # Redis client (graceful degradation)
+│   │   └── bull.ts             # BullMQ connection config
+│   ├── features/
+│   │   ├── auth/               # Authentication feature
+│   │   │   ├── controllers/    # HTTP request handlers
+│   │   │   ├── services/       # Business logic
+│   │   │   ├── repositories/   # Prisma data access (transaction-aware)
+│   │   │   ├── validations/    # Zod schemas
+│   │   │   ├── types/          # Zod-inferred types
+│   │   │   ├── jobs/           # BullMQ queue + worker + job processors
+│   │   │   └── auth.routes.ts  # Route definitions
+│   │   └── upload/             # File upload feature (S3 presigned URL)
+│   │       ├── controllers/
+│   │       ├── services/
+│   │       ├── validations/
+│   │       ├── types/
+│   │       └── upload.routes.ts
+│   ├── middlewares/
+│   │   ├── authMiddleware.ts     # JWT verification + user loading
+│   │   ├── rbacMiddleware.ts     # Permission check
+│   │   ├── errorHandler.ts       # Global error + 404 handler (with auto-translate)
+│   │   ├── multerMiddleware.ts   # File upload handler
+│   │   └── requestContext.ts     # reqId, startTime, sensitive masking
+│   ├── routes/
+│   │   └── index.ts              # Aggregates all feature routes
+│   └── utils/
+│       ├── encryption.ts       # AES-256-GCM encrypt/decrypt
+│       ├── jwt.ts              # JWT sign/verify helpers
+│       ├── logger.ts           # Pino logger (console + file daily)
+│       ├── auditLogger.ts      # Queue-based audit log ke database
+│       ├── respons.ts          # respons.success/error + apiError + validateOrThrow
+│       ├── pagination.ts       # Pagination helper
+│       ├── rateLimiter.ts      # Redis-based rate limiter
+│       ├── s3.ts               # S3/MinIO helpers (upload, presigned, delete)
+│       ├── smtp.ts             # Nodemailer SMTP sender (singleton transporter)
+│       ├── mail.ts             # HTML email templates
+│       ├── tokenStore.ts       # Redis token CRUD (access, refresh, OTP)
+│       ├── utils.ts            # bcrypt, email/phone validation, OTP, pLimit
+│       ├── signature.ts        # HMAC-SHA256 API key verification
+│       └── healthCheck.ts      # Service health check
+├── __tests__/
+│   ├── integration/            # Integration tests
+│   └── debug-test.mjs          # Debug helper
+├── logger/                     # Log file output harian
+├── uploads/                    # Temporary upload directory
+├── CHANGELOG.md
 └── README.md
 ```
 
@@ -112,9 +124,10 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18 atau lebih baru
+- [Node.js](https://nodejs.org/) v24 atau lebih baru
+- [PostgreSQL](https://www.postgresql.org/) 14+
+- [Redis](https://redis.io/) (opsional — untuk queue, rate limiting, caching)
 - [NPM](https://www.npmjs.com/) atau [Yarn](https://yarnpkg.com/)
-- Database yang didukung Prisma (PostgreSQL, MySQL, SQLite, dll)
 
 ### Installation
 
@@ -197,50 +210,50 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     npx prisma migrate dev
     ```
 
-5. **Start development server:**
+5. **Start development server (HTTP + worker bersamaan):**
 
     ```bash
     npm run dev
+    ```
+
+    Atau jalankan worker secara terpisah (terminal lain):
+
+    ```bash
+    npm run worker:dev
     ```
 
     Server akan berjalan di `http://localhost:3000`
 
 ## 📜 Available Scripts
 
-| Script                     | Description                                |
-| -------------------------- | ------------------------------------------ |
-| `npm run dev`              | Start development server dengan hot-reload |
-| `npm run build`            | Compile TypeScript ke JavaScript           |
-| `npm start`                | Run production server                      |
-| `npm run start:migrate`    | Run migrations dan start server            |
-| `npm test`                 | Run test suite                             |
-| `npm run test:utils`       | Run utility tests                          |
-| `npm run lint`             | Check linting errors                       |
-| `npm run lint:fix`         | Fix linting errors                         |
-| `npm run prettier`         | Format code dengan Prettier                |
-| `npm run generate-api-key` | Generate API key dengan signature          |
+| Script                          | Description                                        |
+| ------------------------------- | -------------------------------------------------- |
+| `npm run dev`                   | Start development server (HTTP + worker) with hot-reload |
+| `npm run worker:dev`            | Start standalone worker with hot-reload            |
+| `npm run build`                 | Compile TypeScript ke JavaScript                   |
+| `npm start`                     | Run production server                              |
+| `npm run worker:start`          | Run standalone worker production                   |
+| `npm run start:migrate`         | Run migrations dan start server                    |
+| `npm test`                      | Run all tests                                      |
+| `npm run test:integration`      | Run integration tests                              |
+| `npm run lint`                  | Check linting errors                               |
+| `npm run lint:fix`              | Fix linting errors                                 |
+| `npm run prettier`              | Format code dengan Prettier                        |
+| `npm run generate-api-key`      | Generate API key dengan signature                  |
+| `npm run seed`                  | Run database seeder                                |
+| `npm run typecheck`             | TypeScript type checking                           |
 
 ## 🧪 Testing
 
-Project ini dilengkapi dengan comprehensive test suite:
+Project ini dilengkapi dengan test suite menggunakan **Node.js test runner** (`node --test`):
 
 ```bash
 # Run all tests
 npm test
 
-# Run specific test suite
-npm run test:utils
+# Run integration tests only
+npm run test:integration
 ```
-
-Test coverage meliputi:
-
-- Encryption utilities
-- JWT token management
-- Response formatting
-- Rate limiting
-- S3 file operations
-- SMTP configuration
-- Token storage
 
 ## 🔒 Security Features
 
@@ -421,26 +434,29 @@ Response:
 
 ### Authentication
 
-| Method   | Endpoint                    | Description                                      |
-| -------- | --------------------------- | ------------------------------------------------ |
-| `POST`   | `/api/auth/register`        | Register user baru dengan profil & foto (base64) |
-| `POST`   | `/api/auth/login`           | Login user, mengembalikan data user + foto URL   |
-| `POST`   | `/api/auth/refresh-token`   | Refresh access token                             |
-| `POST`   | `/api/auth/logout`          | Logout user                                      |
-| `GET`    | `/api/auth/profile`         | Get profil user dengan foto URL                  |
-| `GET`    | `/api/auth/users`           | Get semua user dengan data profil dan foto URL   |
-| `POST`   | `/api/auth/forgot-password` | Kirim OTP email untuk reset password             |
-| `PUT`    | `/api/auth/profile`         | Update profil user (name, phone, address, photo) |
-| `DELETE` | `/api/auth/profile`         | Hapus akun user & cleanup file S3                |
+| Method   | Endpoint                          | Description                                    | Middleware                     |
+| -------- | --------------------------------- | ---------------------------------------------- | ------------------------------ |
+| `POST`   | `/api/auth/register`              | Register user baru (optional photo base64)     |                                |
+| `POST`   | `/api/auth/login`                 | Login user, return tokens + user data          |                                |
+| `POST`   | `/api/auth/refresh-token`         | Refresh access token                           |                                |
+| `POST`   | `/api/auth/logout`                | Logout, hapus tokens dari Redis                | `auth`                         |
+| `GET`    | `/api/auth/profile`               | Get profile user (decrypted NIK)               | `auth`                         |
+| `PATCH`  | `/api/auth/profile`               | Update profil (name, phone, address, NIK)      | `auth`                         |
+| `PATCH`  | `/api/auth/profile/photo`         | Update foto via Multer upload                  | `auth`, `multer`               |
+| `PATCH`  | `/api/auth/profile/photo/direct`  | Update foto via S3 presigned URL               | `auth`                         |
+| `DELETE` | `/api/auth/profile/:id`           | Hapus akun + cleanup S3                        | `auth`                         |
+| `GET`    | `/api/auth/users`                 | Get all users (paginated, searchable)          | `auth`                         |
+| `POST`   | `/api/auth/forgot-password`       | Kirim email reset password link                | `rateLimiter`                  |
+| `POST`   | `/api/auth/reset-password`        | Reset password dengan token                    | `rateLimiter`                  |
+| `POST`   | `/api/auth/send-otp`              | Kirim OTP email                                | `rateLimiter`                  |
+| `POST`   | `/api/auth/verify-otp`            | Verifikasi OTP                                 | `rateLimiter`                  |
 
 ### File Upload (requires S3 Storage)
 
 | Method   | Endpoint                       | Description                          |
 | -------- | ------------------------------ | ------------------------------------ |
-| `POST`   | `/api/files/upload`            | Upload file (multipart/form-data)    |
-| `POST`   | `/api/files/upload-base64`     | Upload file base64 encoded           |
-| `GET`    | `/api/files/:folder/:fileName` | Get direct public URL (`urlStorage`) |
-| `DELETE` | `/api/files/:folder/:fileName` | Hapus file                           |
+| `POST`   | `/api/upload/presigned-url`    | Generate S3 presigned upload URL     |
+| `POST`   | `/api/upload/confirm`          | Confirm file upload ke S3            |
 
 ### API Signature Examples
 
@@ -451,14 +467,12 @@ Response:
 
 ## 📧 Email Templates
 
-Project ini menyediakan email template system yang modular dan reusable. Lihat [Email Templates Documentation](./docs/EMAIL_TEMPLATES.md) untuk detail lengkap.
+Project ini menyediakan email template system yang modular dan reusable.
 
 ### Available Templates
 
 - **OTP Email** - Untuk password reset
-- **Verification Email** - Untuk account activation
-- **Welcome Email** - Untuk new users
-- **Password Changed Email** - Konfirmasi perubahan password
+- **Forgot Password Email** - Link reset password
 - **Generic OTP Email** - Customizable untuk berbagai keperluan
 
 ### Usage Example
@@ -479,67 +493,41 @@ await sendEmail({
 
 ## 🛠️ Tech Stack
 
-### Core Dependencies
+Core Dependencies:
 
 - **express** (v5.1.0) - Web framework
 - **typescript** (v5.9.3) - Type safety
-- **@prisma/client** (v7.4.2) - Database ORM
+- **@prisma/client** (v7.4.2) - Database ORM (PostgreSQL)
+- **@prisma/adapter-pg** (v7.4.2) - PostgreSQL adapter
+- **bullmq** (v5.76.6) - Background job queue
+- **ioredis** (v5.8.2) - Redis client
 - **jsonwebtoken** (v9.0.2) - JWT authentication
 - **bcrypt** (v6.0.0) - Password hashing
-
-### Security
-
-- **helmet** (v8.1.0) - Security headers
-- **cors** (v2.8.5) - CORS handling
-
-### File Handling
-
-- **multer** (v2.0.2) - File upload
-- **@aws-sdk/client-s3** (v3.917.0) - S3 integration
-
-### Utilities
-
-- **pino** (v10.1.0) - Logging
-- **ioredis** (v5.8.2) - Redis client
+- **zod** (v4.3.6) - Schema validation
 - **nodemailer** (v7.0.10) - Email sending
-- **dotenv** (v17.2.3) - Environment variables
-
-### Development
-
-- **tsx** (v4.21.0) - TypeScript execution dengan hot-reload
-- **jest** (v30.2.0) - Testing framework
-- **eslint** (v9.39.1) - Linting
-- **prettier** - Code formatting
-- **tsc-alias** (v1.8.16) - Path alias resolver saat build
+- **@aws-sdk/client-s3** (v3.917.0) - S3/MinIO storage
+- **pino** (v10.1.0) - Structured logging
+- **multer** (v2.0.2) - File upload handling
+- **helmet** (v8.1.0) - Security headers
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## � Documentation
+## Documentation
 
 - [CHANGELOG](./CHANGELOG.md) - Detailed version history and changes
-- [Email Templates Guide](./docs/EMAIL_TEMPLATES.md) - Email template usage and examples
 
-## �📄 License
+## License
 
 This project is licensed under the ISC License.
 
-## 👤 Author
+## Author
 
 Created by [Iswanto25](https://github.com/Iswanto25)
 
-## 🔗 Links
+## Links
 
 - **Repository**: [github.com/Iswanto25/boilerplate-expressJs](https://github.com/Iswanto25/boilerplate-expressJs)
 - **Issues**: [Report a bug or request a feature](https://github.com/Iswanto25/boilerplate-expressJs/issues)
 - **Pull Requests**: [Contribute to the project](https://github.com/Iswanto25/boilerplate-expressJs/pulls)
-
----
-
-**Happy Coding! 🚀**
-ressJs/pulls)
-
----
-
-**Happy Coding! 🚀**
