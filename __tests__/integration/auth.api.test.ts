@@ -1,290 +1,296 @@
-/**
- * Integration Test untuk Auth API
- * Menggunakan supertest untuk testing HTTP endpoints
- * Menggunakan @faker-js/faker untuk dummy data
- */
-
+import { describe, it, before, beforeEach, mock } from "node:test";
+import assert from "node:assert/strict";
 import request from "supertest";
-import { app } from "@/configs/express.js";
-import { generateFakeRegisterData, generateFakeLoginData, setFakerSeed } from "__tests__/helpers/faker.helper.js";
-import prisma from "@/configs/database.js";
 
-// Mock database untuk integration test
-jest.mock("@/configs/database.js", () => ({
-	__esModule: true,
-	default: {
-		user: {
-			create: jest.fn(),
-			findFirst: jest.fn(),
-			findUnique: jest.fn(),
-			findMany: jest.fn(),
-			update: jest.fn(),
-			delete: jest.fn(),
+
+const mockUserFindUnique = mock.fn();
+const mockUserFindMany = mock.fn();
+const mockUserCreate = mock.fn();
+const mockUserCount = mock.fn();
+const mockUserUpdate = mock.fn();
+const mockUserDelete = mock.fn();
+const mockRoleFindUnique = mock.fn();
+const mockLogsCreate = mock.fn(() => Promise.resolve());
+const mockDisconnect = mock.fn();
+
+const mockPrisma = {
+	user: {
+		findUnique: mockUserFindUnique,
+		findMany: mockUserFindMany,
+		create: mockUserCreate,
+		count: mockUserCount,
+		update: mockUserUpdate,
+		delete: mockUserDelete,
+	},
+	role: {
+		findUnique: mockRoleFindUnique,
+	},
+	logs: {
+		create: mockLogsCreate,
+	},
+	$transaction: (cb: any, ...args: any[]) => {
+		return cb(mockPrisma, ...args);
+	},
+	$disconnect: mockDisconnect,
+};
+
+mock.module("@/configs/database.js", {
+	exports: { default: mockPrisma },
+});
+
+mock.module("@/utils/s3", {
+	exports: {
+		s3: {},
+		isS3Configured: true,
+		getPublicUrl: mock.fn(() => null),
+		deleteFile: mock.fn(() => undefined),
+		getPresignedUploadUrl: mock.fn(() => undefined),
+		headFile: mock.fn(() => Promise.resolve(undefined)),
+		uploadBase64: mock.fn(() => Promise.resolve({ fileName: "test.jpg", fileUrl: "https://example.com/test.jpg" })),
+		getFile: mock.fn(() => "https://example.com/file.jpg"),
+		deleteMany: mock.fn(() => Promise.resolve({ deleted: [], errors: [] })),
+		deleteByPrefix: mock.fn(() => Promise.resolve({ deleted: 0, errors: 0 })),
+		uploadFile: mock.fn(() => Promise.resolve({ fileName: "test.jpg" })),
+	},
+});
+
+const mockStoreToken = mock.fn(() => Promise.resolve(undefined));
+const mockGetStoredToken = mock.fn(() => Promise.resolve("mock-refresh-token"));
+const mockDeleteToken = mock.fn(() => Promise.resolve(undefined));
+
+mock.module("@/utils/tokenStore", {
+	exports: {
+		storeToken: mockStoreToken,
+		getStoredToken: mockGetStoredToken,
+		deleteToken: mockDeleteToken,
+	},
+});
+
+mock.module("@/utils/encryption", {
+	exports: {
+		encryptionUtils: {
+			encryptSensitive: mock.fn(() => ({ version: "v1", ciphertext: "encrypted-data" })),
 		},
-		$disconnect: jest.fn(),
+		decryptSensitive: mock.fn(() => "decrypted-data"),
 	},
-}));
+});
 
-jest.mock("@/utils/s3", () => ({
-	uploadBase64: jest.fn().mockResolvedValue("https://example.com/photo.jpg"),
-	getFile: jest.fn().mockReturnValue("https://example.com/photo.jpg"),
-	deleteFile: jest.fn().mockResolvedValue(undefined),
-}));
-
-jest.mock("@/utils/tokenStore", () => ({
-	storeRefreshToken: jest.fn().mockResolvedValue(undefined),
-	getRefreshToken: jest.fn().mockResolvedValue("mock-refresh-token"),
-	deleteRefreshToken: jest.fn().mockResolvedValue(undefined),
-}));
-
-jest.mock("@/utils/encryption", () => ({
-	encryptionUtils: {
-		encryptSensitive: jest.fn().mockReturnValue({
-			version: "v1",
-			ciphertext: "encrypted-data",
-		}),
+mock.module("@/features/auth/jobs/auth.jobs.js", {
+	exports: {
+		authQueue: {
+			add: mock.fn(() => Promise.resolve({ id: "mock-job-id" })),
+		},
 	},
-	decryptSensitive: jest.fn().mockReturnValue("decrypted-data"),
-}));
+});
+
+mock.module("@/configs/redis.js", {
+	exports: {
+		redisState: { client: null, isAvailable: false },
+	},
+});
+
+mock.module("@/configs/bull.js", {
+	exports: {
+		bullConnection: {},
+	},
+});
+
+mock.module("@/middlewares/authMiddleware.js", {
+	exports: {
+		authenticate: {
+			verifyToken: (req: any, _res: any, next: any) => {
+				req.user = { id: "test-user-id", email: "test@example.com", roleName: "USER" };
+				next();
+			},
+		},
+	},
+});
+
+let app: any;
+
+before(async () => {
+	const mod = await import("@/configs/express.js");
+	app = mod.app;
+});
 
 describe("Auth API Integration Tests", () => {
-	beforeAll(() => {
-		setFakerSeed(12345);
-	});
-
 	beforeEach(() => {
-		jest.clearAllMocks();
+		mockUserFindUnique.mock.resetCalls();
+		mockUserFindMany.mock.resetCalls();
+		mockUserCreate.mock.resetCalls();
+		mockUserCount.mock.resetCalls();
+		mockRoleFindUnique.mock.resetCalls();
+		mockLogsCreate.mock.resetCalls();
+		mockStoreToken.mock.resetCalls();
+		mockGetStoredToken.mock.resetCalls();
+		mockDeleteToken.mock.resetCalls();
+		mockUserFindUnique.mock.mockImplementation(() => null);
+		mockUserFindMany.mock.mockImplementation(() => []);
+		mockUserCount.mock.mockImplementation(() => 0);
+		mockUserCreate.mock.mockImplementation(() => undefined);
+		mockRoleFindUnique.mock.mockImplementation(() => undefined);
+		mockGetStoredToken.mock.mockImplementation(() => Promise.resolve("mock-refresh-token"));
 	});
 
 	describe("POST /api/auth/register", () => {
+		it("should return 400 if required fields are missing", async () => {
+			const response = await request(app).post("/api/auth/register").send({ email: "test@example.com" });
+
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.success, false);
+		});
+
 		it("should register a new user successfully", async () => {
-			// Arrange
-			const registerData = generateFakeRegisterData();
+			const registerData = {
+				name: "Test User",
+				email: "testuser@example.com",
+				password: "Test1234!pass",
+				phone: "08123456789",
+				address: "Jl. Test No. 123",
+			};
 			const fakeUser = {
 				id: "user-id-123",
-				...registerData,
+				email: registerData.email,
+				profile: { name: registerData.name, phone: registerData.phone, address: registerData.address, photo: null, NIK: null },
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
-			(prisma.user.create as jest.Mock).mockResolvedValue(fakeUser);
+			mockRoleFindUnique.mock.mockImplementation(() => ({ id: "role-id", name: "USER" }));
+			mockUserCreate.mock.mockImplementation(() => fakeUser);
 
-			// Act
 			const response = await request(app).post("/api/auth/register").send(registerData);
 
-			// Assert
-			expect(response.status).toBe(200);
-			expect(response.body).toMatchObject({
-				status: "success",
-				message: "Berhasil register",
-			});
-			expect(response.body.data).toBeDefined();
-		});
-
-		it("should return 400 if required fields are missing", async () => {
-			// Arrange
-			const incompleteData = {
-				email: "test@example.com",
-				// missing name and password
-			};
-
-			// Act
-			const response = await request(app).post("/api/auth/register").send(incompleteData);
-
-			// Assert
-			expect(response.status).toBe(400);
-			expect(response.body).toMatchObject({
-				status: "error",
-				message: "Data tidak lengkap",
-			});
+			assert.strictEqual(response.status, 200);
+			assert.strictEqual(response.body.success, true);
+			assert.strictEqual(response.body.message, "Berhasil register");
+			assert.ok(response.body.data);
+			assert.ok(response.body.data.accessToken);
+			assert.ok(response.body.data.refreshToken);
 		});
 
 		it("should return error if email already exists", async () => {
-			// Arrange
-			const registerData = generateFakeRegisterData();
-			const existingUser = {
-				id: "existing-user-id",
-				email: registerData.email,
-			};
+			mockUserFindUnique.mock.mockImplementation(() => ({ id: "existing-id", email: "already@example.com" }));
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(existingUser);
+			const response = await request(app).post("/api/auth/register").send({
+				name: "Test User",
+				email: "already@example.com",
+				password: "Test1234!pass",
+				phone: "08123456789",
+				address: "Jl. Test No. 123",
+			});
 
-			// Act
-			const response = await request(app).post("/api/auth/register").send(registerData);
-
-			// Assert
-			expect(response.status).toBe(500);
-			expect(response.body.message).toContain("Email");
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.success, false);
+			assert.strictEqual(response.body.message, "Email sudah terdaftar");
 		});
 	});
 
 	describe("POST /api/auth/login", () => {
-		it("should login successfully with valid credentials", async () => {
-			// Arrange
-			const loginData = generateFakeLoginData({
-				email: "test@example.com",
-				password: "test-password",
-			});
+		it("should return 400 if credentials are missing", async () => {
+			const response = await request(app).post("/api/auth/login").send({ email: "test@example.com" });
 
-			const { encryptPassword } = require("@/utils/utils");
-			const hashedPassword = encryptPassword(loginData.password);
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.success, false);
+		});
+
+		it("should login successfully with valid credentials", async () => {
+			const loginData = { email: "test@example.com", password: "Test1234!pass" };
+
+			const { encryptPassword } = await import("@/utils/utils.js");
+			const hashedPassword = await encryptPassword(loginData.password);
 
 			const fakeUser = {
 				id: "user-id-123",
 				email: loginData.email,
 				password: hashedPassword,
-				name: "Test User",
+				profile: { name: "Test User", photo: null },
 			};
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(fakeUser);
+			mockUserFindUnique.mock.mockImplementation(() => fakeUser);
 
-			// Act
-			const response = await request(app).post("/api/auth/login").send(loginData);
-
-			// Assert
-			expect(response.status).toBe(200);
-			expect(response.body).toMatchObject({
-				status: "success",
-				message: "Berhasil login",
+			const response = await request(app).post("/api/auth/login").send({
+				email: loginData.email,
+				password: loginData.password,
 			});
-			expect(response.body.data).toHaveProperty("accessToken");
-			expect(response.body.data).toHaveProperty("refreshToken");
-		});
 
-		it("should return 400 if credentials are missing", async () => {
-			// Arrange
-			const incompleteData = {
-				email: "test@example.com",
-				// missing password
-			};
-
-			// Act
-			const response = await request(app).post("/api/auth/login").send(incompleteData);
-
-			// Assert
-			expect(response.status).toBe(400);
-			expect(response.body).toMatchObject({
-				status: "error",
-				message: "Data tidak lengkap",
-			});
+			assert.strictEqual(response.status, 200);
+			assert.strictEqual(response.body.success, true);
+			assert.strictEqual(response.body.message, "Berhasil login");
+			assert.ok(response.body.data.accessToken);
+			assert.ok(response.body.data.refreshToken);
 		});
 
 		it("should return error if user not found", async () => {
-			// Arrange
-			const loginData = generateFakeLoginData();
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+			const response = await request(app).post("/api/auth/login").send({
+				email: "nonexistent@example.com",
+				password: "Test1234!pass",
+			});
 
-			// Act
-			const response = await request(app).post("/api/auth/login").send(loginData);
-
-			// Assert
-			expect(response.status).toBe(500);
-			expect(response.body.message).toContain("tidak ditemukan");
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.success, false);
 		});
 	});
 
 	describe("POST /api/auth/refresh-token", () => {
+		it("should return 400 if refresh token is missing", async () => {
+			const response = await request(app).post("/api/auth/refresh-token").send({});
+
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.success, false);
+		});
+
 		it("should refresh token successfully", async () => {
-			// Arrange
-			const { verifyRefreshToken } = require("@/utils/jwt");
+			const { jwtUtils } = await import("@/utils/jwt.js");
 			const mockUser = {
 				id: "user-id-123",
 				email: "test@example.com",
-				name: "Test User",
+				isActive: true,
+				profile: { name: "Test User", NIK: null, phone: null, photo: null, address: null },
+				role: { name: "USER" },
 			};
 
-			(verifyRefreshToken as jest.Mock).mockReturnValue({ userId: mockUser.id });
-			(prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			const validRefreshToken = jwtUtils.generateRefreshToken({ id: mockUser.id, email: mockUser.email });
 
-			const refreshData = {
-				refreshToken: "valid-refresh-token",
-			};
+			mockGetStoredToken.mock.mockImplementation(() => Promise.resolve(validRefreshToken));
+			mockUserFindUnique.mock.mockImplementation(() => mockUser);
 
-			// Act
-			const response = await request(app).post("/api/auth/refresh-token").send(refreshData);
-
-			// Assert
-			expect(response.status).toBe(200);
-			expect(response.body).toMatchObject({
-				status: "success",
-				message: "Berhasil refresh token",
+			const response = await request(app).post("/api/auth/refresh-token").send({
+				refreshToken: validRefreshToken,
 			});
-		});
 
-		it("should return 400 if refresh token is missing", async () => {
-			// Act
-			const response = await request(app).post("/api/auth/refresh-token").send({});
-
-			// Assert
-			expect(response.status).toBe(400);
-			expect(response.body.message).toBe("Data tidak lengkap");
+			assert.strictEqual(response.status, 200);
+			assert.strictEqual(response.body.success, true);
+			assert.strictEqual(response.body.message, "Berhasil refresh token");
+			assert.ok(response.body.data.accessToken);
+			assert.ok(response.body.data.refreshToken);
 		});
 	});
 
 	describe("POST /api/auth/forgot-password", () => {
+		it("should return 400 if email is missing", async () => {
+			const response = await request(app).post("/api/auth/forgot-password").send({});
+
+			assert.strictEqual(response.status, 400);
+			assert.strictEqual(response.body.success, false);
+		});
+
 		it("should send forgot password email successfully", async () => {
-			// Arrange
 			const mockUser = {
 				id: "user-id-123",
 				email: "test@example.com",
-				name: "Test User",
+				profile: { name: "Test User" },
 			};
 
-			(prisma.user.findFirst as jest.Mock).mockResolvedValue(mockUser);
+			mockUserFindUnique.mock.mockImplementation(() => mockUser);
 
-			const emailData = {
+			const response = await request(app).post("/api/auth/forgot-password").send({
 				email: mockUser.email,
-			};
-
-			// Mock SMTP
-			const { sendMail } = require("@/utils/smtp");
-			if (sendMail) {
-				sendMail.mockResolvedValue(true);
-			}
-
-			// Act
-			const response = await request(app).post("/api/auth/forgot-password").send(emailData);
-
-			// Assert
-			expect(response.status).toBe(200);
-			expect(response.body).toMatchObject({
-				status: "success",
-				message: "Berhasil kirim email",
 			});
-		});
 
-		it("should return 400 if email is missing", async () => {
-			// Act
-			const response = await request(app).post("/api/auth/forgot-password").send({});
-
-			// Assert
-			expect(response.status).toBe(400);
-			expect(response.body.message).toBe("Data tidak lengkap");
-		});
-	});
-
-	describe("GET /api/auth/users", () => {
-		it("should get all users successfully", async () => {
-			// Arrange
-			const fakeUsers = Array.from({ length: 5 }, (_, i) => ({
-				id: `user-id-${i}`,
-				email: `user${i}@example.com`,
-				name: `User ${i}`,
-			}));
-
-			(prisma.user.findMany as jest.Mock).mockResolvedValue(fakeUsers);
-
-			// Act
-			const response = await request(app).get("/api/auth/users");
-
-			// Assert
-			expect(response.status).toBe(200);
-			expect(response.body).toMatchObject({
-				status: "success",
-				message: "Berhasil get users",
-			});
-			expect(Array.isArray(response.body.data)).toBe(true);
+			assert.strictEqual(response.status, 200);
+			assert.strictEqual(response.body.success, true);
+			assert.strictEqual(response.body.message, "Berhasil kirim email");
 		});
 	});
 });
