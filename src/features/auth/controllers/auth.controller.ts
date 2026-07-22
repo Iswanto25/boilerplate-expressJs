@@ -130,7 +130,7 @@ export const authController = {
 
 	sendOtp: async (req: Request, res: Response) => {
 		try {
-			const validation = authValidation.sendOtp.safeParse(req.body);
+			const validation = authValidation.sendOtp.safeParse({ ...req.body, ...req.query });
 
 			if (!validation.success) {
 				const errorMsg = validation.error.issues[0]?.message || "Data tidak valid";

@@ -33,10 +33,10 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
 				pass: process.env.SMTP_PASS,
 			},
 		});
-		const fromAddress = options.fromEmail || process.env.SMTP_FROM || process.env.SMTP_USER;
-		const fromName = options.fromName || process.env.APP_NAME || "Boilerplate App";
+		const fromAddress = options.fromEmail || process.env.SMTP_FROM;
+		const fromName = options.fromName || process.env.APP_NAME;
 		await transporter.sendMail({
-			from: `"${fromName}" <${fromAddress}>`,
+			from: `${fromName} <${fromAddress}>`,
 			to: options.to,
 			subject: options.subject,
 			text: options.text,

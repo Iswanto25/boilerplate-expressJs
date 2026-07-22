@@ -46,6 +46,7 @@ export const authValidation = {
 	}),
 
 	sendOtp: z.object({
+		type: z.enum(["registration", "reset-password", "login", "update-profile", "verify-otp"]),
 		email: z.string().email({ message: "Invalid email format" }),
 	}),
 

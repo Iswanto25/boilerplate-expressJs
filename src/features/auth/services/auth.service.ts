@@ -158,13 +158,14 @@ export const authServices = {
 
 		const otp = crypto.randomInt(100000, 999999).toString();
 
-		const OTP_EXPIRE_SECONDS = 300; // 5 minutes
+		const OTP_EXPIRE_SECONDS = 300;
 		await storeToken(user.id, otp, "otp", OTP_EXPIRE_SECONDS);
 
 		await authQueue.add("send-otp-email", {
 			email: input.email,
 			userName: user.profile?.name || "User",
 			otp,
+			purpose: input.type
 		});
 	},
 
