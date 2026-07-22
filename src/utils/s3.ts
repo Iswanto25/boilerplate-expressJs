@@ -73,6 +73,34 @@ function publicUrl(key: string): string {
 	return `${ENDPOINT}/${BUCKET}/${key}`;
 }
 
+export async function getPresignedUploadUrl(
+	folder: string,
+	opts: {
+		contentType?: string;
+		fileExtension?: string;
+		expiresIn?: number;
+		maxSize?: number;
+	} = {},
+): Promise<{ url: string; key: string; publicUrl: string; fields?: Record<string, string> }> {
+	if (!s3Holder.client) throwS3NotConfigured();
+	const s3 = s3Holder.client;
+
+	const ext = opts.fileExtension ? (opts.fileExtension.startsWith(".") ? opts.fileExtension : `.${opts.fileExtension}`) : "";
+	const fileName = `${randomString()}${ext}`;
+	const key = `${folder}/${fileName}`;
+	const expiresIn = opts.expiresIn ?? 3600;
+
+	const command = new PutObjectCommand({
+		Bucket: BUCKET,
+		Key: key,
+		...(opts.contentType ? { ContentType: opts.contentType } : {}),
+	});
+
+	const url = await getSignedUrl(s3, command, { expiresIn });
+
+	return { url, key, publicUrl: publicUrl(key) };
+}
+
 export function getPublicUrl(folder: string, file: string): string {
 	const publicBaseUrl = (process.env.STORAGE_PUBLIC_URL || "").replace(/^"|"$/g, "").replace(/\/$/, "");
 	const bucket = (process.env.S3_BUCKET_NAME || "").trim();

@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
-import { uploadFile, deleteFile, getPublicUrl } from "@/utils/s3.js";
+import { uploadFile, deleteFile, getPublicUrl, getPresignedUploadUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
 import { authQueue } from "@/features/auth/jobs/auth.jobs.js";
 import { jwtUtils } from "@/utils/jwt.js";
@@ -263,6 +263,24 @@ export const authServices = {
 		if (oldPhotoFileName) {
 			await deleteFile(folder, oldPhotoFileName, { strict: false });
 		}
+	},
+
+	async updatePhotoDirect(userId: string, contentType?: string): Promise<{ presignedUrl: string; fileName: string; publicUrl: string }> {
+		const currentUser = await authRepository.findUserById(userId);
+		if (!currentUser) throw new apiError(400, "User not found");
+
+		const ext = contentType ? contentType.split("/")[1] || "jpg" : "jpg";
+		const { url, key, publicUrl } = await getPresignedUploadUrl(folder, {
+			contentType: contentType || "image/jpeg",
+			fileExtension: ext,
+			expiresIn: 3600,
+		});
+
+		const fileName = key.replace(`${folder}/`, "");
+
+		await authRepository.updateUserProfile(userId, { photo: fileName });
+
+		return { presignedUrl: url, fileName, publicUrl };
 	},
 
 	async deleteProfile(userId: string): Promise<void> {
