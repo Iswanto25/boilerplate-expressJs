@@ -6,7 +6,58 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ---
 
-## [Unreleased]
+## [2.2.0] - 2026-07-22
+
+### ✨ Added
+
+- **Zod Validation**: Implementasi Zod untuk validasi input di semua endpoint auth (register, login, refresh token, forgot password, dll).
+- **RBAC System**: Dynamic Role-Based Access Control dengan model role, module, permission, dan `requirePermission` middleware.
+- **OTP Flow**: OTP generation & verification dengan background email job, OTP purpose validation, dan expiry 5 menit.
+- **Password Reset**: Flow reset password menggunakan time-limited token di Redis (900s) + email notification via BullMQ.
+- **Profile Management**: Update profile (name, phone, address, NIK), delete profile dengan cascade cleanup S3.
+- **Photo Upload**: Upload profile photo via Multer (disk) + base64, diproses asinkron via BullMQ queue.
+- **S3 Presigned URL**: Upload flow baru via presigned URL dengan dedicated `/api/upload` feature module.
+- **`validateOrThrow` Utility**: Fungsi validasi Zod di `respons.ts`, menggunakan `safeParse()` secara konsisten.
+- **BullMQ Worker Observability**: Event listener `active`, `completed`, `failed`, `error` dengan detail attempt, duration, retry status.
+- **SMTP Singleton Transport**: Transporter Nodemailer singleton, tidak lagi membuat koneksi baru setiap kirim email.
+- **Worker Error Propagation**: Error `sendEmail` di-rethrow agar BullMQ dapat retry otomatis (3x exponential backoff).
+- **Database Seeding**: Seeder untuk data awal (role, module, permission, admin user).
+- **AGENTS.md**: Dokumentasi arsitektur project, pattern coding, dan development rules.
+- **Graceful Shutdown**: SIGTERM/SIGINT handler untuk clean shutdown HTTP server + worker.
+- **Database Indexes**: Index pada tabel `logs` (date, userId, reqId) dan tabel terkait.
+
+### 🔄 Changed
+
+- **Auth Module Architecture**: Modernisasi struktur — file dipisah ke controllers/services/repositories/types/validations, menggunakan import alias `@/`.
+- **Controllers Refactor**: Semua `try-catch` dihapus dari controllers, validasi manual diganti `validateOrThrow()`. Error handling via global handler.
+- **Controller Input Handling**:
+  - `req.params` di-destructure langsung di awal controller (`const { id } = req.params`)
+  - `req.query` untuk pagination di-destructure via `validateOrThrow` dengan Zod `z.coerce.number()`
+- **Error Handler**: Global error handler menerjemahkan pesan error Inggris ke Bahasa Indonesia secara otomatis.
+- **Auth Security**: Refresh token tidak lagi disimpan di database — hanya di Redis. Validasi token menggunakan `getStoredToken` sebelum regenerasi.
+- **NIK Encryption**: Peningkatan enkripsi NIK dengan AES-256-GCM + dukungan prefix opsional `encry-` di `DATA_ENCRYPTION_KEY`.
+- **Logger**: Implementasi Pino multistream (console + file harian di `logger/`), base64 truncation, sensitive field masking.
+- **Audit Log**: Restruktur — log disimpan ke tabel `logs` via queue-based buffer (1000 entry, batch 10).
+- **SMTP & Console**: Semua `console.warn`/`console.info` di `smtp.ts` diganti pino logger.
+- **BullMQ Config**: `maxRetriesPerRequest: null` → `20`, cegah worker hang saat Redis unavailable.
+- **S3 Environment**: Variabel environment di-rename dari `MINIO_*` ke `S3_*` untuk konsistensi.
+- **AGENTS.md**: Controller pattern dan aturan destructuring params/query diperbarui sesuai kode aktual.
+- **Response Format**: Field `status` dihapus dari body respons (status tetap di HTTP header).
+
+### 🔧 Fixed
+
+- **Forgot Password Silent Fail**: Jika Redis tidak tersedia, `forgotPassword` throw `503` (sebelumnya silent return).
+- **SMTP Error Ditelan**: Error kirim email di-rethrow agar BullMQ bisa retry (sebelumnya error ditelan, job dianggap sukses).
+- **Secure `/users` Route**: Endpoint `GET /api/auth/users` kini dilindungi `verifyToken` middleware.
+- **ESM Import Paths**: Perbaikan ESM module resolution dan loader hooks untuk test compatibility.
+
+### 🗑️ Removed
+
+- **Multer Middleware**: Dihapus dari auth routes (digantikan BullMQ queue + base64 processing).
+- **Database Refresh Token Storage**: Refresh token sepenuhnya dikelola di Redis.
+- **Unused Scripts**: `cleanup-boilerplate.sh`, `test:unit`, `test:infra` dari `package.json`.
+- **Unused Dependencies**: `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`, `pino-http`.
+- **`@types/pg`**: Dipindahkan dari `dependencies` ke `devDependencies`.
 
 ## [2.1.0] - 2026-03-24
 
@@ -157,7 +208,8 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ---
 
-[Unreleased]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.0.0...HEAD
+[2.2.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v1.4.0...v2.0.0
 [1.4.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v1.2.0...v1.3.0
