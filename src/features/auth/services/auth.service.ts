@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import fs from "node:fs";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
 import { deleteFile, getPublicUrl, getPresignedUploadUrl } from "@/utils/s3.js";
 import { apiError } from "@/utils/respons.js";
@@ -257,8 +256,7 @@ export const authServices = {
 
 		const oldPhotoFileName = currentUser.profile?.photo || undefined;
 
-		const fileBuffer = await fs.promises.readFile(file.path);
-		const base64Data = `data:${file.mimetype};base64,${fileBuffer.toString("base64")}`;
+		const base64Data = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
 
 		await authQueue.add("upload-profile-photo", {
 			base64Data,
@@ -267,10 +265,6 @@ export const authServices = {
 			allowedFormats: ["image/jpeg", "image/png", "image/jpg", "image/webp"],
 			userId,
 			oldPhotoFileName,
-		});
-
-		await fs.promises.unlink(file.path).catch((err) => {
-			logger.warn({ err, path: file.path }, "Failed to delete temp file after queuing");
 		});
 	},
 
@@ -311,6 +305,20 @@ export const authServices = {
 	},
 
 	async getUsers(page: number = 1, limit: number = 10, search?: string) {
+		const cacheKey = `users:page:${page}:limit:${limit}:search:${search || ""}`;
+		const CACHE_TTL = 30;
+
+		if (redisState.isAvailable && redisState.client) {
+			try {
+				const cached = await redisState.client.get(cacheKey);
+				if (cached) {
+					return JSON.parse(cached);
+				}
+			} catch (err) {
+				logger.warn({ err }, "Failed to read users cache from Redis");
+			}
+		}
+
 		const take = limit;
 		const skip = (page - 1) * limit;
 
@@ -338,6 +346,16 @@ export const authServices = {
 			};
 		});
 
-		return { items: result, pagination };
+		const response = { items: result, pagination };
+
+		if (redisState.isAvailable && redisState.client) {
+			try {
+				await redisState.client.set(cacheKey, JSON.stringify(response), "EX", CACHE_TTL);
+			} catch (err) {
+				logger.warn({ err }, "Failed to cache users in Redis");
+			}
+		}
+
+		return response;
 	},
 };

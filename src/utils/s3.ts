@@ -13,7 +13,7 @@ import path from "node:path";
 import dotenv from "dotenv";
 import { randomString } from "@/utils/utils.js";
 import { logger } from "@/utils/logger.js";
-dotenv.config({ quiet: process.env.NODE_ENV === "production" });
+dotenv.config({ quiet: true });
 
 function normalizeEndpoint(raw?: string, useSSL?: boolean, port?: string): string | null {
 	if (!raw?.trim()) return null;
@@ -60,13 +60,13 @@ if (isS3Configured) {
 			forcePathStyle: true,
 			credentials: { accessKeyId: ACCESS_KEY, secretAccessKey: SECRET_KEY },
 		});
-		console.info("S3 Storage configured successfully");
+		logger.info("S3 Storage configured successfully");
 	} catch {
-		console.warn("S3 Storage initialization failed - file upload features will be disabled");
+		logger.warn("S3 Storage initialization failed - file upload features will be disabled");
 		s3Holder.client = null;
 	}
 } else {
-	console.warn("S3 Storage not configured (S3_ENDPOINT, S3_BUCKET_NAME, S3_ACCESS_KEY, S3_SECRET_KEY) - file upload features will be disabled");
+	logger.warn("S3 Storage not configured (S3_ENDPOINT, S3_BUCKET_NAME, S3_ACCESS_KEY, S3_SECRET_KEY) - file upload features will be disabled");
 }
 
 function publicUrl(key: string): string {
@@ -331,7 +331,7 @@ export async function getFile(
 	},
 ): Promise<string | null> {
 	if (!s3Holder.client) {
-		console.warn("S3 Storage not configured - cannot generate presigned URL");
+		logger.warn("S3 Storage not configured - cannot generate presigned URL");
 		return null;
 	}
 	const s3 = s3Holder.client;
@@ -366,7 +366,7 @@ export async function deleteFile(
 	opts?: { strict?: boolean; verifyAfter?: boolean },
 ): Promise<{ deleted: boolean; key: string; reason?: "not_found" | "still_exists" | "error" | "s3_not_configured" }> {
 	if (!s3Holder.client) {
-		console.warn("S3 Storage not configured - cannot delete file");
+		logger.warn("S3 Storage not configured - cannot delete file");
 		return { deleted: false, key: `${folder}/${file}`, reason: "s3_not_configured" };
 	}
 	const s3 = s3Holder.client;
@@ -397,7 +397,7 @@ export async function deleteFile(
 
 export async function deleteMany(items: Array<{ folder: string; file: string }>): Promise<{ deleted: string[]; errors: string[] }> {
 	if (!s3Holder.client) {
-		console.warn("S3 Storage not configured - cannot delete files");
+		logger.warn("S3 Storage not configured - cannot delete files");
 		return { deleted: [], errors: items.map((i) => `${i.folder}/${i.file}: S3 not configured`) };
 	}
 	const s3 = s3Holder.client;
@@ -431,7 +431,7 @@ export async function deleteMany(items: Array<{ folder: string; file: string }>)
 
 export async function deleteByPrefix(prefix: string): Promise<{ deleted: number; errors: number }> {
 	if (!s3Holder.client) {
-		console.warn("S3 Storage not configured - cannot delete by prefix");
+		logger.warn("S3 Storage not configured - cannot delete by prefix");
 		return { deleted: 0, errors: 0 };
 	}
 	const s3 = s3Holder.client;

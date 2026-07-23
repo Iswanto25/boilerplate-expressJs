@@ -7,6 +7,8 @@ logger.info("All workers started and listening for jobs...");
 process.on("SIGTERM", async () => {
 	logger.info("SIGTERM received, closing workers...");
 	const { authWorker } = await import("@/features/auth/jobs/auth.jobs.js");
-	await authWorker.close();
+	if (authWorker) {
+		await authWorker.close();
+	}
 	process.exit(0);
 });

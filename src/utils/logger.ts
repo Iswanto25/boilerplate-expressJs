@@ -1,10 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Writable } from "node:stream";
+import cluster from "node:cluster";
 import pino from "pino";
 import pretty from "pino-pretty";
 
-export const getLogLevel = (env = process.env.NODE_ENV) => (env === "production" ? "info" : "debug");
+export const getLogLevel = (env = process.env.NODE_ENV) => {
+	if (cluster.isWorker) {
+		return "warn";
+	}
+	return env === "production" ? "info" : "debug";
+};
 
 export function formatIsoWithTz(date: Date = new Date()): string {
 	const pad = (n: number, len = 2) => String(n).padStart(len, "0");

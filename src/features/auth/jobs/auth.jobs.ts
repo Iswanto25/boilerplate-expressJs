@@ -102,97 +102,103 @@ export const processUploadJob = async (data: UploadJobData) => {
 	return { success: true, fileName: result.fileName };
 };
 
-export const authWorker = new Worker(
-	AUTH_QUEUE_NAME,
-	async (job: Job) => {
-		try {
-			logger.info(
-				{
-					jobId: job.id,
-					jobName: job.name,
-					attempt: job.attemptsMade + 1,
-					maxAttempts: job.opts.attempts,
-				},
-				"Processing job...",
-			);
+const shouldRunWorker = process.env.NODE_ENV === "development" || process.argv[1]?.includes("worker");
 
-			switch (job.name) {
-				case "upload-profile-photo":
-					return await processUploadJob(job.data as UploadJobData);
-				case "send-forgot-password-email":
-					return await processForgotPasswordJob(job.data as ForgotPasswordJobData);
-				case "send-otp-email":
-					return await processSendOtpJob(job.data as SendOtpJobData);
-				default:
-					logger.warn({ jobName: job.name }, "Unknown job name");
-					return null;
+export let authWorker: Worker | null = null;
+
+if (shouldRunWorker) {
+	authWorker = new Worker(
+		AUTH_QUEUE_NAME,
+		async (job: Job) => {
+			try {
+				logger.info(
+					{
+						jobId: job.id,
+						jobName: job.name,
+						attempt: job.attemptsMade + 1,
+						maxAttempts: job.opts.attempts,
+					},
+					"Processing job...",
+				);
+
+				switch (job.name) {
+					case "upload-profile-photo":
+						return await processUploadJob(job.data as UploadJobData);
+					case "send-forgot-password-email":
+						return await processForgotPasswordJob(job.data as ForgotPasswordJobData);
+					case "send-otp-email":
+						return await processSendOtpJob(job.data as SendOtpJobData);
+					default:
+						logger.warn({ jobName: job.name }, "Unknown job name");
+						return null;
+				}
+			} catch (error) {
+				const attemptsLeft = (job.opts.attempts || 3) - job.attemptsMade - 1;
+				logger.error(
+					{
+						err: error,
+						jobId: job.id,
+						jobName: job.name,
+						attempt: job.attemptsMade + 1,
+						maxAttempts: job.opts.attempts,
+						attemptsLeft,
+						willRetry: attemptsLeft > 0,
+					},
+					"Error processing job",
+				);
+				throw error;
 			}
-		} catch (error) {
-			const attemptsLeft = (job.opts.attempts || 3) - job.attemptsMade - 1;
-			logger.error(
-				{
-					err: error,
-					jobId: job.id,
-					jobName: job.name,
-					attempt: job.attemptsMade + 1,
-					maxAttempts: job.opts.attempts,
-					attemptsLeft,
-					willRetry: attemptsLeft > 0,
-				},
-				"Error processing job",
-			);
-			throw error;
-		}
-	},
-	{
-		connection: bullConnection,
-		concurrency: 5,
-	},
-);
-
-authWorker.on("active", (job) => {
-	logger.info(
-		{
-			jobId: job.id,
-			jobName: job.name,
-			timestamp: new Date().toISOString(),
 		},
-		"Job started processing",
-	);
-});
-
-authWorker.on("completed", (job) => {
-	const duration = job.finishedOn ? job.finishedOn - (job.processedOn || job.finishedOn) : undefined;
-	logger.info(
 		{
-			jobId: job.id,
-			jobName: job.name,
-			duration,
-			attempts: job.attemptsMade + 1,
+			connection: bullConnection,
+			concurrency: 5,
 		},
-		"Job completed",
 	);
-});
 
-authWorker.on("failed", (job, err) => {
-	const attemptsMade = job?.attemptsMade ?? 0;
-	const maxAttempts = job?.opts.attempts ?? 3;
-	const willRetry = attemptsMade < maxAttempts - 1;
-	logger.error(
-		{
-			jobId: job?.id,
-			jobName: job?.name,
-			err,
-			attemptsMade,
-			maxAttempts,
-			willRetry,
-		},
-		"Job failed",
-	);
-});
+	authWorker.on("active", (job) => {
+		logger.info(
+			{
+				jobId: job.id,
+				jobName: job.name,
+				timestamp: new Date().toISOString(),
+			},
+			"Job started processing",
+		);
+	});
 
-authWorker.on("error", (err) => {
-	logger.error({ err }, "Worker connection error");
-});
+	authWorker.on("completed", (job) => {
+		const duration = job.finishedOn ? job.finishedOn - (job.processedOn || job.finishedOn) : undefined;
+		logger.info(
+			{
+				jobId: job.id,
+				jobName: job.name,
+				duration,
+				attempts: job.attemptsMade + 1,
+			},
+			"Job completed",
+		);
+	});
 
-logger.info(`Worker for ${AUTH_QUEUE_NAME} started`);
+	authWorker.on("failed", (job, err) => {
+		const attemptsMade = job?.attemptsMade ?? 0;
+		const maxAttempts = job?.opts.attempts ?? 3;
+		const willRetry = attemptsMade < maxAttempts - 1;
+		logger.error(
+			{
+				jobId: job?.id,
+				jobName: job?.name,
+				err,
+				attemptsMade,
+				maxAttempts,
+				willRetry,
+			},
+			"Job failed",
+		);
+	});
+
+	authWorker.on("error", (err) => {
+		logger.error({ err }, "Worker connection error");
+	});
+
+	logger.info(`Worker for ${AUTH_QUEUE_NAME} started`);
+}

@@ -1,29 +1,11 @@
 import multer from "multer";
-import path from "node:path";
-import fs from "node:fs";
 import { Request, Response, NextFunction } from "express";
 import { apiError, HttpStatus, respons } from "@/utils/respons.js";
-
-const uploadDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadDir)) {
-	fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-	destination: (_req, _file, cb) => {
-		cb(null, uploadDir);
-	},
-	filename: (_req, file, cb) => {
-		const ext = path.extname(file.originalname) || "";
-		const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-		cb(null, uniqueName);
-	},
-});
 
 const allowedMimes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
 
 const upload = multer({
-	storage,
+	storage: multer.memoryStorage(),
 	limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 	fileFilter: (_req, file, cb) => {
 		if (allowedMimes.includes(file.mimetype.toLowerCase())) {
