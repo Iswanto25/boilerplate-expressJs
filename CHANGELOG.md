@@ -75,6 +75,8 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 - **Multer Middleware**: Dihapus dari auth routes (digantikan BullMQ queue + base64 processing).
 - **Database Refresh Token Storage**: Refresh token sepenuhnya dikelola di Redis.
+- **Prisma OTP Model**: Dihapus `model otp` dan `enum statusOTP` dari schema — OTP sepenuhnya dikelola di Redis via `tokenStore.ts`.
+- **Unused Repository Methods**: `deactivateOtpsByEmail`, `createOtp`, `findActiveOtp`, `useOtp` dari `auth.repository.ts`.
 - **Unused Scripts**: `cleanup-boilerplate.sh`, `test:unit`, `test:infra` dari `package.json`.
 - **Unused Dependencies**: `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`, `pino-http`, `uuid`, `nanoid`, `@aws-sdk/node-http-handler`.
 - **`@types/pg`**: Dipindahkan dari `dependencies` ke `devDependencies`.

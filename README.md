@@ -10,7 +10,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js 5, 
 - **Authentication**:
   - JWT-based authentication (access token 15m, refresh token 7d)
   - Multi-device support (refresh tokens di Redis)
-  - Token storage di Redis dengan TTL + graceful degradation
+  - Token storage & OTP di Redis dengan TTL + graceful degradation
   - Profile management + photo upload (Multer & S3 presigned URL)
   - **NIK encryption** dengan AES-256-GCM
   - Forgot password & reset password via BullMQ job + email
@@ -47,7 +47,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js 5, 
 - **Error Handling**: Global error handler + 404 handler dengan auto-translate error ke Bahasa Indonesia
 - **Logging**: Pino structured logging ke console (pretty-print di dev) + file harian di `logger/`
 - **Testing**: Node.js test runner (`node --test`) untuk unit (10 files) & integration tests
-- **Caching**: Redis untuk token storage, rate limiting, OTP (optional with graceful degradation)
+- **Caching & Storage**: Redis untuk token storage, OTP, rate limiting (optional with graceful degradation)
 - **Path Alias**: Import menggunakan `@/` untuk menggantikan relative path (resolved via tsc-alias)
 
 ## Struktur Proyek
@@ -55,7 +55,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js 5, 
 ```
 /
 ├── prisma/
-│   ├── schema.prisma           # Database schema (User, Profile, Role, Permission, dll)
+│   ├── schema.prisma           # Database schema (User, Profile, Role, Permission, Logs)
 │   ├── prisma.config.ts        # Prisma v7 config (defineConfig)
 │   ├── seed.ts                 # Database seeder (role, module, resource, permission)
 │   └── migrations/             # Database migrations

@@ -83,7 +83,6 @@ model user {
   updatedAt DateTime @updatedAt
 
   profile profile?
-  otps    otp[]
 
   @@index([roleId])
   @@index([email])
@@ -100,25 +99,4 @@ model profile {
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-enum statusOTP {
-	active
-	used
-	expired
-}
-
-model otp {
-	id        Int       @id @default(autoincrement())
-	email     String
-	code      String
-	userId    String
-	user      user      @relation(fields: [userId], references: [id], onDelete: Cascade)
-	status    statusOTP @default(active)
-	expiredAt DateTime
-	createdAt DateTime  @default(now())
-	updatedAt DateTime  @updatedAt
-
-	@@unique([email, status, code])
-	@@index([userId])
 }
