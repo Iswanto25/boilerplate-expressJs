@@ -6,6 +6,81 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ---
 
+## [3.0.0] - 2026-07-23
+
+### ⚡ Breaking Changes
+
+- **Node.js engine minimum**: Now requires Node.js >=24.0.0 (was >=20.x). Uses latest ESM features and native test runner.
+- **Prisma upgrade to v7**: Menggunakan `@prisma/client` v7.4.2 + `@prisma/adapter-pg` v7.4.2 + Prisma Config API via `prisma.config.ts` (root). Konfigurasi koneksi database dipindahkan dari `schema.prisma` ke `prisma.config.ts`.
+- **Path alias**: Semua import menggunakan `@/` alias (`tsconfig.json` paths) + resolved via `tsc-alias` saat build.
+
+### ✨ Added
+
+- **Cluster mode**: `src/app.ts` menggunakan `node:cluster` untuk multi-CPU production deployment.
+- **Dev entry**: `src/dev.ts` — server HTTP + BullMQ worker berjalan bersamaan dengan graceful shutdown (SIGTERM/SIGINT).
+- **Standalone worker**: `src/worker.ts` — entry point terpisah untuk BullMQ worker (produksi).
+- **Graceful Shutdown**: SIGTERM/SIGINT handler untuk clean shutdown HTTP server + BullMQ worker + Redis + Pino logger di semua entry points.
+- **BullMQ Worker Observability**: Event listener `active`, `completed`, `failed`, `error` dengan detail attempt, duration, retry status di `auth.jobs.ts`.
+- **RBAC System**: Dynamic Role-Based Access Control dengan model `role`, `module`, `resource`, `rolePermission` + `requirePermission` middleware.
+- **OTP Flow**: OTP generation & verification dengan background email job, OTP purpose validation, dan expiry 5 menit.
+- **Password Reset**: Flow reset password menggunakan time-limited token di Redis (900s) + email notification via BullMQ.
+- **Profile Management**: Update profile (name, phone, address, NIK), delete profile dengan cascade cleanup S3.
+- **Photo Upload**: Upload profile photo via Multer (disk) + base64, diproses asinkron via BullMQ queue.
+- **S3 Presigned URL**: Upload flow baru via presigned URL dengan dedicated `/api/upload` feature module.
+- **`validateOrThrow` Utility**: Fungsi validasi Zod di `respons.ts`, menggunakan `safeParse()` secara konsisten.
+- **SMTP Singleton Transport**: Transporter Nodemailer singleton (`smtp.ts`), tidak lagi membuat koneksi baru setiap kirim email.
+- **Worker Error Propagation**: Error `sendEmail` di-rethrow agar BullMQ dapat retry otomatis (3x exponential backoff).
+- **Database Seeding**: Seeder (`prisma/seed.ts`) untuk data awal — role (Superadmin, USER), module (Authentication, User Management), resource, dan rolePermissions.
+- **Database Indexes**: Index pada tabel `logs` (date, userId, reqId) dan tabel terkait.
+- **Audit Logger**: `auditLogger.ts` — queue-based buffer (1000 entry, batch 10) untuk menulis log HTTP request-response ke tabel `logs`.
+- **Health Check**: Endpoint `/health` dengan response status, timestamp, version, environment.
+- **AGENTS.md**: Dokumentasi arsitektur project, pattern coding, dan development rules untuk AI agents.
+- **`prisma.config.ts`**: File konfigurasi Prisma terpusat menggunakan `defineConfig` dari `prisma/config`.
+- **API Signature**: HMAC-SHA256 verification via `signature.ts` + `scripts/generateApiKey.ts`.
+
+### 🔄 Changed
+
+- **Auth Module Architecture**: Modernisasi struktur — file dipisah ke controllers/services/repositories/types/validations, menggunakan import alias `@/`.
+- **Controllers Refactor**: Semua `try-catch` dihapus dari controllers, validasi manual diganti `validateOrThrow()`. Error handling via global handler.
+- **Controller Input Handling**:
+  - `req.params` di-destructure langsung di awal controller (`const { id } = req.params`)
+  - `req.query` untuk pagination di-destructure via `validateOrThrow` dengan Zod `z.coerce.number()`
+- **Error Handler**: Global error handler menerjemahkan pesan error Inggris ke Bahasa Indonesia secara otomatis (`errorTranslations` map).
+- **Auth Security**: Refresh token tidak lagi disimpan di database — hanya di Redis. Validasi token menggunakan `getStoredToken` sebelum regenerasi.
+- **NIK Encryption**: Peningkatan enkripsi NIK dengan AES-256-GCM + dukungan prefix opsional `encry-` di `DATA_ENCRYPTION_KEY`.
+- **Logger**: Implementasi Pino multistream (console + file harian di `logger/`), base64 truncation, sensitive field masking.
+- **SMTP & Console**: Semua `console.warn`/`console.info` di `smtp.ts` diganti pino logger.
+- **BullMQ Config**: `maxRetriesPerRequest: null` → `20`, cegah worker hang saat Redis unavailable.
+- **S3 Environment**: Variabel environment di-rename dari `MINIO_*` ke `S3_*` untuk konsistensi. Ditambahkan `S3_PORT` dan `STORAGE_PUBLIC_URL`.
+- **Response Format**: Field `status` dihapus dari body respons (status tetap di HTTP header).
+- **Middleware Stack**: Helmet dengan CSP lengkap, CORS environment-based, compression, request context middleware.
+- **Express Config**: `trust proxy` diaktifkan, `x-powered-by` di-disable, body parser limit 100mb.
+- **Route Structure**: Semua route diaggregate di `src/routes/index.ts` dengan prefix `/api`.
+- **Testing**: Migrasi dari Jest ke Node.js test runner (`node --test` dengan `--experimental-test-module-mocks`).
+- **`.env.example`**: Default port 3004, menambahkan semua variabel environment yang diperlukan.
+- **Docker Compose**: Service `boilerplate-express-backend` dengan environment variables mapping, `extra_hosts` untuk `host.docker.internal`.
+- **Prettier Config**: Tabs (4 width), double quotes, print width 150, trailing commas.
+- **Package Scripts**: `dev` → `tsx watch`, `build` → `tsc && tsc-alias`, `test` → `node --import tsx/esm` dengan pretest hook.
+- **`package.json` version**: Updated to `1.0.0`.
+- **AGENTS.md, README.md, CHANGELOG.md**: Diselaraskan dengan kondisi aktual project (dokumentasi, endpoint, scripts, struktur).
+
+### 🔧 Fixed
+
+- **Forgot Password Silent Fail**: Jika Redis tidak tersedia, `forgotPassword` throw `503` (sebelumnya silent return).
+- **SMTP Error Ditelan**: Error kirim email di-rethrow agar BullMQ bisa retry (sebelumnya error ditelan, job dianggap sukses).
+- **Secure `/users` Route**: Endpoint `GET /api/auth/users` kini dilindungi `verifyToken` middleware.
+- **ESM Import Paths**: Perbaikan ESM module resolution dan loader hooks untuk test compatibility.
+
+### 🗑️ Removed
+
+- **Multer Middleware**: Dihapus dari auth routes (digantikan BullMQ queue + base64 processing).
+- **Database Refresh Token Storage**: Refresh token sepenuhnya dikelola di Redis.
+- **Unused Scripts**: `cleanup-boilerplate.sh`, `test:unit`, `test:infra` dari `package.json`.
+- **Unused Dependencies**: `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`, `pino-http`, `uuid`, `nanoid`, `@aws-sdk/node-http-handler`.
+- **`@types/pg`**: Dipindahkan dari `dependencies` ke `devDependencies`.
+
+---
+
 ## [2.2.0] - 2026-07-22
 
 ### ✨ Added
@@ -208,6 +283,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ---
 
+[3.0.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v1.4.0...v2.0.0

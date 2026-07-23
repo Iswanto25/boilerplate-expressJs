@@ -1,133 +1,138 @@
 # Express.js & TypeScript Boilerplate
 
-Boilerplate production-ready untuk membangun REST API menggunakan Express.js, TypeScript, dan Prisma. Arsitektur proyek ini dirancang agar modular, scalable, dan mudah dikelola.
+Boilerplate production-ready untuk membangun REST API menggunakan Express.js 5, TypeScript, dan Prisma 7. Arsitektur modular berbasis fitur dengan Repository Pattern, RBAC, background jobs (BullMQ), dan S3/MinIO storage.
 
-## ✨ Fitur Utama
+## Fitur Utama
 
-- **Framework**: Express.js v5 dengan TypeScript
-- **Architecture**: Modular Feature-based Architecture dengan Repository Pattern + Controller-Service-Repository
-- **ORM**: Prisma v7 + PostgreSQL dengan pg Pool adapter
+- **Framework**: Express.js 5 dengan TypeScript (ESM, bundler moduleResolution)
+- **Architecture**: Modular Feature-based Architecture — Controller → Service → Repository + Transaction-aware
+- **ORM**: Prisma 7 + PostgreSQL dengan pg Pool adapter + Prisma Config API (`defineConfig`)
 - **Authentication**:
-    - JWT-based authentication (access token 1d, refresh token 7d)
-    - User registration with profile creation
-    - Multi-device support (multiple refresh tokens)
-    - Token storage di Redis dengan TTL
-    - Profile management with photo upload (Public URL access)
-    - **NIK (National ID) encryption dengan AES-256-GCM**
-    - Password reset via OTP email
-    - RBAC (Role-Based Access Control) dengan dynamic role & permission
+  - JWT-based authentication (access token 15m, refresh token 7d)
+  - Multi-device support (refresh tokens di Redis)
+  - Token storage di Redis dengan TTL + graceful degradation
+  - Profile management + photo upload (Multer & S3 presigned URL)
+  - **NIK encryption** dengan AES-256-GCM
+  - Forgot password & reset password via BullMQ job + email
+  - OTP verification dengan purpose validation & expiry 5 menit
+  - RBAC (Role-Based Access Control) dengan dynamic role & permission
 - **Background Jobs**:
-    - BullMQ queue untuk task asinkron (email, upload)
-    - 3x retry dengan exponential backoff
-    - Worker terpisah atau berjalan bersama dev server
-    - Observability lengkap (active, completed, failed, error events)
+  - BullMQ queue untuk task asinkron (email OTP, forgot password, photo upload)
+  - 3x retry dengan exponential backoff
+  - Worker terpisah atau berjalan bersama dev server
+  - Event listener: active, completed, failed, error
 - **Security**:
-    - Helmet untuk HTTP headers security
-    - CORS dengan konfigurasi environment-based
-    - Rate limiting dengan Redis (optional)
-    - Encrypt data sensitif (NIK) dengan AES-256-GCM
-    - Input validation dengan Zod
-    - API Signature verification (HMAC-SHA256)
-    - Password hashing dengan bcrypt + pepper
-    - RBAC permission checking per endpoint
+  - Helmet (CSP, HSTS, XSS, etc.) — konfigurasi lengkap
+  - CORS environment-based dengan credentials support
+  - Rate limiting dengan Redis (optional, configurable per-endpoint)
+  - Encrypt data sensitif (NIK) dengan AES-256-GCM
+  - Input validation dengan Zod (`validateOrThrow` via `.safeParse()`)
+  - API Signature verification (HMAC-SHA256) untuk endpoint tertentu
+  - Password hashing dengan bcrypt + pepper (SALT_HASH)
+  - RBAC permission checking per endpoint
 - **File Management**:
-    - Upload via Multer (disk sementara) + base64
-    - Integrasi S3/MinIO (optional)
-    - Presigned URL generation untuk direct upload
-    - Auto cleanup file lama saat update
-    - Validasi format & ukuran foto
+  - Upload via Multer (disk sementara) + base64 processing via BullMQ
+  - Integrasi S3/MinIO (optional)
+  - Presigned URL generation untuk direct upload
+  - Auto cleanup file lama saat update profile
+  - Validasi format & ukuran foto
 - **Email System**:
-    - SMTP integration (optional)
-    - Dynamic HTML email templates
-    - OTP email untuk password reset, verifikasi
-    - SendGrid/email service-agnostic via Nodemailer
+  - SMTP integration via Nodemailer (optional, singleton transporter)
+  - Dynamic HTML email templates (OTP, forgot password, generic)
+  - Background email sending via BullMQ
 - **Audit Log**:
-    - Semua HTTP request-response tercatat di tabel `logs` database
-    - Queue-based async write (buffer 1000 entry, batch 10)
-    - Sensitive fields otomatis di-mask sebelum logging
+  - Semua HTTP request-response tercatat di tabel `logs` database
+  - Queue-based async write (buffer 1000 entry, batch 10)
+  - Sensitive fields otomatis di-mask sebelum logging
 - **Error Handling**: Global error handler + 404 handler dengan auto-translate error ke Bahasa Indonesia
 - **Logging**: Pino structured logging ke console (pretty-print di dev) + file harian di `logger/`
-- **Testing**: Node.js test runner (`node --test`) untuk unit & integration tests
-- **Caching**: Redis untuk rate limiting, token storage, OTP (optional with graceful degradation)
-- **Path Alias**: Import menggunakan `@/` untuk menggantikan relative path
+- **Testing**: Node.js test runner (`node --test`) untuk unit (10 files) & integration tests
+- **Caching**: Redis untuk token storage, rate limiting, OTP (optional with graceful degradation)
+- **Path Alias**: Import menggunakan `@/` untuk menggantikan relative path (resolved via tsc-alias)
 
-## 📂 Struktur Proyek
+## Struktur Proyek
 
 ```
 /
 ├── prisma/
 │   ├── schema.prisma           # Database schema (User, Profile, Role, Permission, dll)
-│   ├── prisma.config.ts        # Prisma v7 config (database URL)
-│   ├── seed.ts                 # Database seeder
+│   ├── prisma.config.ts        # Prisma v7 config (defineConfig)
+│   ├── seed.ts                 # Database seeder (role, module, resource, permission)
 │   └── migrations/             # Database migrations
 ├── scripts/
 │   ├── loader-hooks.mjs        # ESM loader hooks untuk testing
 │   ├── test-loader.mjs         # Test loader
+│   ├── prepare-test-env.cjs    # Pretest hook
 │   └── generateApiKey.ts       # API signature key generator
 ├── src/
-│   ├── app.ts                  # API server entry point (production)
-│   ├── dev.ts                  # Dev entry point (server + worker bersamaan)
-│   ├── worker.ts               # Standalone worker entry point
+│   ├── app.ts                  # Production entry — cluster mode (multi-CPU)
+│   ├── dev.ts                  # Dev entry — server + worker combined
+│   ├── worker.ts               # Standalone BullMQ worker entry
 │   ├── configs/
-│   │   ├── express.ts          # Express app setup (middleware stack)
-│   │   ├── database.ts         # Prisma client + pg Pool adapter
-│   │   ├── redis.ts            # Redis client (graceful degradation)
+│   │   ├── express.ts          # Express app setup (helmet CSP, cors, compression)
+│   │   ├── database.ts         # Prisma client singleton
+│   │   ├── redis.ts            # Redis client (graceful degradation via redisState)
 │   │   └── bull.ts             # BullMQ connection config
 │   ├── features/
-│   │   ├── auth/               # Authentication feature
-│   │   │   ├── controllers/    # HTTP request handlers
+│   │   ├── auth/               # Auth: register, login, logout, refresh, profile, forgot-password, OTP
+│   │   │   ├── controllers/    # HTTP request handlers + spec
 │   │   │   ├── services/       # Business logic
 │   │   │   ├── repositories/   # Prisma data access (transaction-aware)
 │   │   │   ├── validations/    # Zod schemas
 │   │   │   ├── types/          # Zod-inferred types
 │   │   │   ├── jobs/           # BullMQ queue + worker + job processors
 │   │   │   └── auth.routes.ts  # Route definitions
-│   │   └── upload/             # File upload feature (S3 presigned URL)
+│   │   └── upload/             # File upload (S3 presigned URL)
 │   │       ├── controllers/
 │   │       ├── services/
+│   │       ├── jobs/           # BullMQ queue setup
 │   │       ├── validations/
 │   │       ├── types/
 │   │       └── upload.routes.ts
 │   ├── middlewares/
 │   │   ├── authMiddleware.ts     # JWT verification + user loading
 │   │   ├── rbacMiddleware.ts     # Permission check
-│   │   ├── errorHandler.ts       # Global error + 404 handler (with auto-translate)
-│   │   ├── multerMiddleware.ts   # File upload handler
+│   │   ├── errorHandler.ts       # Global error + 404 handler (auto-translate)
+│   │   ├── multerMiddleware.ts   # File upload (multer)
 │   │   └── requestContext.ts     # reqId, startTime, sensitive masking
 │   ├── routes/
-│   │   └── index.ts              # Aggregates all feature routes
+│   │   └── index.ts              # Aggregates auth + upload routes under /api
 │   └── utils/
-│       ├── encryption.ts       # AES-256-GCM encrypt/decrypt
-│       ├── jwt.ts              # JWT sign/verify helpers
-│       ├── logger.ts           # Pino logger (console + file daily)
-│       ├── auditLogger.ts      # Queue-based audit log ke database
-│       ├── respons.ts          # respons.success/error + apiError + validateOrThrow
-│       ├── pagination.ts       # Pagination helper
-│       ├── rateLimiter.ts      # Redis-based rate limiter
-│       ├── s3.ts               # S3/MinIO helpers (upload, presigned, delete)
-│       ├── smtp.ts             # Nodemailer SMTP sender (singleton transporter)
-│       ├── mail.ts             # HTML email templates
-│       ├── tokenStore.ts       # Redis token CRUD (access, refresh, OTP)
-│       ├── utils.ts            # bcrypt, email/phone validation, OTP, pLimit
-│       ├── signature.ts        # HMAC-SHA256 API key verification
-│       └── healthCheck.ts      # Service health check
+│       ├── __tests__/            # 10 unit test files
+│       ├── auditLogger.ts        # Queue-based audit log ke database
+│       ├── encryption.ts         # AES-256-GCM encrypt/decrypt
+│       ├── healthCheck.ts        # Service health check
+│       ├── jwt.ts                # JWT sign/verify helpers
+│       ├── logger.ts             # Pino logger (console + file daily rotate)
+│       ├── mail.ts               # HTML email templates
+│       ├── pagination.ts         # Pagination helper
+│       ├── rateLimiter.ts        # Redis-based rate limiter
+│       ├── respons.ts            # respons.success/error + apiError + validateOrThrow
+│       ├── s3.ts                 # S3/MinIO helpers
+│       ├── signature.ts          # HMAC-SHA256 API key verification
+│       ├── smtp.ts               # Nodemailer SMTP sender (singleton)
+│       ├── tokenStore.ts         # Redis token CRUD
+│       └── utils.ts              # bcrypt, email/phone validation, OTP, pLimit
 ├── __tests__/
-│   ├── integration/            # Integration tests
-│   └── debug-test.mjs          # Debug helper
+│   ├── helpers/
+│   │   ├── faker.helper.ts       # Fake data generation
+│   │   └── mock.helper.ts        # Module mocking helpers
+│   └── integration/
+│       └── auth.api.test.ts      # Auth integration tests
 ├── logger/                     # Log file output harian
 ├── uploads/                    # Temporary upload directory
 ├── CHANGELOG.md
 └── README.md
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v24 atau lebih baru
 - [PostgreSQL](https://www.postgresql.org/) 14+
 - [Redis](https://redis.io/) (opsional — untuk queue, rate limiting, caching)
-- [NPM](https://www.npmjs.com/) atau [Yarn](https://yarnpkg.com/)
+- [NPM](https://www.npmjs.com/)
 
 ### Installation
 
@@ -157,47 +162,52 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     ```env
     # Application
     NODE_ENV=development
-    PORT=3000
-    HOST=localhost
+    PORT=3004
+    HOST=0.0.0.0
     DOMAIN=localhost
     ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 
     # Database (Required)
-    DATABASE_URL="your-database-connection-string"
+    DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 
     # Security (Required)
-    DATA_ENCRYPTION_KEY="your-32-character-hex-key"
-    JWT_SECRET="your-jwt-secret-key"
-    JWT_REFRESH_SECRET="your-refresh-secret-key"
+    DATA_ENCRYPTION_KEY=your-32-char-hex-key-here-change-this-in-production
+    JWT_SECRET=your-jwt-secret-change-this-in-production
+    JWT_REFRESH_SECRET=your-refresh-secret-change-this-in-production
+    ACCESS_TOKEN_EXPIRES_IN=15m
+    REFRESH_TOKEN_EXPIRES_IN=7d
 
     # Password Security (Optional)
-    SALT_HASH="your-custom-salt-string"  # Additional salt for password hashing
-    SALT_ROUNDS=5                         # bcrypt salt rounds (default: 5)
+    SALT_HASH=your-custom-salt-string  # Additional salt for password hashing
+    SALT_ROUNDS=5                       # bcrypt salt rounds (default: 5)
     ```
 
     **Optional Services:**
 
     ```env
-    # Redis (Optional - for rate limiting & token caching)
+    # Redis (Optional - for queue, rate limiting & token storage)
     REDIS_HOST=localhost
     REDIS_PORT=6379
     REDIS_PASSWORD=
     REDIS_DB=0
 
     # S3 Storage (Optional - for file uploads)
-    S3_ENDPOINT=localhost:9000
-    S3_BUCKET_NAME=your-bucket
+    S3_ENDPOINT=localhost
+    S3_PORT=9000
+    S3_BUCKET_NAME=uploads
     S3_ACCESS_KEY=your-access-key
     S3_SECRET_KEY=your-secret-key
     S3_USE_SSL=false
     S3_REGION=us-east-1
 
     # SMTP (Optional - for email sending)
+    APP_NAME=Boilerplate Express
     SMTP_HOST=smtp.gmail.com
     SMTP_PORT=587
     SMTP_SECURE=false
     SMTP_USER=your-email@gmail.com
     SMTP_PASS=your-app-password
+    SMTP_FROM=noreply@yourdomain.com
     ```
 
 4. **Setup database:**
@@ -208,6 +218,9 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
 
     # Run migrations
     npx prisma migrate dev
+
+    # Seed database (role, module, resource, permission)
+    npm run seed
     ```
 
 5. **Start development server (HTTP + worker bersamaan):**
@@ -222,30 +235,31 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js, Ty
     npm run worker:dev
     ```
 
-    Server akan berjalan di `http://localhost:3000`
+    Server akan berjalan di `http://localhost:3004`
 
-## 📜 Available Scripts
+## Available Scripts
 
 | Script                          | Description                                        |
 | ------------------------------- | -------------------------------------------------- |
-| `npm run dev`                   | Start development server (HTTP + worker) with hot-reload |
-| `npm run worker:dev`            | Start standalone worker with hot-reload            |
-| `npm run build`                 | Compile TypeScript ke JavaScript                   |
-| `npm start`                     | Run production server                              |
+| `npm run dev`                   | Start dev server + worker (tsx watch)              |
+| `npm run worker:dev`            | Start standalone worker (tsx watch)                |
+| `npm run build`                 | Compile TypeScript + resolve path aliases          |
+| `npm start`                     | Run production server (cluster mode)               |
 | `npm run worker:start`          | Run standalone worker production                   |
 | `npm run start:migrate`         | Run migrations dan start server                    |
-| `npm test`                      | Run all tests                                      |
+| `npm test`                      | Run all tests (node --test)                        |
 | `npm run test:integration`      | Run integration tests                              |
-| `npm run lint`                  | Check linting errors                               |
+| `npm run lint`                  | Check linting errors (ESLint)                      |
 | `npm run lint:fix`              | Fix linting errors                                 |
+| `npm run typecheck`             | TypeScript type checking                           |
 | `npm run prettier`              | Format code dengan Prettier                        |
 | `npm run generate-api-key`      | Generate API key dengan signature                  |
+| `npm run generate-data`         | Generate sample data                               |
 | `npm run seed`                  | Run database seeder                                |
-| `npm run typecheck`             | TypeScript type checking                           |
 
-## 🧪 Testing
+## Testing
 
-Project ini dilengkapi dengan test suite menggunakan **Node.js test runner** (`node --test`):
+Project ini menggunakan **Node.js test runner** (`node --test`):
 
 ```bash
 # Run all tests
@@ -255,21 +269,27 @@ npm test
 npm run test:integration
 ```
 
-## 🔒 Security Features
+Test command: `node --import tsx/esm --import ./scripts/test-loader.mjs --experimental-test-module-mocks --test`
 
-- ✅ **Helmet** - Secure HTTP headers
-- ✅ **CORS** - Configurable cross-origin requests
-- ✅ **Rate Limiting** - Prevent API abuse (with Redis)
-- ✅ **Data Encryption** - Sensitive data encryption
-- ✅ **JWT Authentication** - Secure token-based auth
-- ✅ **Input Validation** - Request payload validation
-- ✅ **Error Handling** - Secure error responses (no stack traces in production)
-- ✅ **Password Hashing** - Enhanced bcrypt integration with:
-    - Configurable salt rounds (SALT_ROUNDS environment variable)
-    - Additional custom salt hash (SALT_HASH environment variable)
-    - Double-layer hashing for extra security
+- **Unit tests**: 10 files di `src/utils/__tests__/` (encryption, jwt, logger, pagination, rateLimiter, respons, s3, smtp, tokenStore, utils)
+- **Integration tests**: `__tests__/integration/auth.api.test.ts`
+- **Mock helpers**: `faker.helper.ts` (fake data), `mock.helper.ts` (module mocking)
 
-## 🔐 API Signature
+## Security Features
+
+- Helmet — Secure HTTP headers (CSP, HSTS, XSS, etc.)
+- CORS — Configurable cross-origin requests
+- Rate Limiting — Prevent API abuse (with Redis)
+- Data Encryption — Sensitive data (NIK) dengan AES-256-GCM
+- JWT Authentication — Secure token-based auth
+- Input Validation — Request payload validation via Zod (`validateOrThrow`)
+- Error Handling — Secure error responses (no stack traces in production)
+- Password Hashing — Enhanced bcrypt integration with:
+  - Configurable salt rounds (`SALT_ROUNDS` environment variable)
+  - Additional custom salt hash (`SALT_HASH` environment variable)
+  - Double-layer hashing for extra security
+
+## API Signature
 
 Boilerplate ini menyediakan sistem API Signature untuk melindungi endpoint tertentu dengan HMAC-SHA256 signature.
 
@@ -289,8 +309,6 @@ SECRET_KEY=your-secret-key-change-this-in-production
 ```
 
 ### Generate API Key
-
-Gunakan script yang sudah disediakan:
 
 ```bash
 npm run generate-api-key
@@ -315,22 +333,6 @@ API Key ini valid selama 5 menit
 ========================================
 ```
 
-### Implementasi di Route
-
-```typescript
-import { Router } from "express";
-import { verifyApiKey } from "../utils/signature";
-
-const router = Router();
-
-// Protected endpoint dengan signature
-router.get("/protected", verifyApiKey, (req, res) => {
-	res.json({ message: "Access granted!" });
-});
-
-export default router;
-```
-
 ### Testing dengan cURL
 
 ```bash
@@ -339,82 +341,40 @@ npm run generate-api-key
 
 # Test protected endpoint
 curl -H "x-api-key: YOUR_GENERATED_API_KEY" http://localhost:3004/api/example/protected
-
-# Test public endpoint (tidak perlu API key)
-curl http://localhost:3004/api/example/public
 ```
 
-### Response Format
-
-**Success (200):**
-
-```json
-{
-	"success": true,
-	"message": "Access granted",
-	"data": {
-		"message": "Ini adalah endpoint yang dilindungi dengan API signature",
-		"timestamp": "2024-12-24T07:00:00.000Z",
-		"info": "API Key Anda valid!"
-	}
-}
-```
-
-**Error (401):**
-
-```json
-{
-	"success": false,
-	"message": "API key tidak ditemukan"
-}
-```
-
-```json
-{
-	"success": false,
-	"message": "API key sudah expired atau tidak valid"
-}
-```
-
-```json
-{
-	"success": false,
-	"message": "Signature API key tidak valid"
-}
-```
-
-## 🔌 Optional Services
+## Optional Services
 
 ### Redis (Optional)
 
-- **Purpose**: Rate limiting dan token caching
+- **Purpose**: Queue (BullMQ), rate limiting, token storage, OTP
 - **If not configured**:
-    - Rate limiting dilewati dengan warning log
-    - Token storage dilewati dengan warning log
-    - Aplikasi tetap berjalan normal
+  - BullMQ queue tidak aktif (background jobs gagal)
+  - Rate limiting dilewati dengan warning log
+  - Token storage di-skip (auth tetap jalan via JWT verification)
+  - Graceful degradation — aplikasi tetap berjalan
 
 ### S3 Storage (Optional)
 
 - **Purpose**: File upload dan storage
 - **If not configured**:
-    - File routes return 503 Service Unavailable
-    - Warning ditampilkan saat startup
+  - File routes return 503 Service Unavailable
+  - Warning ditampilkan saat startup
 - **Features**:
-    - Multipart file upload
-    - Base64 upload support
-    - Presigned URL generation
-    - File deletion
+  - Presigned URL generation
+  - File upload + delete
+  - Public URL access via `STORAGE_PUBLIC_URL`
 
 ### SMTP (Optional)
 
-- **Purpose**: Email sending (notifications, password reset, etc)
+- **Purpose**: Email sending (forgot password, OTP notification)
 - **If not configured**:
-    - Email operations dilewati dengan warning log
-    - Aplikasi tetap berjalan normal
+  - Email operations dilewati dengan warning log
+  - Aplikasi tetap berjalan normal
 
 **Note**: Hanya Database yang wajib dikonfigurasi. Semua layanan lain bersifat optional dan aplikasi akan gracefully degrade jika tidak tersedia.
 
-## 📝 API Endpoints
+## API Endpoints
 
 ### Health Check
 
@@ -426,60 +386,58 @@ Response:
 
 ```json
 {
-	"status": "ok",
-	"timestamp": "2024-12-24T07:00:00.000Z",
-	"environment": "development"
+	"success": true,
+	"message": "Service is healthy",
+	"data": {
+		"status": "ok",
+		"timestamp": "2026-07-23 10:00:00",
+		"version": "1.0.0",
+		"environment": "development"
+	}
 }
 ```
 
-### Authentication
+### Authentication (`/api/auth`)
 
-| Method   | Endpoint                          | Description                                    | Middleware                     |
-| -------- | --------------------------------- | ---------------------------------------------- | ------------------------------ |
-| `POST`   | `/api/auth/register`              | Register user baru (optional photo base64)     |                                |
-| `POST`   | `/api/auth/login`                 | Login user, return tokens + user data          |                                |
-| `POST`   | `/api/auth/refresh-token`         | Refresh access token                           |                                |
-| `POST`   | `/api/auth/logout`                | Logout, hapus tokens dari Redis                | `auth`                         |
-| `GET`    | `/api/auth/profile`               | Get profile user (decrypted NIK)               | `auth`                         |
-| `PATCH`  | `/api/auth/profile`               | Update profil (name, phone, address, NIK)      | `auth`                         |
-| `PATCH`  | `/api/auth/profile/photo`         | Update foto via Multer upload                  | `auth`, `multer`               |
-| `PATCH`  | `/api/auth/profile/photo/direct`  | Update foto via S3 presigned URL               | `auth`                         |
-| `DELETE` | `/api/auth/profile/:id`           | Hapus akun + cleanup S3                        | `auth`                         |
-| `GET`    | `/api/auth/users`                 | Get all users (paginated, searchable)          | `auth`                         |
-| `POST`   | `/api/auth/forgot-password`       | Kirim email reset password link                | `rateLimiter`                  |
-| `POST`   | `/api/auth/reset-password`        | Reset password dengan token                    | `rateLimiter`                  |
-| `POST`   | `/api/auth/send-otp`              | Kirim OTP email                                | `rateLimiter`                  |
-| `POST`   | `/api/auth/verify-otp`            | Verifikasi OTP                                 | `rateLimiter`                  |
+| Method   | Endpoint                    | Auth Required | Description                        |
+| -------- | --------------------------- | ------------- | ---------------------------------- |
+| `POST`   | `/register`                 | No            | Register user baru                 |
+| `POST`   | `/login`                    | No            | Login, return tokens               |
+| `POST`   | `/logout`                   | Yes           | Logout, hapus tokens dari Redis    |
+| `POST`   | `/refresh-token`            | Yes           | Refresh access token               |
+| `GET`    | `/profile`                  | Yes           | Get profile (decrypted NIK)        |
+| `PATCH`  | `/profile`                  | Yes           | Update profil                      |
+| `PATCH`  | `/profile/photo`            | Yes           | Update foto via Multer             |
+| `PATCH`  | `/profile/photo/direct`     | Yes           | Update foto via S3 presigned       |
+| `DELETE` | `/profile/:id`              | Yes           | Hapus akun + cleanup S3            |
+| `GET`    | `/users`                    | Yes           | Get all users (paginated)          |
+| `POST`   | `/forgot-password`          | No            | Kirim email reset password         |
+| `POST`   | `/reset-password`           | No            | Reset password dengan token        |
+| `POST`   | `/send-otp`                 | No            | Kirim OTP email                    |
+| `POST`   | `/verify-otp`               | No            | Verifikasi OTP                     |
 
-### File Upload (requires S3 Storage)
+### Upload (`/api/upload`)
 
-| Method   | Endpoint                       | Description                          |
-| -------- | ------------------------------ | ------------------------------------ |
-| `POST`   | `/api/upload/presigned-url`    | Generate S3 presigned upload URL     |
-| `POST`   | `/api/upload/confirm`          | Confirm file upload ke S3            |
+| Method   | Endpoint           | Auth Required | Description                      |
+| -------- | ------------------ | ------------- | -------------------------------- |
+| `POST`   | `/presigned-url`   | Yes           | Generate S3 presigned upload URL |
+| `POST`   | `/confirm`         | Yes           | Confirm file upload ke S3        |
 
-### API Signature Examples
-
-| Method | Endpoint                 | Description                                              |
-| ------ | ------------------------ | -------------------------------------------------------- |
-| `GET`  | `/api/example/protected` | Endpoint dilindungi signature (butuh `x-api-key` header) |
-| `GET`  | `/api/example/public`    | Endpoint publik (tanpa autentikasi)                      |
-
-## 📧 Email Templates
+## Email Templates
 
 Project ini menyediakan email template system yang modular dan reusable.
 
 ### Available Templates
 
-- **OTP Email** - Untuk password reset
-- **Forgot Password Email** - Link reset password
-- **Generic OTP Email** - Customizable untuk berbagai keperluan
+- **OTP Email** — Untuk verifikasi OTP
+- **Reset Password Email** — Link reset password
+- **Generic OTP Email** — Customizable untuk berbagai keperluan
 
-### Usage Example
+### Usage
 
 ```typescript
-import { generateOTPEmail } from "../utils/mail";
-import { sendEmail } from "../utils/smtp";
+import { generateOTPEmail } from "../utils/mail.js";
+import { sendEmail } from "../utils/smtp.js";
 
 const html = generateOTPEmail("John Doe", "123456");
 await sendEmail({
@@ -491,36 +449,33 @@ await sendEmail({
 });
 ```
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-Core Dependencies:
+**Core Dependencies:**
 
-- **express** (v5.1.0) - Web framework
-- **typescript** (v5.9.3) - Type safety
-- **@prisma/client** (v7.4.2) - Database ORM (PostgreSQL)
-- **@prisma/adapter-pg** (v7.4.2) - PostgreSQL adapter
-- **bullmq** (v5.76.6) - Background job queue
-- **ioredis** (v5.8.2) - Redis client
-- **jsonwebtoken** (v9.0.2) - JWT authentication
-- **bcrypt** (v6.0.0) - Password hashing
-- **zod** (v4.3.6) - Schema validation
-- **nodemailer** (v7.0.10) - Email sending
-- **@aws-sdk/client-s3** (v3.917.0) - S3/MinIO storage
-- **pino** (v10.1.0) - Structured logging
-- **multer** (v2.0.2) - File upload handling
-- **helmet** (v8.1.0) - Security headers
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- **express** (v5.1.0) — Web framework
+- **typescript** (v5.9.3) — Type safety
+- **@prisma/client** (v7.4.2) — Database ORM (PostgreSQL)
+- **@prisma/adapter-pg** (v7.4.2) — PostgreSQL adapter
+- **bullmq** (v5.76.6) — Background job queue
+- **ioredis** (v5.8.2) — Redis client
+- **jsonwebtoken** (v9.0.2) — JWT authentication
+- **bcrypt** (v6.0.0) — Password hashing
+- **zod** (v4.3.6) — Schema validation
+- **nodemailer** (v9.0.3) — Email sending
+- **@aws-sdk/client-s3** (v3.917.0) — S3/MinIO storage
+- **pino** (v10.1.0) — Structured logging
+- **multer** (v2.0.2) — File upload handling
+- **helmet** (v8.1.0) — Security headers
+- **pino-pretty** (v13.1.2) — Pretty-print logging di dev
 
 ## Documentation
 
-- [CHANGELOG](./CHANGELOG.md) - Detailed version history and changes
+- [CHANGELOG](./CHANGELOG.md) — Detailed version history and changes
 
 ## License
 
-This project is licensed under the ISC License.
+ISC License
 
 ## Author
 
