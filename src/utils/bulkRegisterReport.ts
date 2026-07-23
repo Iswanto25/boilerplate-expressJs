@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { logger } from "@/utils/logger.js";
 
 interface BulkRegisterMetrics {
 	// Request Info
@@ -229,7 +230,7 @@ export async function saveBulkRegisterReport(metrics: BulkRegisterMetrics): Prom
 	const report = generateBulkRegisterReport(metrics);
 	fs.writeFileSync(filepath, report, "utf-8");
 
-	console.info(`Report saved: ${filepath}`);
+	logger.info(`Report saved: ${filepath}`);
 
 	return filepath;
 }

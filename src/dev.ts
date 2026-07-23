@@ -25,12 +25,18 @@ server.listen(PORT, HOST, () => {
 	});
 });
 
+let isShuttingDown = false;
+
 process.on("SIGTERM", async () => {
+	if (isShuttingDown) return;
+	isShuttingDown = true;
 	logger.info("SIGTERM received, shutting down...");
 
 	const { authWorker } = await import("@/features/auth/jobs/auth.jobs.js");
-	await authWorker.close();
-	logger.info("BullMQ worker closed");
+	if (authWorker) {
+		await authWorker.close();
+		logger.info("BullMQ worker closed");
+	}
 
 	server.close(() => {
 		redisState.client?.quit();
@@ -41,10 +47,14 @@ process.on("SIGTERM", async () => {
 });
 
 process.on("SIGINT", async () => {
+	if (isShuttingDown) return;
+	isShuttingDown = true;
 	logger.info("SIGINT received, shutting down...");
 
 	const { authWorker } = await import("@/features/auth/jobs/auth.jobs.js");
-	await authWorker.close();
+	if (authWorker) {
+		await authWorker.close();
+	}
 
 	server.close(() => {
 		redisState.client?.quit();
