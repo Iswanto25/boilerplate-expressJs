@@ -6,6 +6,34 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ---
 
+## [3.1.0] - 2026-08-21
+
+### ⚡ Breaking Changes
+
+- **Penyederhanaan API Signature**: Menghapus validasi timestamp (replay protection) dan hashing body request dari verifikasi API signature. Signature sekarang hanya memvalidasi format `userKey:method:url` dan format payload di header dipermudah menjadi `userKey:signature` (dikodekan dalam Base64).
+
+### ✨ Added
+
+- **Pipeline Deployment Staging**: Menambahkan workflow GitHub Actions (`deploy-staging-scholaflow.yml`) untuk deployment otomatis ke server staging dengan PM2 zero-downtime reload, verifikasi health check, dan notifikasi Telegram.
+- **RBAC Action Enum**: Mengubah tipe `availableActions` pada model `resource` dan `grantedActions` pada model `rolePermission` dari `String[]` menjadi enum `Action` (`CREATE`, `UPDATE`, `DELETE`, `DETAIL`, `LIST`, `IMPORT`, `EXPORT`, `ASSIGN`, `REVOKE`) di Prisma schema untuk menjamin keamanan tipe (type safety).
+- **Konfigurasi TypeScript Build**: Menambahkan `tsconfig.build.json` untuk mengecualikan file testing (`*.test.ts`, `*.spec.ts`) dari output build produksi.
+- **Node Test Types**: Menambahkan deklarasi custom type untuk `node:test` mocking options pada `types/node-test.d.ts`.
+- **Kolom Nomor pada Modul & Resource**: Menambahkan field `number` (tipe `Int`) pada model `module` dan `resource` di database untuk pengurutan data seeder.
+
+### 🔄 Changed
+
+- **Inisialisasi Worker BullMQ**: Membatasi pembuatan instance worker secara selektif (`process.env.NODE_ENV === "development"` atau argumen CLI berisi `worker`) guna mencegah terjadinya instansiasi worker ganda pada mode cluster CPU produksi.
+- **Bypass Superadmin**: Menambahkan pemeriksaan bypass izin bagi role "Superadmin" secara langsung di `rbacMiddleware.ts`.
+- **TypeScript Build Target**: Perintah `npm run build` diperbarui menjadi `tsc -p tsconfig.build.json && tsc-alias` agar build output tidak menyertakan file test.
+- **Upgrade Dependencies**: Mengupgrade library `nodemailer` ke `v9.0.3` dan `prisma` ke `v7.9.0`.
+- **Optimasi Integrasi Test Mocking**: Memperbaiki type safety mocking fungsi pada `auth.api.test.ts` dan menambahkan mock client Redis untuk test integration.
+
+### 🗑️ Removed
+
+- **File Utility Tidak Terpakai**: Menghapus file utility `src/utils/bulkRegisterReport.ts` dan `src/utils/generateData.ts` yang sudah tidak digunakan lagi.
+
+---
+
 ## [3.0.0] - 2026-07-23
 
 ### ⚡ Breaking Changes
@@ -285,6 +313,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ---
 
+[3.1.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/Iswanto25/boilerplate-expressJs/compare/v2.0.0...v2.1.0
