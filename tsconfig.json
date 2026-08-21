@@ -19,6 +19,6 @@
 		"allowJs": false,
 		"typeRoots": ["./node_modules/@types", "./types"]
 	},
-	"include": ["src/**/*.ts", "prisma.config.ts"],
-	"exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
+	"include": ["src/**/*.ts", "prisma.config.ts", "__tests__/integration/**/*.ts", "types/**/*.d.ts"],
+	"exclude": ["node_modules", "dist", "**/*.spec.ts", "__tests__/helpers/**"]
 }

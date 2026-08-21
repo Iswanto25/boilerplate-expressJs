@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import test, { mock } from "node:test";
-import crypto from "node:crypto";
+import test from "node:test";
 
 import { randomString, encryptPassword, comparePassword, isEmailValid, isPhoneNumberValid, generateOTP } from "@/utils/utils.js";
 

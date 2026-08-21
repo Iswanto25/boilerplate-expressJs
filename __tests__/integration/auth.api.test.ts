@@ -2,15 +2,15 @@ import { describe, it, before, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
 
-const mockUserFindUnique = mock.fn();
-const mockUserFindMany = mock.fn();
-const mockUserCreate = mock.fn();
-const mockUserCount = mock.fn();
-const mockUserUpdate = mock.fn();
-const mockUserDelete = mock.fn();
-const mockRoleFindUnique = mock.fn();
-const mockLogsCreate = mock.fn(() => Promise.resolve());
-const mockDisconnect = mock.fn();
+const mockUserFindUnique = mock.fn<(...args: any[]) => any>();
+const mockUserFindMany = mock.fn<(...args: any[]) => any>();
+const mockUserCreate = mock.fn<(...args: any[]) => any>();
+const mockUserCount = mock.fn<(...args: any[]) => any>();
+const mockUserUpdate = mock.fn<(...args: any[]) => any>();
+const mockUserDelete = mock.fn<(...args: any[]) => any>();
+const mockRoleFindUnique = mock.fn<(...args: any[]) => any>();
+const mockLogsCreate = mock.fn<(...args: any[]) => any>(() => Promise.resolve());
+const mockDisconnect = mock.fn<(...args: any[]) => any>();
 
 const mockPrisma = {
 	user: {
@@ -53,9 +53,9 @@ mock.module("@/utils/s3", {
 	},
 });
 
-const mockStoreToken = mock.fn(() => Promise.resolve(undefined));
-const mockGetStoredToken = mock.fn(() => Promise.resolve("mock-refresh-token"));
-const mockDeleteToken = mock.fn(() => Promise.resolve(undefined));
+const mockStoreToken = mock.fn<(...args: any[]) => any>(() => Promise.resolve(undefined));
+const mockGetStoredToken = mock.fn<(...args: any[]) => any>(() => Promise.resolve("mock-refresh-token"));
+const mockDeleteToken = mock.fn<(...args: any[]) => any>(() => Promise.resolve(undefined));
 
 mock.module("@/utils/tokenStore", {
 	exports: {
@@ -82,9 +82,15 @@ mock.module("@/features/auth/jobs/auth.jobs.js", {
 	},
 });
 
+const mockRedisClient = {
+	set: mock.fn(() => Promise.resolve("OK")),
+	get: mock.fn(() => Promise.resolve("user-id-123")),
+	del: mock.fn(() => Promise.resolve(1)),
+};
+
 mock.module("@/configs/redis.js", {
 	exports: {
-		redisState: { client: null, isAvailable: false },
+		redisState: { client: mockRedisClient, isAvailable: true },
 	},
 });
 
