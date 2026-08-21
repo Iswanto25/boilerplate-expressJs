@@ -1,0 +1,288 @@
+name: Deploy ScholaFlow BE to Staging
+
+on:
+    push:
+        branches:
+            - staging
+
+jobs:
+    # ============================================================
+    # STAGE 0: Notification (Start)
+    # ============================================================
+    notify-start:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Send Telegram Notification (Start)
+              uses: appleboy/telegram-action@master
+              with:
+                  to: ${{ secrets.TELEGRAM_TO }}
+                  token: ${{ secrets.TELEGRAM_TOKEN }}
+                  format: markdown
+                  message: |
+                      *STATUS: PIPELINE BERJALAN*
+                      *Repository:* ${{ github.repository }}
+                      *Branch:* ${{ github.ref_name }}
+                      *Pusher:* ${{ github.actor }}
+
+                      [Lihat Pipeline](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+    # ============================================================
+    # STAGE 1+2: Checkout → Dependencies → Code Analysis
+    # ============================================================
+    analyze:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js Runtime
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+                  cache: "npm"
+
+            - name: Install All Dependencies
+              run: npm ci
+
+            - name: Generate Prisma Client
+              run: npx prisma generate
+              env:
+                  DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+
+            - name: Run Linter
+              run: npm run lint
+
+            - name: Run Type Check
+              run: npm run typecheck
+
+            - name: Run Unit Tests
+              run: npm test
+
+    # ============================================================
+    # STAGE 3: Build
+    # ============================================================
+    build:
+        needs: analyze
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js Runtime
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+                  cache: "npm"
+
+            - name: Install All Dependencies
+              run: npm ci
+
+            - name: Generate Prisma Client
+              run: npx prisma generate
+              env:
+                  DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+
+            - name: Compile TypeScript to JavaScript
+              run: npm run build
+
+            - name: Upload Build Artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-artifacts
+                  path: |
+                      dist/
+                      src/
+                      scripts/
+                      prisma/
+                      prisma.config.ts
+                      tsconfig.json
+                      package.json
+                      package-lock.json
+                      ecosystem.config.cjs
+                  retention-days: 1
+
+    # ============================================================
+    # STAGE 4: Artifact Transfer
+    # ============================================================
+    transfer:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download Build Artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: build-artifacts
+
+            - name: Copy Artifacts to Server via SCP
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ secrets.SSH_HOST_STAGING }}
+                  username: ${{ secrets.SSH_USER_STAGING }}
+                  password: ${{ secrets.SSH_PASSWORD_STAGING }}
+                  port: ${{ secrets.SSH_PORT_STAGING }}
+                  timeout: 30m
+                  source: "dist/,src/,scripts/,prisma/,prisma.config.ts,tsconfig.json,package.json,package-lock.json,ecosystem.config.cjs"
+                  target: "/root/scholaflow-backend-staging"
+
+    # ============================================================
+    # STAGE 5: Pre-Deployment (Server Target)
+    # ============================================================
+    pre-deploy:
+        needs: transfer
+        runs-on: ubuntu-latest
+        steps:
+            - name: Install Dependencies & Run Migrations on Server
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.SSH_HOST_STAGING }}
+                  username: ${{ secrets.SSH_USER_STAGING }}
+                  password: ${{ secrets.SSH_PASSWORD_STAGING }}
+                  port: ${{ secrets.SSH_PORT_STAGING }}
+                  command_timeout: 30m
+                  script: |
+                      set -e
+                      export PATH=$PATH:/usr/local/bin:~/.nvm/versions/node/v24/bin
+                      cd /root/scholaflow-backend-staging
+
+                      echo "📝 Writing .env file..."
+                      cat << 'EOF' > .env
+                      ${{ secrets.ENV_STAGING }}
+                      EOF
+
+                      echo "📦 Installing production dependencies..."
+                      npm ci --omit=dev
+
+                      echo "🗄️ Running database migrations..."
+                      export DATABASE_URL="$(grep '^DATABASE_URL=' .env | cut -d= -f2-)"
+                      # echo "Running reset migration"
+                      # npx prisma migrate reset --force
+                      # echo "Running generate migration"
+                      npx prisma generate
+                      echo "Running deploy migration"
+                      npx prisma migrate deploy
+
+                      # echo "Running seed knowledge"
+                      # npx --yes tsx scripts/seed-knowledge.ts
+
+                      # echo "🌱 Running seeder..."
+                      # npx --yes tsx prisma/seed.ts
+
+    # ============================================================
+    # STAGE 6: Deployment (Zero Downtime via PM2 Reload)
+    # ============================================================
+    deploy:
+        needs: pre-deploy
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy with PM2 Reload (Zero Downtime)
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.SSH_HOST_STAGING }}
+                  username: ${{ secrets.SSH_USER_STAGING }}
+                  password: ${{ secrets.SSH_PASSWORD_STAGING }}
+                  port: ${{ secrets.SSH_PORT_STAGING }}
+                  command_timeout: 30m
+                  script: |
+                      set -e
+                      export PATH=$PATH:/usr/local/bin:~/.nvm/versions/node/v24/bin
+                      cd /root/scholaflow-backend-staging
+
+                      echo "🚀 Reloading application (Zero Downtime)..."
+                      pm2 reload ecosystem.config.cjs --env staging || pm2 start ecosystem.config.cjs --env staging
+                      pm2 save
+                      echo "✅ PM2 reload completed"
+
+    # ============================================================
+    # STAGE 7: Post-Deployment (Health Check & Rollback)
+    # ============================================================
+    health-check:
+        needs: deploy
+        runs-on: ubuntu-latest
+        steps:
+            - name: Health Check & Rollback if Failed
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.SSH_HOST_STAGING }}
+                  username: ${{ secrets.SSH_USER_STAGING }}
+                  password: ${{ secrets.SSH_PASSWORD_STAGING }}
+                  port: ${{ secrets.SSH_PORT_STAGING }}
+                  command_timeout: 5m
+                  script: |
+                      set -e
+                      export PATH=$PATH:/usr/local/bin:~/.nvm/versions/node/v24/bin
+                      cd /root/scholaflow-backend-staging
+
+                      echo "🔍 Performing health check..."
+                      HEALTHY=false
+
+                      for i in $(seq 1 15); do
+                        STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4001/health 2>/dev/null || echo "000")
+                        if [ "$STATUS" = "200" ]; then
+                          echo "✅ Application healthy (HTTP $STATUS)"
+                          HEALTHY=true
+                          break
+                        fi
+                        echo "⏳ Attempt $i/15: HTTP $STATUS, retrying..."
+                        sleep 2
+                      done
+
+                      if [ "$HEALTHY" = "true" ]; then
+                        echo "✅ Deployment successful!"
+                      else
+                        echo "❌ Health check failed! Rolling back..."
+                        pm2 restart scholaflow-backend-staging
+                        echo "⚠️  Application restarted. Check server for details."
+                        exit 1
+                      fi
+
+    # ============================================================
+    # STAGE 8: Notification (Success)
+    # ============================================================
+    notify-success:
+        needs: [analyze, build, transfer, pre-deploy, deploy, health-check]
+        if: success()
+        runs-on: ubuntu-latest
+        steps:
+            - name: Send Telegram Notification (Success)
+              uses: appleboy/telegram-action@master
+              with:
+                  to: ${{ secrets.TELEGRAM_TO }}
+                  token: ${{ secrets.TELEGRAM_TOKEN }}
+                  format: markdown
+                  message: |
+                      *STATUS: SUKSES*
+                      *Repository:* ${{ github.repository }}
+                      *Branch:* ${{ github.ref_name }}
+                      *Pusher:* ${{ github.actor }}
+
+                      Seluruh tahapan berhasil dieksekusi.
+
+    # ============================================================
+    # STAGE 9: Notification (Failure)
+    # ============================================================
+    notify-failure:
+        needs: [analyze, build, transfer, pre-deploy, deploy, health-check]
+        if: always() && contains(needs.*.result, 'failure')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Send Telegram Notification (Failure)
+              uses: appleboy/telegram-action@master
+              with:
+                  to: ${{ secrets.TELEGRAM_TO }}
+                  token: ${{ secrets.TELEGRAM_TOKEN }}
+                  format: markdown
+                  message: |
+                      *STATUS: GAGAL*
+                      *Repository:* ${{ github.repository }}
+                      *Branch:* ${{ github.ref_name }}
+                      *Pusher:* ${{ github.actor }}
+
+                      *Status Tahapan:*
+                      - Analyze: ${{ needs.analyze.result }}
+                      - Build: ${{ needs.build.result }}
+                      - Transfer: ${{ needs.transfer.result }}
+                      - Pre-deploy: ${{ needs.pre-deploy.result }}
+                      - Deploy: ${{ needs.deploy.result }}
+                      - Health Check: ${{ needs.health-check.result }}
+
+                      [Lihat Log GitHub Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})

@@ -19,24 +19,29 @@ model role {
 
 model module {
   id        String   @id @default(uuid())
+  number    Int      @unique
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   resources resource[]
+
+  @@index([number])
 }
 
 model resource {
   id               String   @id @default(uuid())
+  number           Int
   name             String
   moduleId         String
   module           module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  availableActions String[]
+  availableActions Action[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   rolePermissions rolePermission[]
 
+  @@unique([number, moduleId])
   @@index([moduleId])
 }
 
@@ -46,7 +51,7 @@ model rolePermission {
   role           role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   resourceId     String
   resource       resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  grantedActions String[]
+  grantedActions Action[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -99,4 +104,16 @@ model profile {
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum Action {
+  CREATE
+  UPDATE
+  DELETE
+  DETAIL
+  LIST
+  IMPORT
+  EXPORT
+  ASSIGN
+  REVOKE
 }

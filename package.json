@@ -15,7 +15,7 @@
 		"worker:dev": "tsx watch src/worker.ts",
 		"worker:start": "node dist/src/worker.js",
 		"start:migrate": "prisma migrate deploy && npm run start",
-		"build": "tsc && tsc-alias",
+		"build": "tsc -p tsconfig.build.json && tsc-alias",
 		"test": "node --import tsx/esm --import ./scripts/test-loader.mjs --experimental-test-module-mocks --test '__tests__/**/*.test.ts'",
 		"test:integration": "node --import tsx/esm --import ./scripts/test-loader.mjs --experimental-test-module-mocks --test '__tests__/integration/*.test.ts'",
 		"generate-api-key": "tsx scripts/generateApiKey.ts",
