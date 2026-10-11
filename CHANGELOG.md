@@ -71,8 +71,8 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 - **Auth Module Architecture**: Modernisasi struktur — file dipisah ke controllers/services/repositories/types/validations, menggunakan import alias `@/`.
 - **Controllers Refactor**: Semua `try-catch` dihapus dari controllers, validasi manual diganti `validateOrThrow()`. Error handling via global handler.
 - **Controller Input Handling**:
-  - `req.params` di-destructure langsung di awal controller (`const { id } = req.params`)
-  - `req.query` untuk pagination di-destructure via `validateOrThrow` dengan Zod `z.coerce.number()`
+    - `req.params` di-destructure langsung di awal controller (`const { id } = req.params`)
+    - `req.query` untuk pagination di-destructure via `validateOrThrow` dengan Zod `z.coerce.number()`
 - **Error Handler**: Global error handler menerjemahkan pesan error Inggris ke Bahasa Indonesia secara otomatis (`errorTranslations` map).
 - **Auth Security**: Refresh token tidak lagi disimpan di database — hanya di Redis. Validasi token menggunakan `getStoredToken` sebelum regenerasi.
 - **NIK Encryption**: Peningkatan enkripsi NIK dengan AES-256-GCM + dukungan prefix opsional `encry-` di `DATA_ENCRYPTION_KEY`.
@@ -136,8 +136,8 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 - **Auth Module Architecture**: Modernisasi struktur — file dipisah ke controllers/services/repositories/types/validations, menggunakan import alias `@/`.
 - **Controllers Refactor**: Semua `try-catch` dihapus dari controllers, validasi manual diganti `validateOrThrow()`. Error handling via global handler.
 - **Controller Input Handling**:
-  - `req.params` di-destructure langsung di awal controller (`const { id } = req.params`)
-  - `req.query` untuk pagination di-destructure via `validateOrThrow` dengan Zod `z.coerce.number()`
+    - `req.params` di-destructure langsung di awal controller (`const { id } = req.params`)
+    - `req.query` untuk pagination di-destructure via `validateOrThrow` dengan Zod `z.coerce.number()`
 - **Error Handler**: Global error handler menerjemahkan pesan error Inggris ke Bahasa Indonesia secara otomatis.
 - **Auth Security**: Refresh token tidak lagi disimpan di database — hanya di Redis. Validasi token menggunakan `getStoredToken` sebelum regenerasi.
 - **NIK Encryption**: Peningkatan enkripsi NIK dengan AES-256-GCM + dukungan prefix opsional `encry-` di `DATA_ENCRYPTION_KEY`.

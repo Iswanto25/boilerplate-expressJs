@@ -29,10 +29,7 @@ if (cluster.isPrimary) {
 			startupReported = true;
 
 			const baseUrl = `http://${HOST}:${PORT}`;
-			logger.info(
-				{ env: NODE_ENV, version: process.env.VERSION || "1.0.0", url: baseUrl, workers: numCPUs },
-				"Server started (cluster mode)",
-			);
+			logger.info({ env: NODE_ENV, version: process.env.VERSION || "1.0.0", url: baseUrl, workers: numCPUs }, "Server started (cluster mode)");
 
 			checkServicesHealth()
 				.then(() => {
@@ -95,4 +92,3 @@ if (cluster.isPrimary) {
 	process.on("SIGTERM", gracefulShutdown);
 	process.on("SIGINT", gracefulShutdown);
 }
-

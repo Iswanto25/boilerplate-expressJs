@@ -4,7 +4,8 @@
 		"rootDir": "./",
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["src/*"]
+			"@/*": ["src/*"],
+			"@/utils/*": ["src/helper/*"]
 		},
 		"module": "ESNext",
 		"moduleResolution": "bundler",

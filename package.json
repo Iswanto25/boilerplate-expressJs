@@ -19,6 +19,7 @@
 		"test": "node --import tsx/esm --import ./scripts/test-loader.mjs --experimental-test-module-mocks --test '__tests__/**/*.test.ts'",
 		"test:integration": "node --import tsx/esm --import ./scripts/test-loader.mjs --experimental-test-module-mocks --test '__tests__/integration/*.test.ts'",
 		"generate-api-key": "tsx scripts/generateApiKey.ts",
+		"generate-env": "tsx scripts/generateEnv.ts",
 		"generate-data": "tsx src/utils/generateData.ts",
 		"seed": "npx prisma db seed"
 	},

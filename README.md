@@ -8,42 +8,42 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js 5, 
 - **Architecture**: Modular Feature-based Architecture — Controller → Service → Repository + Transaction-aware
 - **ORM**: Prisma 7 + PostgreSQL dengan pg Pool adapter + Prisma Config API (`defineConfig`)
 - **Authentication**:
-  - JWT-based authentication (access token 15m, refresh token 7d)
-  - Multi-device support (refresh tokens di Redis)
-  - Token storage & OTP di Redis dengan TTL + graceful degradation
-  - Profile management + photo upload (Multer & S3 presigned URL)
-  - **NIK encryption** dengan AES-256-GCM
-  - Forgot password & reset password via BullMQ job + email
-  - OTP verification dengan purpose validation & expiry 5 menit
-  - RBAC (Role-Based Access Control) dengan dynamic role & permission
+    - JWT-based authentication (access token 15m, refresh token 7d)
+    - Multi-device support (refresh tokens di Redis)
+    - Token storage & OTP di Redis dengan TTL + graceful degradation
+    - Profile management + photo upload (Multer & S3 presigned URL)
+    - **NIK encryption** dengan AES-256-GCM
+    - Forgot password & reset password via BullMQ job + email
+    - OTP verification dengan purpose validation & expiry 5 menit
+    - RBAC (Role-Based Access Control) dengan dynamic role & permission
 - **Background Jobs**:
-  - BullMQ queue untuk task asinkron (email OTP, forgot password, photo upload)
-  - 3x retry dengan exponential backoff
-  - Worker terpisah atau berjalan bersama dev server
-  - Event listener: active, completed, failed, error
+    - BullMQ queue untuk task asinkron (email OTP, forgot password, photo upload)
+    - 3x retry dengan exponential backoff
+    - Worker terpisah atau berjalan bersama dev server
+    - Event listener: active, completed, failed, error
 - **Security**:
-  - Helmet (CSP, HSTS, XSS, etc.) — konfigurasi lengkap
-  - CORS environment-based dengan credentials support
-  - Rate limiting dengan Redis (optional, configurable per-endpoint)
-  - Encrypt data sensitif (NIK) dengan AES-256-GCM
-  - Input validation dengan Zod (`validateOrThrow` via `.safeParse()`)
-  - API Signature verification (HMAC-SHA256) untuk endpoint tertentu
-  - Password hashing dengan bcrypt + pepper (SALT_HASH)
-  - RBAC permission checking per endpoint
+    - Helmet (CSP, HSTS, XSS, etc.) — konfigurasi lengkap
+    - CORS environment-based dengan credentials support
+    - Rate limiting dengan Redis (optional, configurable per-endpoint)
+    - Encrypt data sensitif (NIK) dengan AES-256-GCM
+    - Input validation dengan Zod (`validateOrThrow` via `.safeParse()`)
+    - API Signature verification (HMAC-SHA256) untuk endpoint tertentu
+    - Password hashing dengan bcrypt + pepper (SALT_HASH)
+    - RBAC permission checking per endpoint
 - **File Management**:
-  - Upload via Multer (disk sementara) + base64 processing via BullMQ
-  - Integrasi S3/MinIO (optional)
-  - Presigned URL generation untuk direct upload
-  - Auto cleanup file lama saat update profile
-  - Validasi format & ukuran foto
+    - Upload via Multer (disk sementara) + base64 processing via BullMQ
+    - Integrasi S3/MinIO (optional)
+    - Presigned URL generation untuk direct upload
+    - Auto cleanup file lama saat update profile
+    - Validasi format & ukuran foto
 - **Email System**:
-  - SMTP integration via Nodemailer (optional, singleton transporter)
-  - Dynamic HTML email templates (OTP, forgot password, generic)
-  - Background email sending via BullMQ
+    - SMTP integration via Nodemailer (optional, singleton transporter)
+    - Dynamic HTML email templates (OTP, forgot password, generic)
+    - Background email sending via BullMQ
 - **Audit Log**:
-  - Semua HTTP request-response tercatat di tabel `logs` database
-  - Queue-based async write (buffer 1000 entry, batch 10)
-  - Sensitive fields otomatis di-mask sebelum logging
+    - Semua HTTP request-response tercatat di tabel `logs` database
+    - Queue-based async write (buffer 1000 entry, batch 10)
+    - Sensitive fields otomatis di-mask sebelum logging
 - **Error Handling**: Global error handler + 404 handler dengan auto-translate error ke Bahasa Indonesia
 - **Logging**: Pino structured logging ke console (pretty-print di dev) + file harian di `logger/`
 - **Testing**: Node.js test runner (`node --test`) untuk unit (10 files) & integration tests
@@ -239,23 +239,23 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js 5, 
 
 ## Available Scripts
 
-| Script                          | Description                                        |
-| ------------------------------- | -------------------------------------------------- |
-| `npm run dev`                   | Start dev server + worker (tsx watch)              |
-| `npm run worker:dev`            | Start standalone worker (tsx watch)                |
-| `npm run build`                 | Compile TypeScript + resolve path aliases          |
-| `npm start`                     | Run production server (cluster mode)               |
-| `npm run worker:start`          | Run standalone worker production                   |
-| `npm run start:migrate`         | Run migrations dan start server                    |
-| `npm test`                      | Run all tests (node --test)                        |
-| `npm run test:integration`      | Run integration tests                              |
-| `npm run lint`                  | Check linting errors (ESLint)                      |
-| `npm run lint:fix`              | Fix linting errors                                 |
-| `npm run typecheck`             | TypeScript type checking                           |
-| `npm run prettier`              | Format code dengan Prettier                        |
-| `npm run generate-api-key`      | Generate API key dengan signature                  |
-| `npm run generate-data`         | Generate sample data                               |
-| `npm run seed`                  | Run database seeder                                |
+| Script                     | Description                               |
+| -------------------------- | ----------------------------------------- |
+| `npm run dev`              | Start dev server + worker (tsx watch)     |
+| `npm run worker:dev`       | Start standalone worker (tsx watch)       |
+| `npm run build`            | Compile TypeScript + resolve path aliases |
+| `npm start`                | Run production server (cluster mode)      |
+| `npm run worker:start`     | Run standalone worker production          |
+| `npm run start:migrate`    | Run migrations dan start server           |
+| `npm test`                 | Run all tests (node --test)               |
+| `npm run test:integration` | Run integration tests                     |
+| `npm run lint`             | Check linting errors (ESLint)             |
+| `npm run lint:fix`         | Fix linting errors                        |
+| `npm run typecheck`        | TypeScript type checking                  |
+| `npm run prettier`         | Format code dengan Prettier               |
+| `npm run generate-api-key` | Generate API key dengan signature         |
+| `npm run generate-data`    | Generate sample data                      |
+| `npm run seed`             | Run database seeder                       |
 
 ## Testing
 
@@ -285,9 +285,9 @@ Test command: `node --import tsx/esm --import ./scripts/test-loader.mjs --experi
 - Input Validation — Request payload validation via Zod (`validateOrThrow`)
 - Error Handling — Secure error responses (no stack traces in production)
 - Password Hashing — Enhanced bcrypt integration with:
-  - Configurable salt rounds (`SALT_ROUNDS` environment variable)
-  - Additional custom salt hash (`SALT_HASH` environment variable)
-  - Double-layer hashing for extra security
+    - Configurable salt rounds (`SALT_ROUNDS` environment variable)
+    - Additional custom salt hash (`SALT_HASH` environment variable)
+    - Double-layer hashing for extra security
 
 ## API Signature
 
@@ -349,28 +349,28 @@ curl -H "x-api-key: YOUR_GENERATED_API_KEY" http://localhost:3004/api/example/pr
 
 - **Purpose**: Queue (BullMQ), rate limiting, token storage, OTP
 - **If not configured**:
-  - BullMQ queue tidak aktif (background jobs gagal)
-  - Rate limiting dilewati dengan warning log
-  - Token storage di-skip (auth tetap jalan via JWT verification)
-  - Graceful degradation — aplikasi tetap berjalan
+    - BullMQ queue tidak aktif (background jobs gagal)
+    - Rate limiting dilewati dengan warning log
+    - Token storage di-skip (auth tetap jalan via JWT verification)
+    - Graceful degradation — aplikasi tetap berjalan
 
 ### S3 Storage (Optional)
 
 - **Purpose**: File upload dan storage
 - **If not configured**:
-  - File routes return 503 Service Unavailable
-  - Warning ditampilkan saat startup
+    - File routes return 503 Service Unavailable
+    - Warning ditampilkan saat startup
 - **Features**:
-  - Presigned URL generation
-  - File upload + delete
-  - Public URL access via `STORAGE_PUBLIC_URL`
+    - Presigned URL generation
+    - File upload + delete
+    - Public URL access via `STORAGE_PUBLIC_URL`
 
 ### SMTP (Optional)
 
 - **Purpose**: Email sending (forgot password, OTP notification)
 - **If not configured**:
-  - Email operations dilewati dengan warning log
-  - Aplikasi tetap berjalan normal
+    - Email operations dilewati dengan warning log
+    - Aplikasi tetap berjalan normal
 
 **Note**: Hanya Database yang wajib dikonfigurasi. Semua layanan lain bersifat optional dan aplikasi akan gracefully degrade jika tidak tersedia.
 
@@ -399,29 +399,29 @@ Response:
 
 ### Authentication (`/api/auth`)
 
-| Method   | Endpoint                    | Auth Required | Description                        |
-| -------- | --------------------------- | ------------- | ---------------------------------- |
-| `POST`   | `/register`                 | No            | Register user baru                 |
-| `POST`   | `/login`                    | No            | Login, return tokens               |
-| `POST`   | `/logout`                   | Yes           | Logout, hapus tokens dari Redis    |
-| `POST`   | `/refresh-token`            | Yes           | Refresh access token               |
-| `GET`    | `/profile`                  | Yes           | Get profile (decrypted NIK)        |
-| `PATCH`  | `/profile`                  | Yes           | Update profil                      |
-| `PATCH`  | `/profile/photo`            | Yes           | Update foto via Multer             |
-| `PATCH`  | `/profile/photo/direct`     | Yes           | Update foto via S3 presigned       |
-| `DELETE` | `/profile/:id`              | Yes           | Hapus akun + cleanup S3            |
-| `GET`    | `/users`                    | Yes           | Get all users (paginated)          |
-| `POST`   | `/forgot-password`          | No            | Kirim email reset password         |
-| `POST`   | `/reset-password`           | No            | Reset password dengan token        |
-| `POST`   | `/send-otp`                 | No            | Kirim OTP email                    |
-| `POST`   | `/verify-otp`               | No            | Verifikasi OTP                     |
+| Method   | Endpoint                | Auth Required | Description                     |
+| -------- | ----------------------- | ------------- | ------------------------------- |
+| `POST`   | `/register`             | No            | Register user baru              |
+| `POST`   | `/login`                | No            | Login, return tokens            |
+| `POST`   | `/logout`               | Yes           | Logout, hapus tokens dari Redis |
+| `POST`   | `/refresh-token`        | Yes           | Refresh access token            |
+| `GET`    | `/profile`              | Yes           | Get profile (decrypted NIK)     |
+| `PATCH`  | `/profile`              | Yes           | Update profil                   |
+| `PATCH`  | `/profile/photo`        | Yes           | Update foto via Multer          |
+| `PATCH`  | `/profile/photo/direct` | Yes           | Update foto via S3 presigned    |
+| `DELETE` | `/profile/:id`          | Yes           | Hapus akun + cleanup S3         |
+| `GET`    | `/users`                | Yes           | Get all users (paginated)       |
+| `POST`   | `/forgot-password`      | No            | Kirim email reset password      |
+| `POST`   | `/reset-password`       | No            | Reset password dengan token     |
+| `POST`   | `/send-otp`             | No            | Kirim OTP email                 |
+| `POST`   | `/verify-otp`           | No            | Verifikasi OTP                  |
 
 ### Upload (`/api/upload`)
 
-| Method   | Endpoint           | Auth Required | Description                      |
-| -------- | ------------------ | ------------- | -------------------------------- |
-| `POST`   | `/presigned-url`   | Yes           | Generate S3 presigned upload URL |
-| `POST`   | `/confirm`         | Yes           | Confirm file upload ke S3        |
+| Method | Endpoint         | Auth Required | Description                      |
+| ------ | ---------------- | ------------- | -------------------------------- |
+| `POST` | `/presigned-url` | Yes           | Generate S3 presigned upload URL |
+| `POST` | `/confirm`       | Yes           | Confirm file upload ke S3        |
 
 ## Email Templates
 

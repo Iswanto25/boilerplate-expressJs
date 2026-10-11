@@ -1,49 +1,89 @@
 import { Request, Response, NextFunction } from "express";
 import crypto from "node:crypto";
+import { HttpStatus, respons } from "./respons.js";
 
-export function generateApiKey(userKey: string, secretKey: string, method: string, url: string): string {
-	const dataToSign = `${userKey}:${method.toUpperCase()}:${url}`;
-	const signature = crypto.createHmac("sha256", secretKey).update(dataToSign).digest("hex");
-	const payload = `${userKey}:${signature}`;
+const UTC7_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+function utc7Now(): number {
+	return Date.now() + UTC7_OFFSET_MS;
+}
+
+export async function generateApiKey(userKey: string, secretKey: string): Promise<string> {
+	const isProd = process.env.NODE_ENV === "production";
+	const timestamp = utc7Now().toString();
+
+	if (!isProd) {
+		const payload = `${userKey}:${secretKey}`;
+		return Buffer.from(payload).toString("base64");
+	}
+
+	const dataToSign = `${userKey}:${timestamp}`;
+	const hmac = crypto.createHmac("sha256", secretKey);
+	hmac.update(dataToSign);
+	const signature = hmac.digest("hex");
+	const payload = `${userKey}:${timestamp}:${signature}`;
 	return Buffer.from(payload).toString("base64");
 }
 
 export function verifyApiKey(req: Request, res: Response, next: NextFunction) {
-	const apiKey = req.headers["x-api-key"] as string;
+	const apiKey = req.headers["x-api-key"] as string | undefined;
 
 	if (!apiKey) {
-		return res.status(401).json({ success: false, message: "API key tidak ditemukan" });
+		return respons.error("API key tidak ditemukan", "Unauthorized", HttpStatus.UNAUTHORIZED, res, req);
 	}
 
 	try {
 		const decoded = Buffer.from(apiKey, "base64").toString("utf-8");
-		const [userKey, signature] = decoded.split(":");
+		const isProd = process.env.NODE_ENV === "production";
 
-		if (!userKey || !signature) {
-			return res.status(401).json({ success: false, message: "Format tidak valid" });
+		if (!isProd) {
+			const [userKey, secretKey] = decoded.split(":");
+
+			if (userKey !== process.env.USER_KEY || secretKey !== process.env.SECRET_KEY) {
+				return respons.error("Identitas atau Secret Key tidak valid", "Unauthorized", HttpStatus.UNAUTHORIZED, res, req);
+			}
+			return next();
+		}
+
+		const [userKey, timestamp, signature] = decoded.split(":");
+
+		if (!userKey || !timestamp || !signature) {
+			return respons.error("Format API Key tidak valid", "Unauthorized", HttpStatus.UNAUTHORIZED, res, req);
 		}
 
 		if (userKey !== process.env.USER_KEY) {
-			return res.status(401).json({ success: false, message: "Identitas tidak valid" });
+			return respons.error("Identitas API Key tidak valid", "Unauthorized", HttpStatus.UNAUTHORIZED, res, req);
 		}
 
-		const dataToVerify = `${userKey}:${req.method.toUpperCase()}:${req.originalUrl}`;
+		const requestTime = parseInt(timestamp, 10);
+		const currentTime = utc7Now();
+		const timeDiff = Math.abs(currentTime - requestTime);
+		const maxAge = 5 * 60 * 1000;
+
+		if (timeDiff > maxAge) {
+			return respons.error("Request expired", "Unauthorized", HttpStatus.UNAUTHORIZED, res, req);
+		}
 
 		const secretKey = process.env.SECRET_KEY;
 		if (!secretKey) {
-			return res.status(500).json({ success: false, message: "Server configuration error" });
+			return respons.error("Server configuration error", "Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR, res, req);
 		}
 
-		const expectedSignature = crypto.createHmac("sha256", secretKey).update(dataToVerify).digest("hex");
+		const dataToVerify = `${userKey}:${timestamp}`;
+		const hmac = crypto.createHmac("sha256", secretKey);
+		hmac.update(dataToVerify);
+		const expectedSignature = hmac.digest("hex");
 
-		const isSignatureValid = crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"));
+		const isSignatureValid =
+			signature.length === expectedSignature.length &&
+			crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"));
 
 		if (!isSignatureValid) {
-			return res.status(401).json({ success: false, message: "Signature tidak valid" });
+			return respons.error("Signature API Key tidak valid", "Unauthorized", HttpStatus.UNAUTHORIZED, res, req);
 		}
 
-		next();
+		return next();
 	} catch {
-		return res.status(401).json({ success: false, message: "Gagal memproses kunci" });
+		return respons.error("Gagal memproses API Key", "Unauthorized", HttpStatus.UNAUTHORIZED, res, req);
 	}
 }
