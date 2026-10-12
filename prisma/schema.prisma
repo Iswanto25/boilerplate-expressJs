@@ -7,39 +7,36 @@ datasource db {
 }
 
 model role {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  status    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users           user[]
+  id              String           @id @default(uuid())
+  name            String           @unique
+  status          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   rolePermissions rolePermission[]
+  users           user[]
 }
 
 model module {
-  id        String   @id @default(uuid())
-  number    Int      @unique
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id        String     @id @default(uuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  number    Int        @unique
   resources resource[]
 
   @@index([number])
 }
 
 model resource {
-  id               String   @id @default(uuid())
-  number           Int
+  id               String           @id @default(uuid())
   name             String
   moduleId         String
-  module           module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  number           Int
   availableActions Action[]
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  rolePermissions rolePermission[]
+  module           module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  rolePermissions  rolePermission[]
 
   @@unique([number, moduleId])
   @@index([moduleId])
@@ -48,29 +45,29 @@ model resource {
 model rolePermission {
   id             String   @id @default(uuid())
   roleId         String
-  role           role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   resourceId     String
-  resource       resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  grantedActions Action[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  grantedActions Action[]
+  resource       resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  role           role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, resourceId])
 }
 
 model logs {
   id       Int       @id @default(autoincrement())
-  date     DateTime?
   name     String?
   role     String?
   host     String?
   status   String?
   data     Json?
   userId   String?
-  ip       String?   @db.Inet
   method   String?
-  reqId    String?
   dayCount Int?
+  reqId    String?
+  date     DateTime?
+  ip       String?   @db.Inet
 
   @@index([date])
   @@index([userId])
@@ -79,15 +76,14 @@ model logs {
 
 model user {
   id        String   @id @default(uuid())
-  roleId    String
-  role      role     @relation(fields: [roleId], references: [id])
   email     String   @unique
   password  String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  profile profile?
+  roleId    String
+  profile   profile?
+  role      role     @relation(fields: [roleId], references: [id])
 
   @@index([roleId])
   @@index([email])
@@ -101,9 +97,9 @@ model profile {
   photo     String?
   NIK       String?
   userId    String   @unique
-  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum Action {
