@@ -13,7 +13,7 @@ import {
 	generateFakeTokens,
 	setFakerSeed,
 } from "__tests__/helpers/faker.helper.js";
-import { HttpStatus } from "@/utils/respons.js";
+import { HttpStatus } from "@/helper/respons.js";
 
 // Mock auth services
 jest.mock("@/features/auth/services/auth.service.js", () => ({

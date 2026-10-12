@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { jwtUtils } from "@/utils/jwt.js";
-import { respons, HttpStatus } from "@/utils/respons.js";
-import { getStoredToken } from "@/utils/tokenStore.js";
+import { jwtUtils } from "@/helper/jwt.js";
+import { respons, HttpStatus } from "@/helper/respons.js";
+import { getStoredToken } from "@/helper/tokenStore.js";
 import prisma from "@/configs/database.js";
 
 export const authenticate = {

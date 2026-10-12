@@ -1,8 +1,8 @@
 import prisma from "@/configs/database.js";
 import { redisState } from "@/configs/redis.js";
-import { isS3Configured } from "@/utils/s3.js";
-import { isSMTPConfigured } from "@/utils/smtp.js";
-import { logger } from "@/utils/logger.js";
+import { isS3Configured } from "@/helper/s3.js";
+import { isSMTPConfigured } from "@/helper/smtp.js";
+import { logger } from "@/helper/logger.js";
 
 export async function checkServicesHealth(summaryOnly = false): Promise<boolean> {
 	let isDbHealthy = false;

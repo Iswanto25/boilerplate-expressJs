@@ -14,7 +14,7 @@ module.exports = {
 		"/node_modules/",
 		"/dist/",
 		"/__tests__/helpers/", // Helpers bukan test files
-		"/src/utils/__tests__/", // Tests format native node --test (not jest)
+		"/src/helper/__tests__/", // Tests format native node --test (not jest)
 	],
 
 	moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],

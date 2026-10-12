@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const requireModule = createRequire(fileURLToPath(import.meta.url));
-const modulePath = "@/utils/jwt";
+const modulePath = "../jwt.js";
 
 const reloadJwtModule = async () => {
 	delete requireModule.cache[requireModule.resolve(modulePath)];

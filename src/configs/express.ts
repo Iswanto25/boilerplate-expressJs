@@ -2,7 +2,7 @@ import express from "express";
 import cors, { CorsOptions } from "cors";
 import compression from "compression";
 import helmet from "helmet";
-import { respons, HttpStatus } from "@/utils/respons.js";
+import { respons, HttpStatus } from "@/helper/respons.js";
 import apiRoutes from "@/routes/index.js";
 import { errorHandler, notFoundHandler } from "@/middlewares/errorHandler.js";
 import { requestContext } from "@/middlewares/requestContext.js";

@@ -37,7 +37,7 @@ mock.module("@/configs/database.js", {
 	exports: { default: mockPrisma },
 });
 
-mock.module("@/utils/s3", {
+mock.module("@/helper/s3", {
 	exports: {
 		s3: {},
 		isS3Configured: true,
@@ -57,7 +57,7 @@ const mockStoreToken = mock.fn<(...args: any[]) => any>(() => Promise.resolve(un
 const mockGetStoredToken = mock.fn<(...args: any[]) => any>(() => Promise.resolve("mock-refresh-token"));
 const mockDeleteToken = mock.fn<(...args: any[]) => any>(() => Promise.resolve(undefined));
 
-mock.module("@/utils/tokenStore", {
+mock.module("@/helper/tokenStore", {
 	exports: {
 		storeToken: mockStoreToken,
 		getStoredToken: mockGetStoredToken,
@@ -65,7 +65,7 @@ mock.module("@/utils/tokenStore", {
 	},
 });
 
-mock.module("@/utils/encryption", {
+mock.module("@/helper/encryption", {
 	exports: {
 		encryptionUtils: {
 			encryptSensitive: mock.fn(() => ({ version: "v1", ciphertext: "encrypted-data" })),
@@ -202,7 +202,7 @@ describe("Auth API Integration Tests", () => {
 		it("should login successfully with valid credentials", async () => {
 			const loginData = { email: "test@example.com", password: "Test1234!pass" };
 
-			const { encryptPassword } = await import("@/utils/utils.js");
+			const { encryptPassword } = await import("@/helper/utils.js");
 			const hashedPassword = await encryptPassword(loginData.password);
 
 			const fakeUser = {
@@ -246,7 +246,7 @@ describe("Auth API Integration Tests", () => {
 		});
 
 		it("should refresh token successfully", async () => {
-			const { jwtUtils } = await import("@/utils/jwt.js");
+			const { jwtUtils } = await import("@/helper/jwt.js");
 			const mockUser = {
 				id: "user-id-123",
 				email: "test@example.com",

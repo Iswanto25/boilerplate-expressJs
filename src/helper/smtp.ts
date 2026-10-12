@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import { logger } from "@/utils/logger.js";
+import { logger } from "@/helper/logger.js";
 dotenv.config({ quiet: true });
 
 interface SendEmailOptions {

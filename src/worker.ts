@@ -1,4 +1,4 @@
-import { logger } from "@/utils/logger.js";
+import { logger } from "@/helper/logger.js";
 
 import "@/features/auth/jobs/auth.jobs.js";
 

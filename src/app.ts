@@ -3,8 +3,8 @@ import os from "node:os";
 import { app } from "@/configs/express.js";
 import http from "http";
 import dotenv from "dotenv";
-import { logger, closeLogger } from "@/utils/logger.js";
-import { checkServicesHealth } from "@/utils/healthCheck.js";
+import { logger, closeLogger } from "@/helper/logger.js";
+import { checkServicesHealth } from "@/helper/healthCheck.js";
 import { redisState } from "@/configs/redis.js";
 
 dotenv.config({ quiet: true });

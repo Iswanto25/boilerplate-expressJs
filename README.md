@@ -97,7 +97,7 @@ Boilerplate production-ready untuk membangun REST API menggunakan Express.js 5, 
 │   │   └── requestContext.ts     # reqId, startTime, sensitive masking
 │   ├── routes/
 │   │   └── index.ts              # Aggregates auth + upload routes under /api
-│   └── utils/
+│   └── helper/
 │       ├── __tests__/            # 10 unit test files
 │       ├── auditLogger.ts        # Queue-based audit log ke database
 │       ├── encryption.ts         # AES-256-GCM encrypt/decrypt
@@ -271,7 +271,7 @@ npm run test:integration
 
 Test command: `node --import tsx/esm --import ./scripts/test-loader.mjs --experimental-test-module-mocks --test`
 
-- **Unit tests**: 10 files di `src/utils/__tests__/` (encryption, jwt, logger, pagination, rateLimiter, respons, s3, smtp, tokenStore, utils)
+- **Unit tests**: 10 files di `src/helper/__tests__/` (encryption, jwt, logger, pagination, rateLimiter, respons, s3, smtp, tokenStore, utils)
 - **Integration tests**: `__tests__/integration/auth.api.test.ts`
 - **Mock helpers**: `faker.helper.ts` (fake data), `mock.helper.ts` (module mocking)
 
@@ -436,8 +436,8 @@ Project ini menyediakan email template system yang modular dan reusable.
 ### Usage
 
 ```typescript
-import { generateOTPEmail } from "../utils/mail.js";
-import { sendEmail } from "../utils/smtp.js";
+import { generateOTPEmail } from "../helper/mail.js";
+import { sendEmail } from "../helper/smtp.js";
 
 const html = generateOTPEmail("John Doe", "123456");
 await sendEmail({

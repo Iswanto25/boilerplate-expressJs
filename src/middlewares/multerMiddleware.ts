@@ -1,6 +1,6 @@
 import multer from "multer";
 import { Request, Response, NextFunction } from "express";
-import { apiError, HttpStatus, respons } from "@/utils/respons.js";
+import { apiError, HttpStatus, respons } from "@/helper/respons.js";
 
 const allowedMimes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
 

@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const requireModule = createRequire(fileURLToPath(import.meta.url));
-const modulePath = "@/utils/encryption";
+const modulePath = "../encryption.js";
 
 const reloadEncryptionModule = async () => {
 	delete requireModule.cache[requireModule.resolve(modulePath)];

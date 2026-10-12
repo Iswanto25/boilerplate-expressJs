@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { uploadServices } from "@/features/upload/services/upload.service.js";
-import { respons, validateOrThrow, HttpStatus } from "@/utils/respons.js";
+import { respons, validateOrThrow, HttpStatus } from "@/helper/respons.js";
 import { uploadValidation } from "@/features/upload/validations/upload.validation.js";
 
 export const uploadController = {

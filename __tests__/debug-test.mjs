@@ -24,11 +24,11 @@ mock.module("@/configs/bull.js", {
 	exports: { bullConnection: {} },
 });
 
-mock.module("@/utils/s3", { exports: { s3: {}, isS3Configured: true, getPublicUrl: () => null } });
-mock.module("@/utils/tokenStore", {
+mock.module("@/helper/s3", { exports: { s3: {}, isS3Configured: true, getPublicUrl: () => null } });
+mock.module("@/helper/tokenStore", {
 	exports: { storeToken: () => Promise.resolve(), getStoredToken: () => Promise.resolve("token"), deleteToken: () => Promise.resolve() },
 });
-mock.module("@/utils/encryption", { exports: { encryptionUtils: { encryptSensitive: () => ({}) }, decryptSensitive: () => "" } });
+mock.module("@/helper/encryption", { exports: { encryptionUtils: { encryptSensitive: () => ({}) }, decryptSensitive: () => "" } });
 mock.module("@/features/auth/jobs/auth.jobs.js", { exports: { authQueue: { add: () => Promise.resolve({ id: "job-1" }) } } });
 
 const { app } = await import("@/configs/express.js");

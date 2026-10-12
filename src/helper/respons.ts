@@ -1,6 +1,6 @@
 import { Response, Request } from "express";
-import { logger, formatIsoWithTz } from "@/utils/logger.js";
-import { saveAuditLog } from "@/utils/auditLogger.js";
+import { logger, formatIsoWithTz } from "@/helper/logger.js";
+import { saveAuditLog } from "@/helper/auditLogger.js";
 import { maskSensitive, truncateLongStrings } from "@/middlewares/requestContext.js";
 
 export enum HttpStatus {

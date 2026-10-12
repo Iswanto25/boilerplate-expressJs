@@ -1,5 +1,5 @@
-import { getPresignedUploadUrl, headFile, getPublicUrl } from "@/utils/s3.js";
-import { apiError } from "@/utils/respons.js";
+import { getPresignedUploadUrl, headFile, getPublicUrl } from "@/helper/s3.js";
+import { apiError } from "@/helper/respons.js";
 
 export const uploadServices = {
 	async getPresignedUrl(input: { folder: string; contentType?: string; fileExtension?: string; expiresIn?: number; maxSize?: number }) {

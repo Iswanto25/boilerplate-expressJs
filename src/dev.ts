@@ -1,7 +1,7 @@
 import { app } from "@/configs/express.js";
 import http from "http";
-import { logger, closeLogger } from "@/utils/logger.js";
-import { checkServicesHealth } from "@/utils/healthCheck.js";
+import { logger, closeLogger } from "@/helper/logger.js";
+import { checkServicesHealth } from "@/helper/healthCheck.js";
 import { redisState } from "@/configs/redis.js";
 
 import "@/features/auth/jobs/auth.jobs.js";

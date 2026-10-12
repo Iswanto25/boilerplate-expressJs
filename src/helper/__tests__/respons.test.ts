@@ -3,8 +3,8 @@ import test, { mock } from "node:test";
 import { createRequire } from "node:module";
 
 const requireModule = createRequire(import.meta.url);
-const modulePath = "@/utils/respons";
-const loggerPath = "@/utils/logger";
+const modulePath = "../respons.js";
+const loggerPath = "../logger.js";
 
 const createReqRes = (withUser = true) => {
 	const user =
@@ -80,7 +80,7 @@ const setup = async (overrides?: { createLog?: ReturnType<typeof mock.fn> }) => 
 	const module = await import(modulePath);
 
 	// Stub auditLogger.saveAuditLog to use our createLog mock
-	const auditLoggerPath = requireModule.resolve("@/utils/auditLogger");
+	const auditLoggerPath = requireModule.resolve("../auditLogger.js");
 	const originalAudit = requireModule.cache[auditLoggerPath];
 	(requireModule.cache as any)[auditLoggerPath] = {
 		id: auditLoggerPath,

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { respons, HttpStatus } from "@/utils/respons.js";
+import { respons, HttpStatus } from "@/helper/respons.js";
 import prisma from "@/configs/database.js";
 import { Action } from "@prisma/client";
 

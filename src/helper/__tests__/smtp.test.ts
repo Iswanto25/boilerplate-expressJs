@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const requireModule = createRequire(fileURLToPath(import.meta.url));
-const modulePath = "@/utils/smtp";
+const modulePath = "../smtp.js";
 const nodemailerPath = "nodemailer";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {

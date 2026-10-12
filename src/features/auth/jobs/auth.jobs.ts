@@ -1,10 +1,10 @@
 import { Queue, Worker, Job } from "bullmq";
 import { bullConnection } from "@/configs/bull.js";
-import { logger } from "@/utils/logger.js";
-import { uploadBase64, deleteFile } from "@/utils/s3.js";
+import { logger } from "@/helper/logger.js";
+import { uploadBase64, deleteFile } from "@/helper/s3.js";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
-import { sendEmail } from "@/utils/smtp.js";
-import { generateResetPasswordEmail, generateGenericOTPEmail } from "@/utils/mail.js";
+import { sendEmail } from "@/helper/smtp.js";
+import { generateResetPasswordEmail, generateGenericOTPEmail } from "@/helper/mail.js";
 
 export const AUTH_QUEUE_NAME = "auth-queue";
 

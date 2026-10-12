@@ -4,10 +4,10 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const requireModule = createRequire(fileURLToPath(import.meta.url));
-const modulePath = "@/utils/rateLimiter";
+const modulePath = "../rateLimiter.js";
 const redisPath = "@/configs/redis";
-const responsPath = "@/utils/respons";
-const loggerPath = "@/utils/logger";
+const responsPath = "../respons.js";
+const loggerPath = "../logger.js";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {
 	const resolvedPath = requireModule.resolve(specifier);

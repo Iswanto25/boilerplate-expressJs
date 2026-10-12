@@ -1,5 +1,5 @@
 import prisma from "@/configs/database.js";
-import { logger } from "@/utils/logger.js";
+import { logger } from "@/helper/logger.js";
 
 interface AuditEntry {
 	userId?: string | null;

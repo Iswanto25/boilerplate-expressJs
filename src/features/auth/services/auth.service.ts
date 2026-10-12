@@ -1,15 +1,15 @@
 import crypto from "node:crypto";
 import { authRepository } from "@/features/auth/repositories/auth.repository.js";
-import { deleteFile, getPublicUrl, getPresignedUploadUrl } from "@/utils/s3.js";
-import { apiError } from "@/utils/respons.js";
+import { deleteFile, getPublicUrl, getPresignedUploadUrl } from "@/helper/s3.js";
+import { apiError } from "@/helper/respons.js";
 import { authQueue } from "@/features/auth/jobs/auth.jobs.js";
-import { jwtUtils } from "@/utils/jwt.js";
-import { storeToken, deleteToken, getStoredToken } from "@/utils/tokenStore.js";
+import { jwtUtils } from "@/helper/jwt.js";
+import { storeToken, deleteToken, getStoredToken } from "@/helper/tokenStore.js";
 import { redisState } from "@/configs/redis.js";
-import { encryptPassword, comparePassword, isEmailValid } from "@/utils/utils.js";
-import { encryptionUtils, decryptSensitive } from "@/utils/encryption.js";
-import { paginate } from "@/utils/pagination.js";
-import { logger } from "@/utils/logger.js";
+import { encryptPassword, comparePassword, isEmailValid } from "@/helper/utils.js";
+import { encryptionUtils, decryptSensitive } from "@/helper/encryption.js";
+import { paginate } from "@/helper/pagination.js";
+import { logger } from "@/helper/logger.js";
 import { RegisterInput, UpdateProfileInput, ResetPasswordInput, SendOtpInput, VerifyOtpInput } from "@/features/auth/types/auth.types.js";
 
 const folder = "profile";

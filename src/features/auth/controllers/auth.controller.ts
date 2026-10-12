@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { authServices } from "@/features/auth/services/auth.service.js";
-import { HttpStatus, respons, validateOrThrow } from "@/utils/respons.js";
+import { HttpStatus, respons, validateOrThrow } from "@/helper/respons.js";
 import { authValidation } from "@/features/auth/validations/auth.validation.js";
 
 export const authController = {

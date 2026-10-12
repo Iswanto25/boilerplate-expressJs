@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import dotenv from "dotenv";
-import { logger } from "@/utils/logger.js";
+import { logger } from "@/helper/logger.js";
 
 dotenv.config({ quiet: true });
 

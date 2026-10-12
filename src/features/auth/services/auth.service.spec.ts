@@ -13,7 +13,7 @@ import {
 	setFakerSeed,
 	generateFakeUUID,
 } from "__tests__/helpers/faker.helper.js";
-import { encryptPassword, comparePassword } from "@/utils/utils.js";
+import { encryptPassword, comparePassword } from "@/helper/utils.js";
 
 // Mock dependencies
 jest.mock("@/configs/database.js", () => ({
@@ -46,13 +46,13 @@ jest.mock("@/configs/database.js", () => ({
 	},
 }));
 
-jest.mock("@/utils/s3.js", () => ({
+jest.mock("@/helper/s3.js", () => ({
 	uploadBase64: jest.fn().mockResolvedValue("https://example.com/photo.jpg"),
 	getFile: jest.fn().mockReturnValue("https://example.com/photo.jpg"),
 	deleteFile: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("@/utils/jwt.js", () => ({
+jest.mock("@/helper/jwt.js", () => ({
 	jwtUtils: {
 		generateAccessToken: jest.fn().mockReturnValue("mock-access-token"),
 		generateRefreshToken: jest.fn().mockReturnValue("mock-refresh-token"),
@@ -60,13 +60,13 @@ jest.mock("@/utils/jwt.js", () => ({
 	},
 }));
 
-jest.mock("@/utils/tokenStore.js", () => ({
+jest.mock("@/helper/tokenStore.js", () => ({
 	storeToken: jest.fn().mockResolvedValue(undefined),
 	getToken: jest.fn().mockResolvedValue("mock-refresh-token"),
 	deleteToken: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("@/utils/encryption.js", () => ({
+jest.mock("@/helper/encryption.js", () => ({
 	encryptionUtils: {
 		encryptSensitive: jest.fn().mockReturnValue({
 			version: "v1",
@@ -201,7 +201,7 @@ describe("Auth Services", () => {
 		it("should logout user successfully", async () => {
 			// Arrange
 			const userId = generateFakeUUID();
-			const { deleteToken } = require("@/utils/tokenStore.js");
+			const { deleteToken } = require("@/helper/tokenStore.js");
 
 			// Act
 			await authServices.logout(userId);

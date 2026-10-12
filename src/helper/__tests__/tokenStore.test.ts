@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const requireModule = createRequire(fileURLToPath(import.meta.url));
-const modulePath = "@/utils/tokenStore";
+const modulePath = "../tokenStore.js";
 const redisPath = "@/configs/redis";
 
 const stubModule = (specifier: string, exports: any): (() => void) => {

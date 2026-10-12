@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { respons, HttpStatus, apiError } from "@/utils/respons.js";
+import { respons, HttpStatus, apiError } from "@/helper/respons.js";
 
 const errorTranslations: Record<string, string> = {
 	"User not found": "User tidak ditemukan",
