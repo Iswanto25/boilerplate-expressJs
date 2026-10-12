@@ -6,6 +6,23 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan p
 
 ---
 
+## [3.2.0] - 2026-10-12
+
+### ✨ Added
+
+- **Environment Generator**: Script baru `scripts/generateEnv.ts` + perintah `npm run generate-env` untuk membuat file `.env`.
+- **Signature Unit Tests**: Test baru `src/helper/__tests__/signature.test.ts` untuk verifikasi API signature.
+
+### 🔄 Changed
+
+- **Migrasi alias `@/utils` → `@/helper`**: Menyelesaikan rename direktori `src/utils/` menjadi `src/helper/` — seluruh import (37 file di `src/`, `__tests__/`, `scripts/`) kini memakai alias `@/helper/`, mapping kompatibilitas `@/utils/*` di `tsconfig.json` dihapus, dan unit test di `src/helper/__tests__/` beralih ke import relatif (`../x.js`).
+- **Dokumentasi & konfigurasi**: Referensi `src/utils/` di `README.md` diperbarui ke `src/helper/`; script `generate-data` di `package.json` dan ignore pattern di `jest.config.cjs` diselaraskan.
+- **API Signature Rework**: `generateApiKey` dan verifikasi di `src/helper/signature.ts` ditulis ulang — payload memakai format `userKey:timestamp:signature` (timestamp UTC+7), mode non-produksi bypass tanpa HMAC, dan error response via `respons.error`.
+- **Deployment Workflow**: Rename `deploy-staging-scholaflow.yml` menjadi `deploy.yml` generik.
+- **Prisma Schema**: Reorder field pada model untuk konsistensi (tanpa perubahan struktur).
+
+---
+
 ## [3.1.0] - 2026-08-21
 
 ### ⚡ Breaking Changes
