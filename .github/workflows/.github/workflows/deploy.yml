@@ -1,4 +1,4 @@
-name: Deploy ScholaFlow BE to Staging
+name: Deploy BE to server
 
 on:
     push:
@@ -122,7 +122,7 @@ jobs:
                   port: ${{ secrets.SSH_PORT_STAGING }}
                   timeout: 30m
                   source: "dist/,src/,scripts/,prisma/,prisma.config.ts,tsconfig.json,package.json,package-lock.json,ecosystem.config.cjs"
-                  target: "/root/scholaflow-backend-staging"
+                  target: "/root/backend"
 
     # ============================================================
     # STAGE 5: Pre-Deployment (Server Target)
@@ -142,7 +142,7 @@ jobs:
                   script: |
                       set -e
                       export PATH=$PATH:/usr/local/bin:~/.nvm/versions/node/v24/bin
-                      cd /root/scholaflow-backend-staging
+                      cd /root/backend
 
                       echo "📝 Writing .env file..."
                       cat << 'EOF' > .env
@@ -185,7 +185,7 @@ jobs:
                   script: |
                       set -e
                       export PATH=$PATH:/usr/local/bin:~/.nvm/versions/node/v24/bin
-                      cd /root/scholaflow-backend-staging
+                      cd /root/backend
 
                       echo "🚀 Reloading application (Zero Downtime)..."
                       pm2 reload ecosystem.config.cjs --env staging || pm2 start ecosystem.config.cjs --env staging
@@ -210,7 +210,7 @@ jobs:
                   script: |
                       set -e
                       export PATH=$PATH:/usr/local/bin:~/.nvm/versions/node/v24/bin
-                      cd /root/scholaflow-backend-staging
+                      cd /root/backend
 
                       echo "🔍 Performing health check..."
                       HEALTHY=false
@@ -230,7 +230,7 @@ jobs:
                         echo "✅ Deployment successful!"
                       else
                         echo "❌ Health check failed! Rolling back..."
-                        pm2 restart scholaflow-backend-staging
+                        pm2 restart backend
                         echo "⚠️  Application restarted. Check server for details."
                         exit 1
                       fi
